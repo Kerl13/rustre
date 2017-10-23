@@ -1,0 +1,6 @@
+node check (x: bool) = (OK: bool)
+with var n1, n2: int; b: bool in
+  b = true fby false;
+  n1 = if b then 0 else pre n1 + 1;  /* 0 -> pre n1 + 1 */
+  n2 = if b then 1 else pre n2 + 1;  /* 1 -> pre n2 + 1 */
+  OK = (n1 + 1) = n2
