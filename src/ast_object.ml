@@ -12,7 +12,7 @@ type pat = Var of var_id | State of var_id
 
 type _ expr =
   | EVar : pat -> 'a expr
-  | Eint: z -> int expr
+  | EInt: z -> int expr
   | EReal: float -> float expr
   | EBool: bool -> bool expr
   | EAdd: int expr * int expr -> int expr
