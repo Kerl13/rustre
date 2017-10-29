@@ -23,7 +23,7 @@
     ])
 
   (* e1 -> e2  ~>  if (True fby False) then e1 else e2 *)
-  let arrow _ _ = failwith "Not implemented"
+  let arrow e1 e2 endpos = if_then_else "_TfbyF" e1 e2 endpos
 
   (* pre e  ~>  nil fby e *)
   let pre e = EFby (CNil, e)
@@ -163,7 +163,7 @@ expr:
 | NOT e = located(expr)                        { EOp (OpNot, [e]) }
 | MINUS e = located(expr)                      { EOp (OpSub, [e]) }
 | PRE e = located(expr)                        { pre e }
-| e1 = located(expr) ARROW e2 = located(expr)  { arrow e1 e2 }
+| e1 = located(expr) ARROW e2 = located(expr)  { arrow e1 e2 $endpos }
 
 | f = ident
   LPAR args = clist(located(expr)) RPAR

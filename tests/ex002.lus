@@ -1,5 +1,5 @@
 node check (x: bool) = (OK: bool)
 with var n1, n2: int in
   n1 = 0 -> pre n1 + 1;
-  n2 = 1 -> pre n2 + 1;
-  OK = (n1 + 1) = n2
+  n2 = 0 -> (1 -> pre (n2 + 1));
+  OK = n1 = n2

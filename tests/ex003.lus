@@ -1,0 +1,9 @@
+node check (x: bool) = (OK: bool)
+with var n1, n2: int;
+         b1, b2, b1b2: bool in
+  n1 = 0 -> pre n1 + 1;
+  n2 = 0 -> pre (0 -> pre (n1 + 2));
+  b1 = false -> true;
+  b2 = false -> pre b1;
+  b1b1 = b1 and b2;
+  OK = if b1b2 then n1 = n2 else true
