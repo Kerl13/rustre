@@ -27,6 +27,9 @@ type statement =
   | SSeq of statement * statement
   | SSkip
   | SCall of pat list * machine_id * pat list
+  | SCase of pat * (statement list) (* Constructors are numbered, the nth
+                                       statement corresponds to the nth
+                                       constructor -- 2 in case of Booleans *)
 
 type machine = {
   m: memory;
