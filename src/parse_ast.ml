@@ -74,6 +74,19 @@ and pattern_desc =
   | PTuple of pattern_desc list
 
 
+(** A visitor for expressions *)
+let rec visit f state e =
+  let state = f state e.expr_desc in
+  match e.expr_desc with
+  | EConst _ | EIdent _ -> state
+  | ETuple es -> List.fold_left (visit f) state es
+  | EFby (_, e) -> visit f state e
+  | EOp (_, es) -> List.fold_left (visit f) state es
+  | EApp (_, es, every) -> List.fold_left (visit f) (visit f state every) es
+  | EWhen (e, _, _) -> visit f state e
+  | EMerge (_, clauses) ->
+      List.fold_left (fun s (_, e) -> visit f s e) state clauses
+
 
 (**
  * Pretty printer

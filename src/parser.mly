@@ -23,10 +23,40 @@
     ])
 
   (* e1 -> e2  ~>  if (True fby False) then e1 else e2 *)
-  let arrow e1 e2 endpos = if_then_else "_TfbyF" e1 e2 endpos
+  let arrow e1 e2 endpos =
+    (* since merge's first argument must be an identifier, we use "_TfbyF" to
+     * refer an previously defined variable equal to [true fby false]. This
+     * variable is automatically added by the parser. *)
+    if_then_else "_TfbyF" e1 e2 endpos
 
   (* pre e  ~>  nil fby e *)
   let pre e = EFby (CNil, e)
+
+
+  (** Define _TfbyF when it is required *)
+
+  (* _TfbyF = true fby false *)
+  let tfbyf =
+    let pos = Lexing.dummy_pos in
+    let e = EFby (CBool true, mk_false_at pos) in
+    let e = dummy_loc e pos in
+    let pat = { pat_desc = PIdent "_TfbyF" ; pat_loc = (pos, pos) } in
+    { eq_pat = pat ; eq_expr = e }
+
+  (* add [_TfbyF = true fby false] to the node's equations if required *)
+  let add_tfbyf node =
+    let find s = function
+      | EMerge ("_TfbyF", _) -> true
+      | _ -> s
+    in
+    let present =
+      let find_in_node found eq = visit find found eq.eq_expr in
+      List.fold_left find_in_node false node.n_eqs
+    in
+    if present then
+      { node with n_eqs = tfbyf :: node.n_eqs }
+    else
+      node
 %}
 
 
@@ -103,14 +133,17 @@ node:
   EQUAL LPAR out_params = param_list RPAR
   WITH local_params = loption(delimited(VAR, param_list, IN))
   eqs = separated_nonempty_list(SEMICOL, equation)
-  {{
-    n_name = name ;
-    n_input = in_params ;
-    n_output = out_params ;
-    n_local = local_params ;
-    n_eqs = eqs ;
-    n_loc = ($startpos, $endpos) ;
-  }}
+  {
+    let node = {
+      n_name = name ;
+      n_input = in_params ;
+      n_output = out_params ;
+      n_local = local_params ;
+      n_eqs = eqs ;
+      n_loc = ($startpos, $endpos) ;
+    } in
+    add_tfbyf node
+  }
 
 
 param_list:
