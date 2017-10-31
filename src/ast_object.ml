@@ -2,9 +2,9 @@ type machine_id = string
 type var_id = string
 type z = int
 
-type var_list = var_id * Parse_ast.ty list
+type var_list = var_id * Ast_parsing.ty list
 
-type machine_ty = Parse_ast.ty list * Parse_ast.ty list
+type machine_ty = Ast_parsing.ty list * Ast_parsing.ty list
 type instance = machine_id
 type memory = var_list
 

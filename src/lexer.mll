@@ -1,7 +1,6 @@
 {
   open Lexing
   open Parser
-  (* open Parse_ast *)
 
   exception Lexical_error of string
 

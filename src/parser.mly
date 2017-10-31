@@ -1,5 +1,5 @@
 %{
-  open Parse_ast
+  open Ast_parsing
 
 
   let dummy_loc e pos = { expr_desc = e ; expr_loc = (pos, pos) }
@@ -68,7 +68,7 @@
 
 
 %start file
-%type <Parse_ast.file> file
+%type <Ast_parsing.file> file
 
 %%
 
