@@ -8,12 +8,12 @@ type location = Parse_ast.location
 
 
 type 'a num_ty =
-| TyZ : int num_ty
-| TyReal : float num_ty
-(**
- * Types
- * tagged with a phantom type
-*)
+  | TyZ : int num_ty
+  | TyReal : float num_ty
+  (**
+   * Types
+   * tagged with a phantom type
+  *)
 type _ ty =
   | TyBool : bool ty
   | TyNum  : 'a num_ty ty
@@ -44,6 +44,7 @@ type (_, _) binop =
   | OpNeq   : ('a, bool) binop
   | OpAnd  : (bool, bool) binop
   | OpOr   : (bool, bool) binop
+  | OpImpl : (bool, bool) binop
 
 (**
  * Builtin unary operators
@@ -52,7 +53,6 @@ type (_, _) binop =
  * - the type of their result
 *)
 type (_, _) unop =
-  | OpImpl : (bool, bool) unop
   | OpNot  : (bool, bool) unop
 
 
