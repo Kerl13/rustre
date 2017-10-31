@@ -80,7 +80,7 @@ and 'a expr_desc =
   | EMerge : ident * (ident * 'a expr) list -> 'a expr_desc
 
 and _ const =
-  | CNil  : unit -> 'a const
+  | CNil  : 'a const
   | CBool : bool -> bool const
   | CInt  : int -> int num_ty const
   | CReal : float -> float num_ty const
