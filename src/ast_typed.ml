@@ -54,6 +54,7 @@ type (_, _) binop =
 *)
 type (_, _) unop =
   | OpNot  : (bool, bool) unop
+  | OpUMinus : ('a num_ty, 'a num_ty) unop
 
 
 (**
