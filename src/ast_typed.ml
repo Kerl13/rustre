@@ -16,14 +16,15 @@ type 'a num_ty =
   *)
 type _ ty =
   | TyBool : bool ty
-  | TyNum  : 'a num_ty ty
+  | TyNum  : 'a num_ty -> 'a num_ty ty
 
 
 type _ var_ident = Parse_ast.ident
 
 type _ var_list =
-  | VIdent: 'a var_ident -> 'a var_list
-  | VTuple: 'a var_ident * 'b var_list -> ('a * 'b) var_list
+  | VIdent: 'a var_ident * 'a ty -> 'a var_list
+  | VEmpty: unit var_list
+  | VTuple: 'a var_ident * 'a ty * 'b var_list -> ('a * 'b) var_list
 
 type (_, _) tagged_ident = Tagged: ('a var_list) * ('b var_list) * ident -> ('a, 'b) tagged_ident
 
@@ -110,5 +111,3 @@ and 'a pattern = {
 }
 
 and 'a pattern_desc = 'a var_list
-
-let get_desc: file -> ('a, 'b) tagged_ident -> ('a, 'b) node_desc = fun _ -> assert false
