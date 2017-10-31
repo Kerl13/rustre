@@ -37,7 +37,11 @@ type (_, _) binop =
   | OpDiv  : ('a num_ty, 'a num_ty) binop
   | OpMod  : ('a num_ty, 'a num_ty) binop
   | OpLt   : ('a num_ty, bool) binop
+  | OpLe   : ('a num_ty, bool) binop
+  | OpGt   : ('a num_ty, bool) binop
+  | OpGe   : ('a num_ty, bool) binop
   | OpEq   : ('a, bool) binop
+  | OpNeq   : ('a, bool) binop
   | OpAnd  : (bool, bool) binop
   | OpOr   : (bool, bool) binop
 
