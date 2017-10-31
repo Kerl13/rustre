@@ -44,7 +44,7 @@ let () =
     let file = Parser.file Lexer.token lb in
     close_in c;
 
-    Format.printf "=== Parsed file =====\n%a@." Parse_ast.pp_file file;
+    Format.printf "=== Parsed file =====\n%a@." Ast_parsing.pp_file file;
 
     exit 0
   with

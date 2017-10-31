@@ -1,5 +1,5 @@
-type ident = Parse_ast.ident
-type location = Parse_ast.location
+type ident = Ast_parsing.ident
+type location = Ast_parsing.location
 
 
 (**
@@ -19,7 +19,7 @@ type _ ty =
   | TyNum  : 'a num_ty ty
 
 
-type _ var_ident = Parse_ast.ident
+type _ var_ident = Ast_parsing.ident
 
 type _ var_list =
   | VIdent: 'a var_ident -> 'a var_list
