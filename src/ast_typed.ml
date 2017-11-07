@@ -17,6 +17,7 @@ type 'a num_ty =
 type _ ty =
   | TyBool : bool ty
   | TyNum  : 'a num_ty -> 'a num_ty ty
+  | TyPair : 'a ty * 'b ty -> ('a * 'b) ty
 
 
 type _ var_ident = Ast_parsing.ident
