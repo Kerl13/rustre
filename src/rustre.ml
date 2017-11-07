@@ -3,6 +3,7 @@ open Lexing
 (* XXX: To remove, that was only to force compilation of these modules. *)
 open Ast_typed
 open Ast_typed_utils
+open Typing
 
 let usage = Format.sprintf "usage: %s [options] file.lus main" Sys.argv.(0)
 
