@@ -59,6 +59,13 @@ type (_, _) unop =
   | OpUMinus : ('a num_ty, 'a num_ty) unop
 
 
+
+type _ const =
+  | CNil  : 'a const
+  | CBool : bool -> bool const
+  | CInt  : int -> int num_ty const
+  | CReal : float -> float num_ty const
+
 (**
  * Expressions
  * tagged with a phantom type corresponding to their lustre type
@@ -79,12 +86,6 @@ and 'a expr_desc =
   | App    : ('a, 'b) tagged_ident * 'a expr * 'c expr -> 'b expr_desc
   | EWhen  : 'a expr * ident * 'b var_ident -> 'a expr_desc
   | EMerge : ident * (ident * 'a expr) list -> 'a expr_desc
-
-and _ const =
-  | CNil  : 'a const
-  | CBool : bool -> bool const
-  | CInt  : int -> int num_ty const
-  | CReal : float -> float num_ty const
 
 
 

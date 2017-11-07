@@ -24,6 +24,13 @@ type op =
   | OpNot
 
 
+
+type const =
+  | CNil
+  | CInt of int
+  | CReal of float
+  | CBool of bool
+
 (** Expressions *)
 type expr = {
   expr_desc  : expr_desc ;
@@ -39,12 +46,6 @@ and expr_desc =
   | EApp   of ident * expr list * expr
   | EWhen  of expr * ident * ident
   | EMerge of ident * (ident * expr) list
-
-and const =
-  | CNil
-  | CInt of int
-  | CReal of float
-  | CBool of bool
 
 
 (** Programs *)
