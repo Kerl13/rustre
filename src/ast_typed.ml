@@ -113,3 +113,93 @@ and 'a pattern = {
 }
 
 and 'a pattern_desc = 'a var_list
+
+
+
+
+
+
+(**
+ * Pretty printer
+ **)
+
+let fprintf = Format.fprintf
+
+let rec pp_list sep pp ppf = function
+  | [] -> fprintf ppf ""
+  | [x] -> fprintf ppf "%a" pp x
+  | x :: xs -> fprintf ppf "%a%s%a" pp x sep (pp_list sep pp) xs
+
+let pp_const: type a. 'b -> a const -> unit = fun ppf -> function
+  | CNil -> fprintf ppf "nil"
+  | CInt n -> fprintf ppf "%d" n
+  | CReal f -> fprintf ppf "%f" f
+  | CBool b -> fprintf ppf "%B" b
+
+let pp_bop: type a b. 'c -> (a, b) binop -> unit = fun ppf -> function
+  | OpAdd -> fprintf ppf "+"
+  | OpSub -> fprintf ppf "-"
+  | OpMul -> fprintf ppf "*"
+  | OpDiv -> fprintf ppf "/"
+  | OpMod -> fprintf ppf "mod"
+  | OpLt -> fprintf ppf "<"
+  | OpLe -> fprintf ppf "<="
+  | OpGt -> fprintf ppf ">"
+  | OpGe -> fprintf ppf ">="
+  | OpEq -> fprintf ppf "="
+  | OpNeq -> fprintf ppf "<>"
+  | OpAnd -> fprintf ppf "and"
+  | OpOr -> fprintf ppf "or"
+  | OpImpl -> fprintf ppf "=>"
+
+let pp_uop: type a b. 'c -> (a, b) unop -> unit = fun ppf -> function
+  | OpNot -> fprintf ppf "not"
+  | OpUMinus -> fprintf ppf "-"
+
+
+
+let rec pp_ty: type a. 'b -> a ty -> unit = fun ppf -> function
+  | TyBool -> fprintf ppf "bool"
+  | TyNum TyZ -> fprintf ppf "int"
+  | TyNum TyReal -> fprintf ppf "real"
+  | TyPair(a, b) -> fprintf ppf "%a, %a" pp_ty a pp_ty b
+
+let pp_expr: type a. 'c -> a expr -> unit =
+  let rec pp: type a. 'd -> a expr -> unit = fun ppf e -> fprintf ppf "%a:%a" pp_desc e.texpr_desc pp_ty e.texpr_type
+  and pp_desc: type b. 'c -> b expr_desc -> unit = fun ppf -> function
+    | EConst c -> fprintf ppf "%a" pp_const c
+    | EIdent i -> fprintf ppf "%s" i
+    | EPair (es, es2) -> fprintf ppf "%a, %a" pp es pp es2
+    | EFby (v, e) -> fprintf ppf "(%a fby %a)" pp_const v pp e
+    | EBOp (op, e1, e2) -> fprintf ppf "(%a %a %a)" pp e1 pp_bop op pp e2
+    | EUOp (op, e) -> fprintf ppf "(%a %a)" pp_uop op pp e
+    | EApp (f, args, ev) ->
+      let Tagged(_, _, f) = f in
+      fprintf ppf "(%s(%a) every %a)" f pp args pp ev
+    | EWhen (e, c, x) -> fprintf ppf "(%a when %s(%s))" pp e c x
+    | EMerge (x, clauses) -> fprintf ppf "(merge %s %a)" x (pp_list " " pp_clause) clauses
+  and pp_clause: type a. 'd -> ident * a expr -> unit = fun ppf (c, e) -> fprintf ppf "(%s -> %a)" c pp e
+  in pp
+
+let rec pp_vl: type a. 'b -> a var_list -> unit = fun ppf -> function
+  | VIdent (i, ty) -> fprintf ppf "%s:%a" i pp_ty ty
+  | VEmpty -> fprintf ppf "()"
+  | VTuple(i, ty, b) -> fprintf ppf "%s:%a, (%a)" i pp_ty ty pp_vl b
+
+let pp_pat ppf p = pp_vl ppf p.pat_desc
+
+let pp_equation ppf (Equ(pat, expr)) =
+  fprintf ppf "%a = %a" pp_pat pat pp_expr expr
+
+let pp_node ppf (Node n) =
+  let pp_equation ppf eq = fprintf ppf "  %a" pp_equation eq in
+  let Tagged(_, _, name) = n.n_name in
+  let NodeLocal n_local = n.n_local in
+  fprintf ppf "node %s(%a) = (%a)\nwith var %a in\n%a"
+    name
+    pp_vl n.n_input
+    pp_vl n.n_output
+    pp_vl n_local
+    (pp_list ";\n" pp_equation) n.n_eqs
+
+let pp_file ppf f = fprintf ppf "%a" (pp_list "\n\n" pp_node) f

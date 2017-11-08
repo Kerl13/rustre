@@ -18,6 +18,7 @@ exception Bad_type
 exception Node_undefined of string * location
 exception Empty_return_type
 exception Empty_merge
+exception Expected_type of typed_ty_wrapped * typed_ty_wrapped
 
 
 let do_typing_const: type a. a ty -> Ast_parsing.const -> a const = fun ty a ->
@@ -29,7 +30,7 @@ let do_typing_const: type a. a ty -> Ast_parsing.const -> a const = fun ty a ->
        | _ -> raise Bad_type)
    | Ast_parsing.CReal a -> (match ty with
        | TyNum TyReal -> CReal a
-       | _ -> raise Bad_type)
+       | _ -> raise (Expected_type(TypedTy (TyNum TyReal), TypedTy(ty))))
    | Ast_parsing.CBool a ->  (match ty with
        | TyBool -> CBool a
        | _ -> raise Bad_type))
@@ -76,7 +77,7 @@ let rec infer_type_opt: var_env VarMap.t -> file -> Ast_parsing.expr -> typed_ty
     (match Ast_parsing.(expr.expr_desc) with
      | Ast_parsing.EConst c -> (match c with
          | Ast_parsing.CNil -> None
-         | Ast_parsing.CInt _ -> Some (TypedTy (TyNum TyZ))
+         | Ast_parsing.CInt _ -> None
          | Ast_parsing.CReal _ -> Some (TypedTy (TyNum TyReal))
          | Ast_parsing.CBool _ -> Some (TypedTy TyBool))
      | Ast_parsing.EIdent v ->
@@ -86,7 +87,7 @@ let rec infer_type_opt: var_env VarMap.t -> file -> Ast_parsing.expr -> typed_ty
      | Ast_parsing.EFby (c,e) ->
        (match c with
         | Ast_parsing.CNil -> infer_type_opt env file e
-        | Ast_parsing.CInt _ -> Some (TypedTy (TyNum TyZ))
+        | Ast_parsing.CInt _ -> None
         | Ast_parsing.CReal _ -> Some (TypedTy (TyNum TyReal))
         | Ast_parsing.CBool _ -> Some (TypedTy TyBool))
      | Ast_parsing.EOp (op,e) -> (match op with
@@ -116,6 +117,16 @@ let infer_type: var_env VarMap.t -> file -> Ast_parsing.expr -> typed_ty_wrapped
     match o with
     | Some s -> s
     | _ -> TypedTy (TyNum TyZ)
+
+let infer_type2 env file e =
+  match e with
+  | [a; b] ->
+    (match infer_type_opt env file a with
+     | Some s -> s
+     | None -> match infer_type_opt env file b with
+       | None -> TypedTy (TyNum TyZ)
+       | Some s -> s)
+  | _ -> raise Bad_type
 
 let rec do_typing_tuple: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsing.expr list -> a expr =
   fun env file ty expr ->
@@ -197,8 +208,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
           let mono_ty = mono_type ty in
           (match mono_ty with
            | Ast_typed.TyBool ->
-             let a = List.hd exprs (* hd exists or should not go through parsing *) in
-             let TypedTy inf_type = infer_type env file a in
+             let TypedTy inf_type = infer_type2 env file exprs in
              binary_expr env file inf_type mono_ty (op_to_ty_op_eq op) exprs, mono_ty
            | _ -> raise Bad_type)
         | Ast_parsing.OpAnd | Ast_parsing.OpOr | Ast_parsing.OpImpl

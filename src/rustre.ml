@@ -47,20 +47,22 @@ let () =
     close_in c;
 
     Format.printf "=== Parsed file =====\n%a@." Ast_parsing.pp_file file;
-    Format.printf "Typing…";
-    let _ = Typing.do_typing file in
-    Format.printf " ok.@.";
+    Format.printf "Typing…@.";
+    Typing.do_typing file |> Format.printf "%a@.ok@." Ast_typed.pp_file;
 
     exit 0
   with
-    | Lexer.Lexical_error s ->
-        report_loc (lexeme_start_p lb, lexeme_end_p lb);
-        Format.eprintf "lexical error: %s\n@." s;
-        exit 1
-    | Parser.Error ->
-        report_loc (lexeme_start_p lb, lexeme_end_p lb);
-        Format.eprintf "syntax error\n@.";
-        exit 1
-    | e ->
-        Format.eprintf "Anomaly: %s\n@." (Printexc.to_string e);
-        exit 2
+  | Lexer.Lexical_error s ->
+    report_loc (lexeme_start_p lb, lexeme_end_p lb);
+    Format.eprintf "lexical error: %s\n@." s;
+    exit 1
+  | Parser.Error ->
+    report_loc (lexeme_start_p lb, lexeme_end_p lb);
+    Format.eprintf "syntax error\n@.";
+    exit 1
+  | Typing.Expected_type(a, b) ->
+    let Typing.(TypedTy a, TypedTy b) = a, b in
+    Format.eprintf "got %a expected %a@." Ast_typed.pp_ty a Ast_typed.pp_ty b;
+  | e ->
+    Format.eprintf "Anomaly: %s\n@." (Printexc.to_string e);
+    exit 2
