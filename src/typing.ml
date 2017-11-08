@@ -18,10 +18,10 @@ exception Bad_type
 exception Node_undefined of string * location
 exception Empty_return_type
 exception Empty_merge
-exception Expected_type of typed_ty_wrapped * typed_ty_wrapped
+exception Expected_type of typed_ty_wrapped * typed_ty_wrapped * location
 
 
-let do_typing_const: type a. a ty -> Ast_parsing.const -> a const = fun ty a ->
+let do_typing_const: type a. a ty -> location -> Ast_parsing.const -> a const = fun ty loc a ->
   (match a with
    | Ast_parsing.CNil -> CNil
    | Ast_parsing.CInt a -> (match ty with
@@ -30,7 +30,7 @@ let do_typing_const: type a. a ty -> Ast_parsing.const -> a const = fun ty a ->
        | _ -> raise Bad_type)
    | Ast_parsing.CReal a -> (match ty with
        | TyNum TyReal -> CReal a
-       | _ -> raise (Expected_type(TypedTy (TyNum TyReal), TypedTy(ty))))
+       | _ -> raise (Expected_type(TypedTy (TyNum TyReal), TypedTy(ty), loc)))
    | Ast_parsing.CBool a ->  (match ty with
        | TyBool -> CBool a
        | _ -> raise Bad_type))
@@ -165,7 +165,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
   let ((descr, ty): a expr_desc * a ty) = match let open Ast_parsing in expr.expr_desc with
     | Ast_parsing.EConst a ->
       let ty = (mono_type ty) in
-      let (c: a const) = do_typing_const ty a in
+      let (c: a const) = do_typing_const ty expr.Ast_parsing.expr_loc a in
       EConst c, ty
     | Ast_parsing.EIdent a ->
       let Var(var_name, var_ty) = VarMap.find a env in (*XXX: handle Not_found*)
@@ -180,7 +180,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
       e.texpr_desc, e.texpr_type
     | Ast_parsing.EFby (a,b) ->
       let mono_ty = (mono_type ty) in
-      EFby(do_typing_const mono_ty a, do_typing_expr env file ty b), mono_ty
+      EFby(do_typing_const mono_ty expr.Ast_parsing.expr_loc a, do_typing_expr env file ty b), mono_ty
     | Ast_parsing.EOp (op, exprs) -> (match op with
         | Ast_parsing.OpAdd | Ast_parsing.OpSub | Ast_parsing.OpMul
         | Ast_parsing.OpDiv | Ast_parsing.OpMod ->

@@ -60,7 +60,7 @@ let () =
     report_loc (lexeme_start_p lb, lexeme_end_p lb);
     Format.eprintf "syntax error\n@.";
     exit 1
-  | Typing.Expected_type(a, b) ->
+  | Typing.Expected_type(a, b, loc) ->
     let Typing.(TypedTy a, TypedTy b) = a, b in
     Format.eprintf "got %a expected %a@." Ast_typed.pp_ty a Ast_typed.pp_ty b;
   | e ->
