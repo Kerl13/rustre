@@ -15,6 +15,10 @@ let ty_to_typed_ty = function
   | Ast_parsing.TyReal -> TypedTy (TyNum TyReal)
 
 exception Bad_type
+exception Node_undefined of string * location
+exception Empty_return_type
+exception Empty_merge
+
 
 let do_typing_const: type a. a ty -> Ast_parsing.const -> a const = fun ty a ->
   (match a with
@@ -35,40 +39,221 @@ let mono_type ty =
   | VIdent (_, myty) -> myty
   | _ -> raise Bad_type
 
-let rec do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsing.expr -> a expr = fun env file ty expr ->
-  let (descr: a expr_desc) = match let open Ast_parsing in expr.expr_desc with
+let op_to_ty_op = function
+  | Ast_parsing.OpAdd -> OpAdd
+  | Ast_parsing.OpSub -> OpSub
+  | Ast_parsing.OpMul -> OpMul
+  | Ast_parsing.OpDiv -> OpDiv
+  | Ast_parsing.OpMod -> OpMod
+  | _ -> assert false
+
+let op_to_ty_op_bool = function
+  | Ast_parsing.OpImpl -> OpImpl
+  | Ast_parsing.OpAnd -> OpAnd
+  | Ast_parsing.OpOr -> OpOr
+  | _ -> assert false
+
+let op_to_ty_op_eq = function
+  | Ast_parsing.OpEq -> OpEq
+  | Ast_parsing.OpNeq -> OpNeq
+  | _ -> assert false
+
+let op_to_ty_op_cmp = function
+  | Ast_parsing.OpLt -> OpLt
+  | Ast_parsing.OpLe -> OpLe
+  | Ast_parsing.OpGt -> OpGt
+  | Ast_parsing.OpGe -> OpGe
+  | _ -> assert false
+
+let rec varlist_to_ty: type a. a var_list -> a ty = function
+  | Ast_typed.VIdent (_,a) -> a
+  | Ast_typed.VEmpty -> raise Empty_return_type
+  | Ast_typed.VTuple (_,a,b) -> TyPair(a, (varlist_to_ty b))
+
+(* Infer simple types (no pair) *)
+let rec infer_type_opt: var_env VarMap.t -> file -> Ast_parsing.expr -> typed_ty_wrapped option =
+  fun env file expr ->
+    (match Ast_parsing.(expr.expr_desc) with
+     | Ast_parsing.EConst c -> (match c with
+         | Ast_parsing.CNil -> None
+         | Ast_parsing.CInt _ -> Some (TypedTy (TyNum TyZ))
+         | Ast_parsing.CReal _ -> Some (TypedTy (TyNum TyReal))
+         | Ast_parsing.CBool _ -> Some (TypedTy TyBool))
+     | Ast_parsing.EIdent v ->
+       let Var (_, t) = VarMap.find v env in (*XXX: handle Not_found*)
+       Some (TypedTy t)
+     | Ast_parsing.ETuple _ -> raise Bad_type
+     | Ast_parsing.EFby (c,e) ->
+       (match c with
+        | Ast_parsing.CNil -> infer_type_opt env file e
+        | Ast_parsing.CInt _ -> Some (TypedTy (TyNum TyZ))
+        | Ast_parsing.CReal _ -> Some (TypedTy (TyNum TyReal))
+        | Ast_parsing.CBool _ -> Some (TypedTy TyBool))
+     | Ast_parsing.EOp (op,e) -> (match op with
+         | Ast_parsing.OpAdd | Ast_parsing.OpSub | Ast_parsing.OpMul | Ast_parsing.OpDiv | Ast_parsing.OpMod -> (match e with
+             | [a; b] ->
+               (match infer_type_opt env file a with
+                | Some s -> Some s
+                | None -> infer_type_opt env file b)
+             | _ -> raise Bad_type)
+         | _ -> Some (TypedTy TyBool))
+     | Ast_parsing.EApp (node_name,_,_) ->
+       let node = List.find (fun (Node desc) ->
+           let Tagged(_, _, i) = desc.n_name in
+           i = node_name) file in
+       let Node node_desc = node in
+       let Tagged(_, out_args, _) = node_desc.n_name in
+       Some (TypedTy (mono_type out_args))
+     | Ast_parsing.EWhen (a,_,_) -> infer_type_opt env file a
+     | Ast_parsing.EMerge (_,e) ->
+       if e = [] then raise Empty_merge
+       else List.hd e |> snd |> infer_type_opt env file)
+
+(* Infer simple types (no pair) *)
+let infer_type: var_env VarMap.t -> file -> Ast_parsing.expr -> typed_ty_wrapped =
+  fun env file expr ->
+    let o = infer_type_opt env file expr in
+    match o with
+    | Some s -> s
+    | _ -> TypedTy (TyNum TyZ)
+
+let rec do_typing_tuple: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsing.expr list -> a expr =
+  fun env file ty expr ->
+
+    begin
+      match ty with
+      | Ast_typed.VIdent (var_name, var_ty) ->
+        begin match expr with
+          | [t] ->
+            (do_typing_expr env file (VIdent (var_name, var_ty)) t)
+          | _ -> raise Bad_type
+        end
+      | Ast_typed.VEmpty -> raise Bad_type
+      | Ast_typed.VTuple (var_name, var_ty, b) ->
+        begin match expr with
+          | t::q ->
+            let p1 = do_typing_expr env file (VIdent (var_name, var_ty)) t in
+            let p2 = do_typing_tuple env file b q in
+            { texpr_desc = EPair (p1, p2);
+              texpr_type = TyPair (p1.texpr_type, p2.texpr_type);
+              texpr_loc = Ast_parsing.(t.expr_loc) }
+          | [] -> raise Bad_type
+        end
+    end
+
+and binary_expr: type a b. var_env VarMap.t -> file -> a ty -> b ty -> (a, b) binop -> Ast_parsing.expr list -> b expr_desc =
+  fun env file ty_in _ op exprs ->
+    match exprs with
+    | [a; b] ->
+      let e1 = do_typing_expr env file (VIdent("", ty_in)) a in
+      let e2 = do_typing_expr env file (VIdent("", ty_in)) b in
+      EBOp(op, e1, e2)
+    | _ -> (* should not go through parsing *) assert false
+
+and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsing.expr -> a expr = fun env file ty expr ->
+  let ((descr, ty): a expr_desc * a ty) = match let open Ast_parsing in expr.expr_desc with
     | Ast_parsing.EConst a ->
-      let (c: a const) = do_typing_const (mono_type ty) a in
-      EConst c
+      let ty = (mono_type ty) in
+      let (c: a const) = do_typing_const ty a in
+      EConst c, ty
     | Ast_parsing.EIdent a ->
-      let Var(var_name, var_ty) = VarMap.find a env in
-      if TypedTy var_ty = TypedTy (mono_type ty) then
-        EIdent var_name
+      let Var(var_name, var_ty) = VarMap.find a env in (*XXX: handle Not_found*)
+      let ty = mono_type ty in
+      if TypedTy var_ty = TypedTy ty then
+        EIdent var_name, ty
       else raise Bad_type
     | Ast_parsing.ETuple [] ->
       raise Bad_type
     | Ast_parsing.ETuple (t::q) ->
-      (match ty with
-       | Ast_typed.VIdent (_,_) -> if q = [] then (??)
-         else raise Bad_type
-       | Ast_typed.VEmpty -> raise Bad_type
-       | Ast_typed.VTuple (var_name, var_ty, b) -> (??)
-       (* )(List.fold_left (fun expr_tuple expr ->
-         { texpr_desc = EPair (assert false, assert false)); texpr_type =
-         (do_typing_expr env file (VIdent (var_name, var_ty)) t) q).texpr_desc
-       ) *))
+      let e = (do_typing_tuple env file ty (t::q)) in
+      e.texpr_desc, e.texpr_type
     | Ast_parsing.EFby (a,b) ->
-      EFby(do_typing_const (mono_type ty) a, do_typing_expr env file ty b)
-    | Ast_parsing.EOp (_,_) -> (??)
-    | Ast_parsing.EApp (_,_,_) -> (??)
-    | Ast_parsing.EWhen (_,_,_) -> (??)
-    | Ast_parsing.EMerge (_,_) -> (??)
+      let mono_ty = (mono_type ty) in
+      EFby(do_typing_const mono_ty a, do_typing_expr env file ty b), mono_ty
+    | Ast_parsing.EOp (op, exprs) -> (match op with
+        | Ast_parsing.OpAdd | Ast_parsing.OpSub | Ast_parsing.OpMul
+        | Ast_parsing.OpDiv | Ast_parsing.OpMod ->
+          let mono_ty = mono_type ty in
+          (match mono_ty with
+           | Ast_typed.TyNum _ ->
+             binary_expr env file mono_ty mono_ty (op_to_ty_op op) exprs, mono_ty
+           | _ -> raise Bad_type)
+        | Ast_parsing.OpLt
+        | Ast_parsing.OpLe
+        | Ast_parsing.OpGt
+        | Ast_parsing.OpGe ->
+          let mono_ty = mono_type ty in
+          (match mono_ty with
+           | Ast_typed.TyBool ->
+             let a = List.hd exprs (* hd exists or should not go through parsing *) in
+             let TypedTy inf_type = infer_type env file a in
+             (match inf_type with
+              | Ast_typed.TyNum _ ->
+                binary_expr env file inf_type mono_ty (op_to_ty_op_cmp op) exprs, mono_ty
+              | _ -> raise Bad_type)
+           | _ -> raise Bad_type)
+        | Ast_parsing.OpEq
+        | Ast_parsing.OpNeq ->
+          let mono_ty = mono_type ty in
+          (match mono_ty with
+           | Ast_typed.TyBool ->
+             let a = List.hd exprs (* hd exists or should not go through parsing *) in
+             let TypedTy inf_type = infer_type env file a in
+             binary_expr env file inf_type mono_ty (op_to_ty_op_eq op) exprs, mono_ty
+           | _ -> raise Bad_type)
+        | Ast_parsing.OpAnd | Ast_parsing.OpOr | Ast_parsing.OpImpl
+        | Ast_parsing.OpNot ->
+          let mono_ty = mono_type ty in
+          (match mono_ty with
+           | Ast_typed.TyBool ->
+             binary_expr env file mono_ty mono_ty (op_to_ty_op_bool op) exprs, mono_ty
+           | _ -> raise Bad_type))
+    | Ast_parsing.EApp (node_name, args, every) ->
+      begin
+        try
+          let node = List.find (fun (Node desc) ->
+              let Tagged(_, _, i) = desc.n_name in
+              i = node_name) file in
+          let Node node_desc = node in
+          let Tagged(in_args, out_args, _) = node_desc.n_name in
+          let in_expr = do_typing_tuple env file in_args args in
+          let every_expr = do_typing_expr env file (VIdent("", TyBool)) every in
+          if VarList out_args = VarList ty then
+            EApp (Tagged(in_args, ty, node_name), in_expr, every_expr), varlist_to_ty ty
+          else raise Bad_type
+        with
+        | Not_found -> raise (Node_undefined (node_name, Ast_parsing.(expr.expr_loc)))
+      end
+
+    | Ast_parsing.EWhen (e1,var,constructor) ->
+      let e = do_typing_expr env file ty e1 in
+      EWhen(e, var, constructor), e.texpr_type
+    | Ast_parsing.EMerge (var, id_exprs) ->
+      let e = List.map (fun (id, e) -> id, do_typing_expr env file ty e) id_exprs in
+      if e = [] then raise Empty_merge;
+      EMerge(var, e), (List.hd e |> snd).texpr_type
   in
-  {texpr_desc = descr; texpr_type = assert false; texpr_loc = Ast_parsing.(expr.expr_loc); }
+  {texpr_desc = descr; texpr_type = ty; texpr_loc = Ast_parsing.(expr.expr_loc); }
 
 
 let do_typing_equation env file eq =
-  assert false
+  let pat_desc_to_var_list = function
+    | Ast_parsing.PIdent v ->
+      let Var(id, ty) = VarMap.find v env in
+      VarList (VIdent(id, ty))
+    | Ast_parsing.PTuple (Ast_parsing.PIdent t ::q) ->
+      let Var(id, ty) = VarMap.find t env in
+      let v = VarList (VIdent(id, ty)) in
+      List.fold_left (fun (VarList vl) pat_desc ->
+          match pat_desc with
+          | Ast_parsing.PIdent v ->
+            let Var(id, ty) = VarMap.find v env in
+            VarList (VTuple(id, ty, vl))
+          | _ -> raise Bad_type) v q
+    | _ -> raise Bad_type in
+
+  let VarList var_list = pat_desc_to_var_list eq.Ast_parsing.eq_pat.Ast_parsing.pat_desc in
+  Equ ({ pat_desc = var_list; pat_loc = eq.Ast_parsing.eq_pat.Ast_parsing.pat_loc; }, do_typing_expr env file var_list eq.Ast_parsing.eq_expr)
 
 let do_typing_equations env file eqs =
   List.map (do_typing_equation env file) eqs
@@ -98,22 +283,22 @@ let rec add_to_map: type a. a var_list -> var_env VarMap.t -> var_env VarMap.t =
                          |> add_to_map b
     | VEmpty -> map
 
-let do_typing_node (env:file) node =
-  let VarList n_input = do_typing_var_list Ast_parsing.(node.n_input) in
-  let VarList n_output = do_typing_var_list Ast_parsing.(node.n_output) in
-  let VarList n_local = do_typing_var_list Ast_parsing.(node.n_output) in
-  let n_name = Tagged(n_input, n_output, Ast_parsing.(node.n_name)) in
+let do_typing_node (env:file) (node:Ast_parsing.node) =
+  let VarList n_input = do_typing_var_list node.Ast_parsing.n_input in
+  let VarList n_output = do_typing_var_list node.Ast_parsing.n_output in
+  let VarList n_local = do_typing_var_list node.Ast_parsing.n_local in
+  let n_name = Tagged(n_input, n_output, node.Ast_parsing.n_name) in
   let n_env = add_to_map n_input VarMap.empty
               |> add_to_map n_output
               |> add_to_map n_local
   in
-  let n_eqs = do_typing_equations n_env env Ast_parsing.(node.n_eqs) in
+  let n_eqs = do_typing_equations n_env env node.Ast_parsing.n_eqs in
   let node_desc = { n_name;
                     n_input;
                     n_output;
                     n_local = NodeLocal n_local;
                     n_eqs;
-                    n_loc = Ast_parsing.(node.n_loc)} in
+                    n_loc = node.Ast_parsing.n_loc} in
   Node node_desc :: env
 
 let do_typing f =

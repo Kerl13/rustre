@@ -1,7 +1,6 @@
 open Lexing
 
 (* XXX: To remove, that was only to force compilation of these modules. *)
-open Ast_typed
 open Ast_typed_utils
 
 let usage = Format.sprintf "usage: %s [options] file.lus main" Sys.argv.(0)
@@ -48,6 +47,9 @@ let () =
     close_in c;
 
     Format.printf "=== Parsed file =====\n%a@." Ast_parsing.pp_file file;
+    Format.printf "Typing…";
+    let _ = Typing.do_typing file in
+    Format.printf " ok.@.";
 
     exit 0
   with

@@ -83,7 +83,7 @@ and 'a expr_desc =
   | EFby   : 'a const * 'a expr -> 'a expr_desc
   | EBOp    : ('a, 'b) binop * 'a expr * 'a expr -> 'b expr_desc
   | EUOp    : ('a, 'b) unop * 'a expr -> 'b expr_desc
-  | App    : ('a, 'b) tagged_ident * 'a expr * 'c expr -> 'b expr_desc
+  | EApp    : ('a, 'b) tagged_ident * 'a expr * bool expr -> 'b expr_desc
   | EWhen  : 'a expr * ident * 'b var_ident -> 'a expr_desc
   | EMerge : ident * (ident * 'a expr) list -> 'a expr_desc
 
