@@ -10,7 +10,7 @@ type location = Ast_parsing.location
 
 type ck =
   | CBase : ck
-  | CCk : ident * 'b var_ident -> ck
+  | COn : ck * ident * 'b var_ident -> ck
 
 type ct =
   | CSingle : ck -> ct
