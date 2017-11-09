@@ -17,6 +17,15 @@ See also Fig. 6 of the article.
 * Output: typed and clock-annotated AST
 * Testing functions?
 
+## Normalization
+* Output: a typed, clock-annotated AST in normal form
+  The article mentions a grammar for these terms, but:
+  > Note that it would also be possible to introduce a new intermediate
+  > language instead of the source-to-source transformation. This is
+  > essentially a matter of taste, the main advantage of the present
+  > formulation being to save the redefinition of auxiliary notions.
+* Testing functions?
+
 ## Dependencies and scheduling
 This phase checks that there is no dependency loop/causality error and then creates a scheduling. Using just a topological sort isn't the best option.
 * Output: typed, clock-annotated AST 
@@ -38,15 +47,6 @@ This phase checks that there is no dependency loop/causality error and then crea
 > stored in the same variable if the computation of x is not followed
 > by a use of pre x. 
 
-
-## Normalization
-* Output: a typed, clock-annotated AST in normal form
-  The article mentions a grammar for these terms, but:
-  > Note that it would also be possible to introduce a new intermediate
-  > language instead of the source-to-source transformation. This is
-  > essentially a matter of taste, the main advantage of the present
-  > formulation being to save the redefinition of auxiliary notions.
-* Testing functions?
 
 ## Translation into a simple object-based language
 * Output: the AST of this object-based language
