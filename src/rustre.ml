@@ -36,7 +36,7 @@ let report_loc (b,e) =
   let l = b.pos_lnum in
   let fc = b.pos_cnum - b.pos_bol + 1 in
   let lc = e.pos_cnum - b.pos_bol + 1 in
-  Format.eprintf "File \"%s\", line %d, characters %d-%d:\n" file l fc lc
+  Format.eprintf "File \"%s\", line %d, characters %d-%d:@." file l fc lc
 
 
 let () =
@@ -63,6 +63,9 @@ let () =
   | Typing.Expected_type(a, b, loc) ->
     let Typing.(TypedTy a, TypedTy b) = a, b in
     Format.eprintf "got %a expected %a@." Ast_typed.pp_ty a Ast_typed.pp_ty b;
+  | Typing.Expected_num(loc) ->
+    Format.eprintf "Expected num at ";
+    report_loc loc
   | e ->
     Format.eprintf "Anomaly: %s\n@." (Printexc.to_string e);
     exit 2

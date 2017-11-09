@@ -15,6 +15,7 @@ let ty_to_typed_ty = function
   | Ast_parsing.TyReal -> TypedTy (TyNum TyReal)
 
 exception Bad_type
+exception Expected_num of location
 exception Node_undefined of string * location
 exception Empty_return_type
 exception Empty_merge
@@ -70,6 +71,9 @@ let rec varlist_to_ty: type a. a var_list -> a ty = function
   | Ast_typed.VIdent (_,a) -> a
   | Ast_typed.VEmpty -> raise Empty_return_type
   | Ast_typed.VTuple (_,a,b) -> TyPair(a, (varlist_to_ty b))
+
+let rec varlist_eq: type a b. a var_list -> b var_list -> bool = fun a b ->
+  TypedTy (varlist_to_ty a) = TypedTy (varlist_to_ty b)
 
 (* Infer simple types (no pair) *)
 let rec infer_type_opt: var_env VarMap.t -> file -> Ast_parsing.expr -> typed_ty_wrapped option =
@@ -188,7 +192,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
           (match mono_ty with
            | Ast_typed.TyNum _ ->
              binary_expr env file mono_ty mono_ty (op_to_ty_op op) exprs, mono_ty
-           | _ -> raise Bad_type)
+           | _ -> raise (Expected_num expr.Ast_parsing.expr_loc))
         | Ast_parsing.OpLt
         | Ast_parsing.OpLe
         | Ast_parsing.OpGt
@@ -228,7 +232,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
           let Tagged(in_args, out_args, _) = node_desc.n_name in
           let in_expr = do_typing_tuple env file in_args args in
           let every_expr = do_typing_expr env file (VIdent("", TyBool)) every in
-          if VarList out_args = VarList ty then
+          if varlist_eq out_args ty then
             EApp (Tagged(in_args, ty, node_name), in_expr, every_expr), varlist_to_ty ty
           else raise Bad_type
         with
