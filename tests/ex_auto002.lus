@@ -1,0 +1,12 @@
+/* From Heptagon manual */
+
+type modes = Up | Down
+
+node two(m:modes;v:int) = (o:int)
+with var shared x:int = 0 in
+  o = x;
+  match m with
+  | Up do x = last x + v
+  | Down do x = last x - v
+  end
+tel
