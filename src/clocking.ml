@@ -34,9 +34,20 @@ module Stupid = struct
     | EMerge (x, clauses) ->
       CMerge (x, List.map (fun (x, e) -> (x, clock_expr e)) clauses)
 
+  let clock_pat:'a Ast_typed.pattern -> 'a Ast_clocked.pattern = fun { pat_desc; pat_loc } ->
+    { pat_desc; pat_loc; }
 
+  let clock_eq: Ast_typed.equation -> Ast_clocked.equation = fun (Equ (a, b)) ->
+    Equ (clock_pat a, clock_expr b)
 
-  let clock_node_desc : type a b. (a, b) Ast_typed.node_desc -> (a, b) node_desc = fun node -> failwith ""
+  let clock_node_desc : type a b. (a, b) Ast_typed.node_desc -> (a, b) node_desc = fun node ->
+    let NodeLocal nl = node.n_local in
+    { n_name = node.n_name;
+      n_input = node.n_input;
+      n_output = node.n_output;
+      n_local = NodeLocal nl;
+      n_eqs = List.map clock_eq node.n_eqs;
+      n_loc = node.n_loc }
 
   let clock_node (Node e:Ast_typed.node) : node =
     Node (clock_node_desc e)

@@ -70,3 +70,6 @@ let () =
   | Typing.Expected_num(loc) ->
     Format.eprintf "Expected num at ";
     report_loc loc
+  | e ->
+    Format.eprintf "Anomaly: %s\n@." (Printexc.to_string e);
+    exit 2
