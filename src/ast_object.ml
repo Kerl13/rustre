@@ -49,6 +49,8 @@ type file = (instance * machine) list
  * Pretty printer
  **)
 
+(* XXX add some boxes here and there *)
+
 let fprintf = Format.fprintf
 
 let rec pp_list sep pp ppf = function
