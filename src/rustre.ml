@@ -1,9 +1,5 @@
 open Lexing
 
-(* XXX: To remove, that was only to force compilation of these modules. *)
-open Ast_typed_utils
-open Clocking
-   
 let usage = Format.sprintf "usage: %s [options] file.lus main" Sys.argv.(0)
 
 let spec = []
@@ -41,6 +37,7 @@ let report_loc (b,e) =
 
 
 let () =
+  let module Clocking = Clocking.Stupid in
   let c = open_in file in
   let lb = Lexing.from_channel c in
   try
@@ -49,7 +46,13 @@ let () =
 
     Format.printf "=== Parsed file =====\n%a@." Ast_parsing.pp_file file;
     Format.printf "Typing…@.";
-    Typing.do_typing file |> Format.printf "%a@.ok@." Ast_typed.pp_file;
+    let typed = Typing.do_typing file in
+    Format.printf "%a@.ok@." Ast_typed.pp_file typed;
+    let clocked = Clocking.clock_file typed in
+    let normalized = Normalization.normalize_file clocked in
+    let obc = Object.from_normalized normalized in
+    Format.printf "Obect:\n%a@." Ast_object.pp_file obc;
+
 
     exit 0
   with
@@ -67,6 +70,3 @@ let () =
   | Typing.Expected_num(loc) ->
     Format.eprintf "Expected num at ";
     report_loc loc
-  | e ->
-    Format.eprintf "Anomaly: %s\n@." (Printexc.to_string e);
-    exit 2
