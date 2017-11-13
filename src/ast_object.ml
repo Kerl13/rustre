@@ -2,7 +2,9 @@ type machine_id = string
 type var_id = string
 type z = int
 
-type var_list = var_id * Ast_parsing.ty list
+open Ast_typed
+
+type var_list = (var_id * Ast_parsing.ty) list
 
 type machine_ty = Ast_parsing.ty list * Ast_parsing.ty list
 type instance = machine_id
@@ -10,29 +12,89 @@ type memory = var_list
 
 type ident = Var of var_id | State of var_id
 
-type _ expr =
-  | EVar : ident -> 'a expr
-  | EInt: z -> int expr
-  | EReal: float -> float expr
-  | EBool: bool -> bool expr
-  | EAdd: int expr * int expr -> int expr
-  | EMinus: int expr * int expr -> int expr
-  | EMult: int expr * int expr -> int expr
-  | ENot: bool expr -> bool expr
+type _ oconst =
+  | CBool : bool -> bool oconst
+  | CInt  : int -> int num_ty oconst
+  | CReal : float -> float num_ty oconst
 
-type statement =
-  | SAssign of { n: ident; expr: 'a. 'a expr }
-  | SSeq of statement * statement
+type _ oexpr =
+  | EVar      : ident -> 'a oexpr
+  | EConst    : 'a oconst -> 'a oexpr
+  | EBOp      : ('a, 'b) binop * 'a oexpr * 'a oexpr -> 'b oexpr
+  | EUOp      : ('a, 'b) unop * 'a oexpr -> 'b oexpr
+
+type ostatement =
+  | SAssign of { n: ident; expr: 'a. 'a oexpr }
+  | SSeq of ostatement * ostatement
   | SSkip
   | SCall of ident list * machine_id * ident list
   | SReset of machine_id
-  | SCase of ident * (statement list) (* Constructors are numbered, the nth
-                                       statement corresponds to the nth
-                                       constructor -- 2 in case of Booleans *)
+  | SCase of ident * (ostatement list) (* Constructors are numbered, the nth
+                                          statement corresponds to the nth
+                                          constructor -- 2 in case of Booleans *)
 
 type machine = {
-  m: memory;
-  j: instance list;
-  reset: statement;
-  step: var_list * statement;
+  memory: memory;
+  instances: instance list;
+  reset: ostatement;
+  step: var_list * ostatement;
 }
+
+type file = (instance * machine) list
+
+
+
+
+(**
+ * Pretty printer
+ **)
+
+let fprintf = Format.fprintf
+
+let rec pp_list sep pp ppf = function
+  | [] -> fprintf ppf ""
+  | [x] -> fprintf ppf "%a" pp x
+  | x :: xs -> fprintf ppf "%a%s%a" pp x sep (pp_list sep pp) xs
+
+
+
+let pp_oconst: type a. 'b -> a oconst -> unit = fun ppf -> function
+  | CInt n -> fprintf ppf "%d" n
+  | CReal f -> fprintf ppf "%f" f
+  | CBool b -> fprintf ppf "%B" b
+
+let rec pp_expr: type a. 'c -> a oexpr -> unit = fun ppf -> function
+  | EConst c -> fprintf ppf "%a" pp_oconst c
+  | EVar (Var i) -> fprintf ppf "%s" i
+  | EVar (State i) -> fprintf ppf "state(%s)" i
+  | EBOp(a, b, c) -> fprintf ppf "%a %a %a" pp_expr b pp_bop a pp_expr c
+  | EUOp(a, b) -> fprintf ppf "%a %a" pp_expr b pp_uop a
+
+let rec pp_ostatement ppf = function
+  | SAssign { n; expr } ->
+    fprintf ppf "%a := %a;" pp_expr (EVar n) pp_expr expr
+  | SSeq(a, b) -> fprintf ppf "%a\n%a" pp_ostatement a pp_ostatement b
+  | SSkip -> fprintf ppf "skip;"
+  | SCall(ids, mach, args) ->
+    fprintf ppf "(%a) := %s(%a);" (pp_list ", " pp_expr) (List.map (fun i -> EVar i) ids)
+      mach
+      (pp_list ", " pp_expr) (List.map (fun i -> EVar i) args)
+
+  | SReset(machine_id) ->
+    fprintf ppf "%s.reset();" machine_id
+  | SCase(i, args) ->
+    fprintf ppf "case %a {\n%a\n}"
+      pp_expr (EVar i)
+      (pp_list "\n" (fun ppf (s, i) -> fprintf ppf "%d -> {\n%a\n}" i pp_ostatement s))
+      (List.mapi (fun i s -> (s, i)) args)
+
+let pp_machine ppf (i, m) =
+  fprintf ppf "machine %s {\n memory: %a\n instances: %a\n reset(){\n%a\n} step(%a){\n%a\n}}\n"
+  i
+  (pp_list ", " (fun ppf (s, ty) -> fprintf ppf "%s:%a" s Ast_parsing.pp_ty ty)) m.memory
+  (pp_list ", " (fun ppf s -> fprintf ppf "%s" s)) m.instances
+  pp_ostatement m.reset
+  (pp_list ", " (fun ppf (s, ty) -> fprintf ppf "%s:%a" s Ast_parsing.pp_ty ty)) (fst m.step)
+  pp_ostatement (snd m.step)
+
+let pp_file = pp_list "\n" pp_machine
