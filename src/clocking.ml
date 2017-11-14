@@ -1,6 +1,5 @@
-open Ast_typed
 open Ast_clocked
-
+   
 module type Clocking = sig
   val clock_file: Ast_typed.file -> Ast_clocked.file
 end
@@ -9,47 +8,88 @@ end
  *)
 
 module Stupid = struct
+  type env = (string, ct option) Hashtbl.t
 
-  let rec clock_expr : type a. a expr -> a cexpr = fun exp ->
-    { texpr_desc=(clock_expr_desc exp.texpr_desc); texpr_clock=(CSingle CBase); texpr_type=exp.texpr_type; texpr_loc=exp.texpr_loc }
+  
+  let rec clock_expr : type a. env -> a Ast_typed.expr -> a cexpr = fun env ->
+    fun exp ->
+    let texpr_desc, texpr_clock = clock_expr_desc env exp.Ast_typed.texpr_desc in
+    { texpr_desc=texpr_desc; texpr_clock=texpr_clock; texpr_type=exp.Ast_typed.texpr_type; texpr_loc=exp.Ast_typed.texpr_loc }
 
-  and clock_expr_desc : type a. a expr_desc -> a cexpr_desc = fun exp ->
+  and clock_expr_desc : type a. env -> a Ast_typed.expr_desc -> (a cexpr_desc * ct) = fun env -> fun exp ->
     match exp with
-    | EConst c ->
-      CConst c
-    | EIdent v ->
-      CIdent v
-    | EPair (e1, e2) ->
-      CPair (clock_expr e1, clock_expr e2)
-    | EFby (c, e) ->
-      CFby (c, clock_expr e)
-    | EBOp (b, e1, e2) ->
-      CBOp (b, clock_expr e1, clock_expr e2)
-    | EUOp (b, e) ->
-      CUOp (b, clock_expr e)
-    | EApp (f, args, ev) ->
-      CApp (f, clock_expr args, clock_expr ev)
-    | EWhen (e, c, x) ->
-      CWhen (clock_expr e, c, x)
-    | EMerge (x, clauses) ->
-      CMerge (x, List.map (fun (x, e) -> (x, clock_expr e)) clauses)
+    | Ast_typed.EConst c ->
+      CConst c, CSingle CBase
+    | Ast_typed.EIdent v ->
+      CIdent v, CSingle CBase
+    | Ast_typed.EPair (e1, e2) ->
+      CPair (clock_expr env e1, clock_expr env e2), CSingle CBase
+    | Ast_typed.EFby (c, e) ->
+      CFby (c, clock_expr env e), CSingle CBase
+    | Ast_typed.EBOp (b, e1, e2) ->
+      CBOp (b, clock_expr env e1, clock_expr env e2), CSingle CBase
+    | Ast_typed.EUOp (b, e) ->
+      CUOp (b, clock_expr env e), CSingle CBase
+    | Ast_typed.EApp (f, args, ev) ->
+      CApp (f, clock_expr env args, clock_expr env ev), CSingle CBase
+    | Ast_typed.EWhen (e, c, x) ->
+      CWhen (clock_expr env e, c, x), CSingle CBase
+    | Ast_typed.EMerge (x, clauses) ->
+      CMerge (x, List.map (fun (x, e) -> (x, clock_expr env e)) clauses), CSingle CBase
 
-  let clock_pat:'a Ast_typed.pattern -> 'a Ast_clocked.pattern = fun { pat_desc; pat_loc } ->
+  let clock_pat:'a Ast_typed.pattern -> 'a Ast_clocked.pattern = fun { Ast_typed.pat_desc; Ast_typed.pat_loc } ->
     { pat_desc; pat_loc; }
 
-  let clock_eq: Ast_typed.equation -> Ast_clocked.equation = fun (Equ (a, b)) ->
-    Equ (clock_pat a, clock_expr b)
+  let clock_eq: env -> Ast_typed.equation -> Ast_clocked.equation = fun env ->
+    fun (Ast_typed.Equ (a, b)) ->
+    let c_pat = clock_pat a in
+    let c_expr = clock_expr env b in 
+    Equ (c_pat, c_expr)
+    
 
-  let clock_node_desc : type a b. (a, b) Ast_typed.node_desc -> (a, b) node_desc = fun node ->
-    let NodeLocal nl = node.n_local in
-    { n_name = node.n_name;
-      n_input = node.n_input;
-      n_output = node.n_output;
-      n_local = NodeLocal nl;
-      n_eqs = List.map clock_eq node.n_eqs;
-      n_loc = node.n_loc }
 
-  let clock_node (Node e:Ast_typed.node) : node =
+  let rec untag : type a.  a Ast_typed.var_list -> Ast_parsing.ident list = fun l -> match l with
+    | Ast_typed.VIdent (x, _) -> [x]
+    | Ast_typed.VEmpty -> []
+    | Ast_typed.VTuple  (x, _, l') -> x::(untag l')
+
+  let create_base_env (n:('a, 'b) Ast_typed.node_desc) : env =
+    let Ast_typed.NodeLocal local_vars = n.Ast_typed.n_local in
+    let var_in = untag n.Ast_typed.n_input in
+    let var_out = untag n.Ast_typed.n_output in
+    let var_local = untag local_vars in
+    let env =  Hashtbl.create (List.length var_in + List.length var_out + List.length var_local) in 
+    (* To create H_p *)
+    let _ = List.map (fun x -> Hashtbl.add env x (Some (CSingle CBase))) var_in in
+    (* To create H_q *)
+    let _ = List.map (fun x -> Hashtbl.add env x (Some (CSingle CBase))) var_out in
+    (* To create H_r (not instantiated yet *)
+    let _ = List.map (fun x -> Hashtbl.add env x None) var_local in
+    env
+
+  (** TODO: something more involved **)
+  let clock_compatible (c1:ct) (c2: ct) = (c1 = c2)
+    
+  let is_compatible (env:env) (s:Ast_parsing.ident) (cl:ct) : bool =
+    let current_val = Hashtbl.find env s in
+    match current_val with
+    | None -> Hashtbl.replace env s (Some cl); true
+    | Some sc -> clock_compatible sc cl
+
+               
+  let clock_node_desc : type a b. (a, b) Ast_typed.node_desc -> (a, b) Ast_clocked.node_desc = fun node ->
+    let Ast_typed.NodeLocal nl = node.Ast_typed.n_local in
+    let n_name = node.Ast_typed.n_name 
+    and n_input = node.Ast_typed.n_input
+    and n_output = node.Ast_typed.n_output
+    and n_local = NodeLocal nl;
+    and n_loc = node.Ast_typed.n_loc in
+
+    let c_env = create_base_env node in
+    let n_eqs = List.map (clock_eq c_env) node.Ast_typed.n_eqs in
+    { n_name=n_name; n_input=n_input; n_output=n_output; n_local=n_local; n_loc=n_loc; n_eqs=n_eqs }
+
+  let clock_node (Ast_typed.Node e:Ast_typed.node) : node =
     Node (clock_node_desc e)
 
 
