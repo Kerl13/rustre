@@ -37,6 +37,7 @@ and 'a nexpr_paired =
 (** named `ce` in the article *)
 type _ nexpr_merge_desc =
   | NMerge : ident * (ident * 'a nexpr_merge) list -> 'a nexpr_merge_desc
+  | NExpr : 'a nexpr -> 'a nexpr_merge_desc
 
 (** named `ca` in the article *)
 and 'a nexpr_merge = {
