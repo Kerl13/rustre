@@ -4,7 +4,9 @@ type z = int
 
 open Ast_typed
 
-type var_list = (var_id * Ast_parsing.ty) list
+type sty = Sty: 'a Ast_normalized.sty -> sty
+
+type var_list = (var_id * sty) list
 
 type machine_ty = Ast_parsing.ty list * Ast_parsing.ty list
 type instance = machine_id
@@ -34,13 +36,14 @@ type ostatement =
                                           constructor -- 2 in case of Booleans *)
 
 type machine = {
+  name: string;
   memory: memory;
   instances: instance list;
   reset: ostatement;
   step: var_list * ostatement;
 }
 
-type file = (instance * machine) list
+type file = machine list
 
 
 
@@ -90,13 +93,13 @@ let rec pp_ostatement ppf = function
       (pp_list "\n" (fun ppf (s, i) -> fprintf ppf "%d -> {\n%a\n}" i pp_ostatement s))
       (List.mapi (fun i s -> (s, i)) args)
 
-let pp_machine ppf (i, m) =
+let pp_machine ppf m =
   fprintf ppf "machine %s {\n memory: %a\n instances: %a\n reset(){\n%a\n} step(%a){\n%a\n}}\n"
-  i
-  (pp_list ", " (fun ppf (s, ty) -> fprintf ppf "%s:%a" s Ast_parsing.pp_ty ty)) m.memory
+  m.name
+  (pp_list ", " (fun ppf (s, ty) -> fprintf ppf "%s" s)) m.memory
   (pp_list ", " (fun ppf s -> fprintf ppf "%s" s)) m.instances
   pp_ostatement m.reset
-  (pp_list ", " (fun ppf (s, ty) -> fprintf ppf "%s:%a" s Ast_parsing.pp_ty ty)) (fst m.step)
+  (pp_list ", " (fun ppf (s, ty) -> fprintf ppf "%s" s)) (fst m.step)
   pp_ostatement (snd m.step)
 
 let pp_file = pp_list "\n" pp_machine
