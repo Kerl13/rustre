@@ -65,4 +65,4 @@ and ('a, 'b) nnode_desc = {
 and nequation =
   | EquSimple: 'a pattern * 'a nexpr_merge -> nequation
   | EquFby: 'a pattern * 'a const * 'a nexpr -> nequation
-  | EquApp: 'b pattern * ('a, 'b) tagged_ident * 'a var_list * 'c nexpr_paired -> nequation
+  | EquApp: 'b pattern * ('a, 'b) tagged_ident * 'a var_list * 'c nexpr -> nequation
