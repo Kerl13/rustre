@@ -93,13 +93,19 @@ let rec pp_ostatement ppf = function
       (pp_list "\n" (fun ppf (s, i) -> fprintf ppf "%d -> {\n%a\n}" i pp_ostatement s))
       (List.mapi (fun i s -> (s, i)) args)
 
+
+let pp_sty: type a. 'b -> a Ast_normalized.sty -> unit = fun ppf -> function
+  | Ast_normalized.StyBool -> fprintf ppf "bool"
+  | Ast_normalized.StyNum TyZ -> fprintf ppf "int"
+  | Ast_normalized.StyNum TyReal -> fprintf ppf "real"
+
 let pp_machine ppf m =
   fprintf ppf "machine %s {\n memory: %a\n instances: %a\n reset(){\n%a\n} step(%a){\n%a\n}}\n"
-  m.name
-  (pp_list ", " (fun ppf (s, ty) -> fprintf ppf "%s" s)) m.memory
-  (pp_list ", " (fun ppf s -> fprintf ppf "%s" s)) m.instances
-  pp_ostatement m.reset
-  (pp_list ", " (fun ppf (s, ty) -> fprintf ppf "%s" s)) (fst m.step)
-  pp_ostatement (snd m.step)
+    m.name
+    (pp_list ", " (fun ppf (s, Sty ty) -> fprintf ppf "%s:%a" s pp_sty ty)) m.memory
+    (pp_list ", " (fun ppf s -> fprintf ppf "%s" s)) m.instances
+    pp_ostatement m.reset
+    (pp_list ", " (fun ppf (s, ty) -> fprintf ppf "%s" s)) (fst m.step)
+    pp_ostatement (snd m.step)
 
 let pp_file = pp_list "\n" pp_machine
