@@ -37,6 +37,9 @@ let rec come_up_vars: type a. 'b -> a Ast_typed.ty -> a Ast_typed.var_list * 'b 
 
 let rec normalize_eqs (a, b) (Ast_clocked.Equ (pat, expr)) =
   let a, b, _ = normalize_expr a b (Some pat) expr in a, b
+
+(* So the main problem with this function is that we cannot always return a
+   `a nexpr`, sometimes that type is not inhabitated. Let's return Cnil instead ?? *)
 and normalize_expr: type a. Ast_normalized.nequation list -> Ast_clocked.node_local -> a Ast_clocked.pattern option -> a Ast_clocked.cexpr ->
   Ast_normalized.nequation list * Ast_clocked.node_local * a Ast_normalized.nexpr = fun a b pat
   Ast_clocked.{ texpr_desc; texpr_type; texpr_clock; texpr_loc } ->
@@ -99,8 +102,8 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_clocked.node_lo
     EquFby ({ pat_desc = Ast_typed.VIdent (v, texpr_type); pat_loc = texpr_loc}, c, nexpr_e) :: a, b, nexpr
 
   | CBOp (op, e1, e2) ->
-  let a, b, e1 = normalize_expr a b None e1 in
-  let a, b, e2 = normalize_expr a b None e2 in
+    let a, b, e1 = normalize_expr a b None e1 in
+    let a, b, e2 = normalize_expr a b None e2 in
     let sty = sty_for_ty texpr_type in
     let nexpr = {
       nexpr_desc = NBOp(op, e1, e2);
@@ -126,21 +129,37 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_clocked.node_lo
     let pat, b = match pat with
       | Some pat -> pat, b
       | None ->
-      let vl, b = come_up_vars b texpr_type in
-      { pat_desc = vl; pat_loc = texpr_loc; }, b
+        let vl, b = come_up_vars b texpr_type in
+        { pat_desc = vl; pat_loc = texpr_loc; }, b
     in
-    EquApp(pat, name, vl, ev) :: a, b, Obj.magic (ref (-1)) (* niark *)
+    let nexpr = match pat with
+      | { pat_desc = Ast_typed.VIdent(v, ty); } ->
+        {
+          nexpr_desc = NIdent(v);
+          nexpr_type = sty_for_ty ty;
+          nexpr_clock = texpr_clock;
+          nexpr_loc = texpr_loc;
+        }
+      | _ ->
+        {
+          nexpr_desc = NConst(Ast_typed.CNil);
+          nexpr_type = Obj.magic(StyBool);
+          nexpr_clock = texpr_clock;
+          nexpr_loc = texpr_loc;
+        } (* we *know* that this thing can never be used. *)
+    in
+    EquApp(pat, name, vl, ev) :: a, b, nexpr
   | CWhen (_, _, _) -> assert false
   | CMerge (_, _) -> assert false
 and normalize_var: type a. Ast_normalized.nequation list -> Ast_clocked.node_local -> a Ast_clocked.cexpr ->
   Ast_normalized.nequation list * Ast_clocked.node_local * Ast_typed.ident = fun a b expr ->
-  match expr.texpr_desc with
+  match expr.Ast_clocked.texpr_desc with
   | Ast_clocked.CIdent v -> a, b, v
   | _ ->
-  let var, b = new_var b expr.texpr_type in
-  let a, b, _ = normalize_expr a b (Some { pat_desc = VIdent(var, expr.texpr_type); pat_loc = expr.texpr_loc; }) expr
-  in
-  a, b, var
+    let var, b = new_var b expr.Ast_clocked.texpr_type in
+    let a, b, _ = normalize_expr a b (Some Ast_clocked.{ pat_desc = Ast_typed.VIdent(var, expr.texpr_type); pat_loc = expr.texpr_loc; }) expr
+    in
+    a, b, var
 
 and normalize_paired: type a. Ast_normalized.nequation list -> Ast_clocked.node_local -> a Ast_clocked.cexpr ->
   Ast_normalized.nequation list * Ast_clocked.node_local * a Ast_typed.var_list = fun a b expr ->
