@@ -242,9 +242,12 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
       let e = do_typing_expr env file ty e1 in
       EWhen(e, var, constructor), e.texpr_type
     | Ast_parsing.EMerge (var, id_exprs) ->
-      let e = List.map (fun (id, e) -> id, do_typing_expr env file ty e) id_exprs in
-      if e = [] then raise Empty_merge;
-      EMerge(var, e), (List.hd e |> snd).texpr_type
+      match ty with
+      | VIdent(_, _) ->
+        let e = List.map (fun (id, e) -> id, do_typing_expr env file ty e) id_exprs in
+        if e = [] then raise Empty_merge;
+        EMerge(var, e), (List.hd e |> snd).texpr_type
+      | _ -> raise Bad_type
   in
   {texpr_desc = descr; texpr_type = ty; texpr_loc = Ast_parsing.(expr.expr_loc); }
 

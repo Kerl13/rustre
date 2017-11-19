@@ -36,7 +36,7 @@ let rec normalize_eqs (a, b) (Ast_clocked.Equ (pat, expr)) =
    `a nexpr`, sometimes that type is not inhabitated. Let's return Cnil instead ?? *)
 and normalize_expr: type a. Ast_normalized.nequation list -> Ast_typed.node_local -> a Ast_typed.pattern option -> a Ast_clocked.cexpr ->
   Ast_normalized.nequation list * Ast_typed.node_local * a expr_or_app = fun a b pat
-  Ast_clocked.{ texpr_desc; texpr_type; texpr_clock; texpr_loc } ->
+  (Ast_clocked.{ texpr_desc; texpr_type; texpr_clock; texpr_loc } as expr) ->
   let open Ast_normalized in
   let open Ast_clocked in
   match texpr_desc with
@@ -167,15 +167,64 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_typed.node_loca
          nexpr_clock = texpr_clock;
          nexpr_loc = texpr_loc;
        } in
-       assert false, b, Expr nexpr
+       EquApp(pat, name, vl, ev) :: a, b, Expr nexpr
      | Ast_typed.VTuple(_, _, _) ->
        EquApp(pat, name, vl, ev) :: a, b, App
      | Ast_typed.VEmpty ->
        EquApp(pat, name, vl, ev) :: a, b, Unit
     )
   | CWhen (_, _, _) -> assert false
-  | CMerge (_, _) -> assert false
+  | CMerge (id, cexprs) ->
+    let a, b, nmerge = normalize_merge a b expr in
+    match pat with
+    | None ->
+      let ty = nmerge.nexpr_merge_type in
+      let v', b = new_var b ty in
+      let nexpr = {
+        nexpr_desc = NIdent v';
+        nexpr_type = ty;
+        nexpr_clock = texpr_clock;
+        nexpr_loc = texpr_loc;
+      } in
+      EquSimple(v', nmerge) :: a, b, Expr nexpr
+    | Some Ast_typed.{ pat_desc = VIdent(v, ty); _ } ->
+      let nexpr = {
+        nexpr_desc = NIdent v;
+        nexpr_type = ty;
+        nexpr_clock = texpr_clock;
+        nexpr_loc = texpr_loc;
+      } in
+      EquSimple(v, nmerge) :: a, b, Expr nexpr
 
+and normalize_merge: type a. Ast_normalized.nequation list -> Ast_typed.node_local -> a Ast_typed.ty Ast_clocked.cexpr ->
+  Ast_normalized.nequation list * Ast_typed.node_local * a Ast_normalized.nexpr_merge = fun a b  (Ast_clocked.{ texpr_desc; texpr_type; texpr_clock; texpr_loc } as e) ->
+  let open Ast_normalized in
+  match texpr_desc with
+  | Ast_clocked.CMerge(id, cexprs) ->
+    let nexprs_merge, a, b = List.fold_left (fun (nm, eq, b) (i, e) ->
+        let eqs, b, e = normalize_merge eq b e in
+        (i,  e) :: nm, eqs, b) ([], a, b) cexprs in
+    let ty = match nexprs_merge with
+      | [] -> assert false (* empty merge *)
+      | (_, t) :: _ -> t.nexpr_merge_type
+    in
+    let nexpr_merge = Ast_normalized.{
+        nexpr_merge_desc = NMerge (id, List.rev nexprs_merge);
+        nexpr_merge_type = ty;
+        nexpr_merge_clock = texpr_clock;
+        nexpr_merge_loc = texpr_loc;
+      } in
+    a, b, nexpr_merge
+  | _ ->
+    let a, b, Expr e = normalize_expr a b None e in
+    let Ast_typed.TySing ty = texpr_type in
+    let nexpr_merge = {
+      nexpr_merge_desc = NExpr e;
+      nexpr_merge_type = ty;
+      nexpr_merge_clock = texpr_clock;
+      nexpr_merge_loc = texpr_loc;
+    } in
+    a, b, nexpr_merge
 
 and normalize_var: type a. Ast_normalized.nequation list -> Ast_typed.node_local -> a Ast_typed.ty Ast_clocked.cexpr ->
   Ast_normalized.nequation list * Ast_typed.node_local * Ast_typed.ident = fun a b expr ->

@@ -92,7 +92,7 @@ and 'a expr_desc =
   | EUOp    : ('a, 'b) unop * 'a ty expr -> 'b ty expr_desc
   | EApp    : ('a, 'b) tagged_ident * 'a expr_list * bool ty expr -> 'b expr_desc
   | EWhen  : 'a expr * ident * 'b ty var_ident -> 'a expr_desc
-  | EMerge : ident * (ident * 'a expr) list -> 'a expr_desc
+  | EMerge : ident * (ident * 'a ty expr) list -> 'a ty expr_desc
 
 and 'a expr_list =
   | ELNil : unit expr_list
