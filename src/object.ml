@@ -44,11 +44,19 @@ and obc_expr: type a. nl -> a nexpr -> a oexpr = fun nl expr ->
   | Ast_normalized.NWhen (_,_,_) -> assert false
 
 let obc_eq (Ast_clocked.NodeLocal local) (instances, s) = function
-  | EquSimple(v, expr_merge) -> let v = if is_in local v then State v else Var v in
-
-  instances, (SSeq (SAssign { n = v; expr = obc_expr_merge (Ast_clocked.NodeLocal local) expr_merge; }, s))
+  | EquSimple(v, expr_merge) ->
+    let v = if is_in local v then State v else Var v in
+    instances,
+    (SSeq (SAssign { n = v; expr = obc_expr_merge (Ast_clocked.NodeLocal local) expr_merge; }, s))
   | EquFby(pat, const, expr) -> instances, s
-  | EquApp(pat, id, vl, ev) -> instances, s
+  | EquApp(pat, id, vl, _) ->
+  let Ast_typed.Tagged(args_in, args_out, machine_id) = id in
+  let args = obc_varlist vl in
+  let args = List.map (fun (v, _) -> if is_in local v then State v else Var v) args in
+  let res = obc_varlist pat.Ast_clocked.pat_desc in
+  let res = List.map (fun (v, _) -> if is_in local v then State v else Var v) res in
+  instances,
+  (SSeq ((SCall(args, machine_id, res)), s))
 
 let obc_node (NNode desc) =
   let instances, step = List.fold_left (obc_eq desc.n_local) ([], SSkip) desc.n_eqs in

@@ -155,13 +155,7 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_clocked.node_lo
     in
     EquApp(pat, name, vl, ev) :: a, b, nexpr
   | CWhen (_, _, _) -> assert false
-  | CMerge (i, _) ->
-  let nexpr_merge = {
-    nexpr_merge_desc = NMerge(i, ml);
-    nexpr_merge_type = sty_for_ty texpr_type;
-    nexpr_merge_clock = texpr_clock;
-    nexpr_merge_loc = texpr_loc;
-  } in
+  | CMerge (i, _) -> assert false
 and normalize_var: type a. Ast_normalized.nequation list -> Ast_clocked.node_local -> a Ast_clocked.cexpr ->
   Ast_normalized.nequation list * Ast_clocked.node_local * Ast_typed.ident = fun a b expr ->
   match expr.Ast_clocked.texpr_desc with
