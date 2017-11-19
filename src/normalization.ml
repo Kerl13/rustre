@@ -140,7 +140,26 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_clocked.node_lo
       | None -> a, b, nexpr
       | Some pat -> EquSimple (mono_ident pat, nexpr_merge) :: a, b, nexpr
     end
-  | CUOp (op, _) -> assert false
+  | CUOp (op, e1) ->
+    let a, b, e1 = normalize_expr a b None e1 in
+    let sty = sty_for_ty texpr_type in
+    let nexpr = {
+      nexpr_desc = NUOp(op, e1);
+      nexpr_type = sty;
+      nexpr_clock = texpr_clock;
+      nexpr_loc = texpr_loc;
+    } in
+    let nexpr_merge = {
+      nexpr_merge_desc = NExpr nexpr;
+      nexpr_merge_type = sty;
+      nexpr_merge_clock = texpr_clock;
+      nexpr_merge_loc = texpr_loc;
+    } in
+    begin
+      match pat with
+      | None -> a, b, nexpr
+      | Some pat -> EquSimple (mono_ident pat, nexpr_merge) :: a, b, nexpr
+    end
   | CApp (name, args, every) ->
     let a, b, vl = normalize_paired a b args in
     let a, b, ev = normalize_expr a b None every in
