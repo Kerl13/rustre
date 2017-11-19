@@ -40,12 +40,9 @@ function
     | Ast_typed.EMerge (x, clauses) ->
       CMerge (x, List.map (fun (x, e) -> (x, clock_expr env e)) clauses), CSingle CBase
 
-  let clock_pat:'a Ast_typed.pattern -> 'a Ast_clocked.pattern = fun { Ast_typed.pat_desc; Ast_typed.pat_loc } ->
-    { pat_desc; pat_loc; }
-
   let clock_eq: env -> Ast_typed.equation -> Ast_clocked.equation = fun env ->
     fun (Ast_typed.Equ (a, b)) ->
-    let c_pat = clock_pat a in
+    let c_pat = a in
     let c_expr = clock_expr env b in
     Equ (c_pat, c_expr)
 
@@ -81,11 +78,10 @@ function
 
 
   let clock_node_desc : type a b. (a, b) Ast_typed.node_desc -> (a, b) Ast_clocked.node_desc = fun node ->
-    let Ast_typed.NodeLocal nl = node.Ast_typed.n_local in
     let n_name = node.Ast_typed.n_name
     and n_input = node.Ast_typed.n_input
     and n_output = node.Ast_typed.n_output
-    and n_local = NodeLocal nl;
+    and n_local = node.Ast_typed.n_local;
     and n_loc = node.Ast_typed.n_loc in
 
     let c_env = create_base_env node in

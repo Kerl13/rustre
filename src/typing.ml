@@ -18,7 +18,6 @@ let ty_to_typed_ty = function
 exception Bad_type
 exception Expected_num of location
 exception Node_undefined of string * location
-exception Empty_return_type
 exception Empty_merge
 exception Expected_type of typed_ty_wrapped * typed_ty_wrapped * location
 
@@ -68,7 +67,7 @@ let rec varlist_to_ty : type a. a var_list -> a compl_ty = function
   | Ast_typed.VEmpty -> TyNil
   | Ast_typed.VTuple (_,a,b) -> TyPair(a, (varlist_to_ty b))
 
-let rec varlist_eq: type a b. a var_list -> b var_list -> bool = fun a b ->
+let varlist_eq: type a b. a var_list -> b var_list -> bool = fun a b ->
   TypedComplTy (varlist_to_ty a) = TypedComplTy (varlist_to_ty b)
 
 (* Infer simple types (no pair) *)
@@ -182,9 +181,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
            EIdent var_name, ty
          else raise Bad_type
        | _ -> raise Bad_type)
-    | Ast_parsing.ETuple [] ->
-      raise Bad_type
-    | Ast_parsing.ETuple (t::q) ->
+    | Ast_parsing.ETuple _ ->
       raise Bad_type
     | Ast_parsing.EFby (a,b) ->
       (match ty with

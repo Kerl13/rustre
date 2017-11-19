@@ -1,8 +1,5 @@
 open Ast_typed
 
-type ident = Ast_parsing.ident
-type location = Ast_parsing.location
-
 
 (**
  * Clocked and Typed AST
@@ -58,13 +55,4 @@ and ('a, 'b) node_desc = {
   n_loc    : location
 }
 
-and node_local = NodeLocal: 'c var_list -> node_local
-
 and equation = Equ: 'a pattern * 'a cexpr -> equation
-
-and 'a pattern = {
-  pat_desc : 'a pattern_desc ;
-  pat_loc  : location
-}
-
-and 'a pattern_desc = 'a var_list

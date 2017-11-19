@@ -168,7 +168,7 @@ let pp_uop: type a b. 'c -> (a, b) unop -> unit = fun ppf -> function
 
 
 
-let rec pp_ty: type a. 'b -> a ty -> unit = fun ppf -> function
+let pp_ty: type a. 'b -> a ty -> unit = fun ppf -> function
   | TyBool -> fprintf ppf "bool"
   | TyNum TyZ -> fprintf ppf "int"
   | TyNum TyReal -> fprintf ppf "real"

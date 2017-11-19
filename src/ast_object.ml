@@ -105,7 +105,7 @@ let pp_machine ppf m =
     (pp_list ", " (fun ppf (s, Sty ty) -> fprintf ppf "%s:%a" s pp_ty ty)) m.memory
     (pp_list ", " (fun ppf s -> fprintf ppf "%s" s)) m.instances
     pp_ostatement m.reset
-    (pp_list ", " (fun ppf (s, ty) -> fprintf ppf "%s" s)) (fst m.step)
+    (pp_list ", " (fun ppf (s, Sty ty) -> fprintf ppf "%s:%a" s pp_ty ty)) (fst m.step)
     pp_ostatement (snd m.step)
 
 let pp_file = pp_list "" pp_machine
