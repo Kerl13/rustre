@@ -51,7 +51,7 @@ let () =
     let clocked = Clocking.clock_file typed in
     let normalized = Normalization.normalize_file clocked in
     let obc = Object.from_normalized normalized in
-    Format.printf "Obect:\n%a@." Ast_object.pp_file obc;
+    Format.printf "Object:@.%a@." Ast_object.pp_file obc;
 
 
     exit 0
