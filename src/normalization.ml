@@ -161,7 +161,7 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_clocked.node_lo
       | Some pat -> EquSimple (mono_ident pat, nexpr_merge) :: a, b, nexpr
     end
   | CApp (name, args, every) ->
-    let a, b, vl = normalize_paired a b args in
+    let a, b, vl = normalize_list a b args in
     let a, b, ev = normalize_expr a b None every in
     let pat, b = match pat with
       | Some pat -> pat, b
@@ -198,17 +198,18 @@ and normalize_var: type a. Ast_normalized.nequation list -> Ast_clocked.node_loc
     in
     a, b, var
 
-and normalize_paired: type a. Ast_normalized.nequation list -> Ast_clocked.node_local -> a Ast_clocked.cexpr ->
+and normalize_list: type a. Ast_normalized.nequation list -> Ast_clocked.node_local -> a Ast_clocked.cexpr_list ->
   Ast_normalized.nequation list * Ast_clocked.node_local * a Ast_typed.var_list = fun a b expr ->
-  let Ast_clocked.{ texpr_desc; texpr_type; texpr_clock; texpr_loc } = expr in
-  match texpr_desc with
-  | Ast_clocked.CPair(e1, e2) ->
-    let a, b, ne1 = normalize_var a b e1 in
-    let a, b, np2 = normalize_paired a b e2 in
-    a, b, Ast_typed.VTuple(ne1, e1.Ast_clocked.texpr_type, np2)
-  | _ ->
-    let a, b, e = normalize_var a b expr in
-    a, b, Ast_typed.VIdent(e, texpr_type)
+  match expr with
+  | Ast_clocked.CLCons(t, q) ->
+    let a, b, ne1 = normalize_var a b t in
+    let a, b, np2 = normalize_list a b q in
+    a, b, Ast_typed.VTuple(ne1, t.Ast_clocked.texpr_type, np2)
+  | Ast_clocked.CLSing t ->
+    let a, b, ne1 = normalize_var a b t in
+    a, b, Ast_typed.VIdent(ne1, t.Ast_clocked.texpr_type)
+  | Ast_clocked.CLNil ->
+    a, b, Ast_typed.VEmpty
 
 
 

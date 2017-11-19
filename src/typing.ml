@@ -132,7 +132,7 @@ let infer_type2 env file e =
        | Some s -> s)
   | _ -> raise Bad_type
 
-let rec do_typing_tuple: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsing.expr list -> a expr =
+let rec do_typing_tuple: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsing.expr list -> a expr_list =
   fun env file ty expr ->
 
     begin
@@ -140,18 +140,18 @@ let rec do_typing_tuple: type a. var_env VarMap.t -> file -> a var_list -> Ast_p
       | Ast_typed.VIdent (var_name, var_ty) ->
         begin match expr with
           | [t] ->
-            (do_typing_expr env file (VIdent (var_name, var_ty)) t)
+            ELSing (do_typing_expr env file (VIdent (var_name, var_ty)) t)
           | _ -> raise Bad_type
         end
-      | Ast_typed.VEmpty -> raise Bad_type
+      | Ast_typed.VEmpty -> (match expr with
+          | [] -> ELNil
+          | _::_ -> raise Bad_type)
       | Ast_typed.VTuple (var_name, var_ty, b) ->
         begin match expr with
           | t::q ->
             let p1 = do_typing_expr env file (VIdent (var_name, var_ty)) t in
             let p2 = do_typing_tuple env file b q in
-            { texpr_desc = EPair (p1, p2);
-              texpr_type = TyPair (p1.texpr_type, p2.texpr_type);
-              texpr_loc = Ast_parsing.(t.expr_loc) }
+            ELCons(p1, p2)
           | [] -> raise Bad_type
         end
     end
@@ -180,8 +180,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
     | Ast_parsing.ETuple [] ->
       raise Bad_type
     | Ast_parsing.ETuple (t::q) ->
-      let e = (do_typing_tuple env file ty (t::q)) in
-      e.texpr_desc, e.texpr_type
+    raise Bad_type
     | Ast_parsing.EFby (a,b) ->
       let mono_ty = (mono_type ty) in
       EFby(do_typing_const mono_ty expr.Ast_parsing.expr_loc a, do_typing_expr env file ty b), mono_ty

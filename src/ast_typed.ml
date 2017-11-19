@@ -10,10 +10,11 @@ type location = Ast_parsing.location
 type 'a num_ty =
   | TyZ : int num_ty
   | TyReal : float num_ty
-  (**
-   * Types
-   * tagged with a phantom type
-  *)
+
+(**
+ * Types
+ * tagged with a phantom type
+*)
 type _ ty =
   | TyBool : bool ty
   | TyNum  : 'a num_ty -> 'a num_ty ty
@@ -79,13 +80,17 @@ type 'a expr = {
 and 'a expr_desc =
   | EConst : 'a const -> 'a expr_desc
   | EIdent : 'a var_ident -> 'a expr_desc
-  | EPair  : 'a expr * 'b expr -> ('a * 'b) expr_desc
   | EFby   : 'a const * 'a expr -> 'a expr_desc
   | EBOp    : ('a, 'b) binop * 'a expr * 'a expr -> 'b expr_desc
   | EUOp    : ('a, 'b) unop * 'a expr -> 'b expr_desc
-  | EApp    : ('a, 'b) tagged_ident * 'a expr * bool expr -> 'b expr_desc
+  | EApp    : ('a, 'b) tagged_ident * 'a expr_list * bool expr -> 'b expr_desc
   | EWhen  : 'a expr * ident * 'b var_ident -> 'a expr_desc
   | EMerge : ident * (ident * 'a expr) list -> 'a expr_desc
+
+and 'a expr_list =
+  | ELNil : unit expr_list
+  | ELSing : 'a expr -> 'a expr_list
+  | ELCons : 'a expr * 'b expr_list -> ('a * 'b) expr_list
 
 
 
@@ -166,16 +171,20 @@ let rec pp_ty: type a. 'b -> a ty -> unit = fun ppf -> function
 
 let pp_expr: type a. 'c -> a expr -> unit =
   let rec pp: type a. 'd -> a expr -> unit = fun ppf e -> fprintf ppf "%a:%a" pp_desc e.texpr_desc pp_ty e.texpr_type
+  and pp_elist: type a. 'd -> a expr_list -> unit = fun ppf l ->
+    match l with
+    | ELNil -> ()
+    | ELSing a -> pp ppf a
+    | ELCons (a,b) -> fprintf ppf "%a, %a" pp a pp_elist b
   and pp_desc: type b. 'c -> b expr_desc -> unit = fun ppf -> function
     | EConst c -> fprintf ppf "%a" pp_const c
     | EIdent i -> fprintf ppf "%s" i
-    | EPair (es, es2) -> fprintf ppf "%a, %a" pp es pp es2
     | EFby (v, e) -> fprintf ppf "(%a fby %a)" pp_const v pp e
     | EBOp (op, e1, e2) -> fprintf ppf "(%a %a %a)" pp e1 pp_bop op pp e2
     | EUOp (op, e) -> fprintf ppf "(%a %a)" pp_uop op pp e
     | EApp (f, args, ev) ->
       let Tagged(_, _, f) = f in
-      fprintf ppf "(%s(%a) every %a)" f pp args pp ev
+      fprintf ppf "(%s(%a) every %a)" f pp_elist args pp ev
     | EWhen (e, c, x) -> fprintf ppf "(%a when %s(%s))" pp e c x
     | EMerge (x, clauses) -> fprintf ppf "(merge %s %a)" x (pp_list " " pp_clause) clauses
   and pp_clause: type a. 'd -> ident * a expr -> unit = fun ppf (c, e) -> fprintf ppf "(%s -> %a)" c pp e

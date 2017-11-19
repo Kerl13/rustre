@@ -1,5 +1,5 @@
 open Ast_typed
-   
+
 type ident = Ast_parsing.ident
 type location = Ast_parsing.location
 
@@ -15,7 +15,7 @@ type ck =
 type ct =
   | CSingle : ck -> ct
   | CProd : ct list -> ct
-  
+
 (**
  * Expressions
  * tagged with a phantom type corresponding to their lustre type
@@ -27,7 +27,7 @@ type 'a cexpr = {
   texpr_loc   : location
 }
 
-             
+
 and 'a cexpr_desc =
   | CConst : 'a const -> 'a cexpr_desc
   | CIdent : 'a var_ident -> 'a cexpr_desc
@@ -35,9 +35,14 @@ and 'a cexpr_desc =
   | CFby   : 'a const * 'a cexpr -> 'a cexpr_desc
   | CBOp    : ('a, 'b) binop * 'a cexpr * 'a cexpr -> 'b cexpr_desc
   | CUOp    : ('a, 'b) unop * 'a cexpr -> 'b cexpr_desc
-  | CApp    : ('a, 'b) tagged_ident * 'a cexpr * 'c cexpr -> 'b cexpr_desc
+  | CApp    : ('a, 'b) tagged_ident * 'a cexpr_list * 'c cexpr -> 'b cexpr_desc
   | CWhen  : 'a cexpr * ident * 'b var_ident -> 'a cexpr_desc
   | CMerge : ident * (ident * 'a cexpr) list -> 'a cexpr_desc
+
+and 'a cexpr_list =
+  | CLNil : unit cexpr_list
+  | CLSing : 'a cexpr -> 'a cexpr_list
+  | CLCons : 'a cexpr * 'b cexpr_list -> ('a * 'b) cexpr_list
 
 
 (** Programs *)
