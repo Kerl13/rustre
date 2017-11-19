@@ -31,7 +31,7 @@ type ostatement =
   | SSkip
   | SCall of ident list * machine_id * ident list
   | SReset of machine_id
-  | SCase of ident * (ostatement list) (* Constructors are numbered, the nth
+  | SCase of ident * (string * ostatement) list (* Constructors are numbered, the nth
                                           statement corresponds to the nth
                                           constructor -- 2 in case of Booleans *)
 
@@ -90,8 +90,8 @@ let rec pp_ostatement ppf = function
   | SCase(i, args) ->
     fprintf ppf "case %a {\n%a\n}"
       pp_expr (EVar i)
-      (pp_list "\n" (fun ppf (s, i) -> fprintf ppf "%d -> {\n%a\n}" i pp_ostatement s))
-      (List.mapi (fun i s -> (s, i)) args)
+      (pp_list "\n" (fun ppf (s, i) -> fprintf ppf "%s -> {\n%a\n}" i pp_ostatement s))
+      (List.mapi (fun _ (i, s) -> (s, i)) args)
 
 
 let pp_sty: type a. 'b -> a Ast_normalized.sty -> unit = fun ppf -> function
@@ -100,7 +100,7 @@ let pp_sty: type a. 'b -> a Ast_normalized.sty -> unit = fun ppf -> function
   | Ast_normalized.StyNum TyReal -> fprintf ppf "real"
 
 let pp_machine ppf m =
-  fprintf ppf "@[<h 2>machine %s{@\n@[<h 2>memory: %a@]@\n@[<h 2>instances: %a@]@\n@[<h 2>reset(){@\n%a@]@\n@\n}@\n@[<h 2>step(%a) {@\n%a@]@\n}@]@\n}@."
+  fprintf ppf "@[<h 2>machine %s {@\n@[<h 2>memory: %a@]@\n@[<h 2>instances: %a@]@\n@[<h 2>reset () {@\n%a@]@\n@\n}@\n@[<h 2>step (%a) {@\n%a@]@\n}@]@\n}@."
     m.name
     (pp_list ", " (fun ppf (s, Sty ty) -> fprintf ppf "%s:%a" s pp_sty ty)) m.memory
     (pp_list ", " (fun ppf s -> fprintf ppf "%s" s)) m.instances
