@@ -104,7 +104,20 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_clocked.node_lo
       nexpr_loc = texpr_loc;
     } in
     let a, b, nexpr_e = normalize_expr a b None e in
-    EquFby ({ pat_desc = Ast_typed.VIdent (v, texpr_type); pat_loc = texpr_loc}, c, nexpr_e) :: a, b, nexpr
+    let v', b = new_var b texpr_type in
+    let nexpr' = {
+      nexpr_desc = NIdent v';
+      nexpr_type = sty;
+      nexpr_clock = texpr_clock;
+      nexpr_loc = texpr_loc;
+    } in
+    let nexpr' = {
+      nexpr_merge_desc = NExpr nexpr';
+      nexpr_merge_type = sty;
+      nexpr_merge_clock = texpr_clock;
+      nexpr_merge_loc = texpr_loc;
+    } in
+    EquFby (v', c, nexpr_e) :: EquSimple(v, nexpr') :: a, b, nexpr
 
   | CBOp (op, e1, e2) ->
     let a, b, e1 = normalize_expr a b None e1 in
@@ -187,7 +200,7 @@ let normalize_node (Ast_clocked.Node desc) =
       n_name = desc.n_name;
       n_input = desc.n_input;
       n_output = desc.n_output;
-      n_local = desc.n_local;
+      n_local = n_local;
       n_eqs = eqs;
       n_loc = desc.n_loc;
     }

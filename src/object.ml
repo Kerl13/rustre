@@ -26,6 +26,7 @@ let obc_const: type a. a Ast_typed.const -> a oconst = fun c ->
 let rec obc_expr_merge: type a. nl -> a nexpr_merge -> a oexpr = fun nl expr ->
   match expr.nexpr_merge_desc with
   | NExpr a -> obc_expr nl a
+  | _ -> assert false
 
 and obc_expr: type a. nl -> a nexpr -> a oexpr = fun nl expr ->
   let (Ast_clocked.NodeLocal nl_) = nl in
@@ -48,8 +49,12 @@ let obc_eq (Ast_clocked.NodeLocal local) (instances, s) = function
     let v = if is_in local v then State v else Var v in
     instances,
     (SSeq (SAssign { n = v; expr = obc_expr_merge (Ast_clocked.NodeLocal local) expr_merge; }, s))
-  | EquFby(pat, const, expr) -> instances, s
-  | EquApp(pat, id, vl, _) ->
+  | EquFby(v, const, expr_merge) ->
+  (* apart from the scheduling, equfby is the same thing as equsimple *)
+  let v = if is_in local v then State v else assert false in
+      instances,
+      (SSeq (SAssign { n = v; expr = obc_expr (Ast_clocked.NodeLocal local) expr_merge; }, s))
+| EquApp(pat, id, vl, _) ->
   let Ast_typed.Tagged(args_in, args_out, machine_id) = id in
   let args = obc_varlist vl in
   let args = List.map (fun (v, _) -> if is_in local v then State v else Var v) args in
