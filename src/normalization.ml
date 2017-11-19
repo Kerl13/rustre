@@ -34,6 +34,11 @@ let rec come_up_vars: type a. 'b -> a Ast_typed.ty -> a Ast_typed.var_list * 'b 
       let vl, b = come_up_vars b t2 in
       Ast_typed.VTuple(a, t1, vl), b
 
+let mono_ident Ast_clocked.{ pat_desc; } =
+  match pat_desc with
+  | Ast_typed.VIdent(v, _) -> v
+  | _ -> assert false
+
 
 let rec normalize_eqs (a, b) (Ast_clocked.Equ (pat, expr)) =
   let a, b, _ = normalize_expr a b (Some pat) expr in a, b
@@ -63,7 +68,7 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_clocked.node_lo
     begin
       match pat with
       | None -> a, b, nexpr
-      | Some pat -> EquSimple (pat, nexpr_merge) :: a, b, nexpr
+      | Some pat -> EquSimple (mono_ident pat, nexpr_merge) :: a, b, nexpr
     end
   | CIdent v ->
     let sty = sty_for_ty texpr_type in
@@ -82,7 +87,7 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_clocked.node_lo
     begin
       match pat with
       | None -> a, b, nexpr
-      | Some pat -> EquSimple (pat, nexpr_merge) :: a, b, nexpr
+      | Some pat -> EquSimple (mono_ident pat, nexpr_merge) :: a, b, nexpr
     end
   | CPair (_, _) -> assert false
   | CFby (c, e) ->
@@ -120,7 +125,7 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_clocked.node_lo
     begin
       match pat with
       | None -> a, b, nexpr
-      | Some pat -> EquSimple (pat, nexpr_merge) :: a, b, nexpr
+      | Some pat -> EquSimple (mono_ident pat, nexpr_merge) :: a, b, nexpr
     end
   | CUOp (op, _) -> assert false
   | CApp (name, args, every) ->
@@ -150,7 +155,13 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_clocked.node_lo
     in
     EquApp(pat, name, vl, ev) :: a, b, nexpr
   | CWhen (_, _, _) -> assert false
-  | CMerge (_, _) -> assert false
+  | CMerge (i, _) ->
+  let nexpr_merge = {
+    nexpr_merge_desc = NMerge(i, ml);
+    nexpr_merge_type = sty_for_ty texpr_type;
+    nexpr_merge_clock = texpr_clock;
+    nexpr_merge_loc = texpr_loc;
+  } in
 and normalize_var: type a. Ast_normalized.nequation list -> Ast_clocked.node_local -> a Ast_clocked.cexpr ->
   Ast_normalized.nequation list * Ast_clocked.node_local * Ast_typed.ident = fun a b expr ->
   match expr.Ast_clocked.texpr_desc with

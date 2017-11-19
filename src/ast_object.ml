@@ -26,7 +26,7 @@ type _ oexpr =
   | EUOp      : ('a, 'b) unop * 'a oexpr -> 'b oexpr
 
 type ostatement =
-  | SAssign of { n: ident; expr: 'a. 'a oexpr }
+  | SAssign : { n: ident; expr: 'a oexpr } -> ostatement
   | SSeq of ostatement * ostatement
   | SSkip
   | SCall of ident list * machine_id * ident list
