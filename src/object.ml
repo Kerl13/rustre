@@ -3,10 +3,10 @@ open Ast_normalized
 
 let obc_varlist vl =
   let rec aux: type a. a Ast_typed.var_list -> var_list = function
-    | Ast_typed.VIdent(a, ty) -> [a, Sty (Normalization.sty_for_ty ty)]
+    | Ast_typed.VIdent(a, ty) -> [a, Sty (ty)]
     | Ast_typed.VEmpty -> []
     | Ast_typed.VTuple(a, ty, b) ->
-      (a, Sty (Normalization.sty_for_ty ty)) :: aux b
+      (a, Sty (ty)) :: aux b
   in aux vl |> List.rev
 
 let rec is_in: type a. a Ast_typed.var_list -> a Ast_typed.var_ident -> bool = fun vl v -> match vl with

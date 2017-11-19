@@ -16,7 +16,7 @@ type _ sty =
 *)
 type 'a nexpr = {
   nexpr_desc  : 'a nexpr_desc ;
-  nexpr_type  : 'a sty;
+  nexpr_type  : 'a ty;
   nexpr_clock : ct ;
   nexpr_loc   : location
 }
@@ -42,7 +42,7 @@ type _ nexpr_merge_desc =
 (** named `ca` in the article *)
 and 'a nexpr_merge = {
   nexpr_merge_desc: 'a nexpr_merge_desc;
-  nexpr_merge_type: 'a sty;
+  nexpr_merge_type: 'a ty;
   nexpr_merge_clock: ct;
   nexpr_merge_loc: location;
 }

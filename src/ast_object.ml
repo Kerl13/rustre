@@ -4,7 +4,7 @@ type z = int
 
 open Ast_typed
 
-type sty = Sty: 'a Ast_normalized.sty -> sty
+type sty = Sty: 'a Ast_typed.ty -> sty
 
 type var_list = (var_id * sty) list
 
@@ -80,7 +80,7 @@ let rec pp_ostatement ppf = function
     fprintf ppf "%a := %a;" pp_expr (EVar n) pp_expr expr
   | SSeq(a, b) -> fprintf ppf "%a@\n%a" pp_ostatement a pp_ostatement b
   | SSkip -> fprintf ppf "skip;"
-  | SCall(ids, mach, args) ->
+  | SCall(args, mach, ids) ->
     fprintf ppf "(%a) := %s(%a);" (pp_list ", " pp_expr) (List.map (fun i -> EVar i) ids)
       mach
       (pp_list ", " pp_expr) (List.map (fun i -> EVar i) args)
@@ -102,7 +102,7 @@ let pp_sty: type a. 'b -> a Ast_normalized.sty -> unit = fun ppf -> function
 let pp_machine ppf m =
   fprintf ppf "@[<h 2>machine %s {@\n@[<h 2>memory: %a@]@\n@[<h 2>instances: %a@]@\n@[<h 2>reset () {@\n%a@]@\n@\n}@\n@[<h 2>step (%a) {@\n%a@]@\n}@]@\n}@."
     m.name
-    (pp_list ", " (fun ppf (s, Sty ty) -> fprintf ppf "%s:%a" s pp_sty ty)) m.memory
+    (pp_list ", " (fun ppf (s, Sty ty) -> fprintf ppf "%s:%a" s pp_ty ty)) m.memory
     (pp_list ", " (fun ppf s -> fprintf ppf "%s" s)) m.instances
     pp_ostatement m.reset
     (pp_list ", " (fun ppf (s, ty) -> fprintf ppf "%s" s)) (fst m.step)

@@ -18,15 +18,22 @@ type 'a num_ty =
 type _ ty =
   | TyBool : bool ty
   | TyNum  : 'a num_ty -> 'a num_ty ty
-  | TyPair : 'a ty * 'b ty -> ('a * 'b) ty
+
+type 'a simp
+type 'a compl
+
+type _ compl_ty =
+  | TySing : 'a ty -> 'a ty compl_ty
+  | TyNil: unit compl_ty
+  | TyPair : 'a ty * 'b compl_ty -> ('a ty * 'b) compl_ty
 
 
 type _ var_ident = Ast_parsing.ident
 
 type _ var_list =
-  | VIdent: 'a var_ident * 'a ty -> 'a var_list
+  | VIdent: 'a var_ident * 'a ty -> 'a ty var_list
   | VEmpty: unit var_list
-  | VTuple: 'a var_ident * 'a ty * 'b var_list -> ('a * 'b) var_list
+  | VTuple: 'a var_ident * 'a ty * 'b var_list -> ('a ty * 'b) var_list
 
 type (_, _) tagged_ident = Tagged: ('a var_list) * ('b var_list) * ident -> ('a, 'b) tagged_ident
 
@@ -73,26 +80,24 @@ type _ const =
 *)
 type 'a expr = {
   texpr_desc : 'a expr_desc ;
-  texpr_type : 'a ty ;
+  texpr_type : 'a compl_ty ;
   texpr_loc  : location
 }
 
 and 'a expr_desc =
-  | EConst : 'a const -> 'a expr_desc
-  | EIdent : 'a var_ident -> 'a expr_desc
-  | EFby   : 'a const * 'a expr -> 'a expr_desc
-  | EBOp    : ('a, 'b) binop * 'a expr * 'a expr -> 'b expr_desc
-  | EUOp    : ('a, 'b) unop * 'a expr -> 'b expr_desc
-  | EApp    : ('a, 'b) tagged_ident * 'a expr_list * bool expr -> 'b expr_desc
-  | EWhen  : 'a expr * ident * 'b var_ident -> 'a expr_desc
+  | EConst : 'a const -> 'a ty expr_desc
+  | EIdent : 'a ty var_ident -> 'a ty expr_desc
+  | EFby   : 'a const * 'a ty expr -> 'a ty expr_desc
+  | EBOp    : ('a, 'b) binop * 'a ty expr * 'a ty expr -> 'b ty expr_desc
+  | EUOp    : ('a, 'b) unop * 'a ty expr -> 'b ty expr_desc
+  | EApp    : ('a, 'b) tagged_ident * 'a expr_list * bool ty expr -> 'b expr_desc
+  | EWhen  : 'a expr * ident * 'b ty var_ident -> 'a expr_desc
   | EMerge : ident * (ident * 'a expr) list -> 'a expr_desc
 
 and 'a expr_list =
   | ELNil : unit expr_list
-  | ELSing : 'a expr -> 'a expr_list
-  | ELCons : 'a expr * 'b expr_list -> ('a * 'b) expr_list
-
-
+  | ELSing : 'a ty expr -> 'a ty expr_list
+  | ELCons : 'a ty expr * 'b expr_list -> ('a ty * 'b) expr_list
 
 (** Programs *)
 type file = node list
@@ -167,10 +172,16 @@ let rec pp_ty: type a. 'b -> a ty -> unit = fun ppf -> function
   | TyBool -> fprintf ppf "bool"
   | TyNum TyZ -> fprintf ppf "int"
   | TyNum TyReal -> fprintf ppf "real"
-  | TyPair(a, b) -> fprintf ppf "%a, %a" pp_ty a pp_ty b
+
+let rec pp_compl_ty: type a. 'b -> a compl_ty -> unit = fun ppf l ->
+match l with
+| TySing a -> pp_ty ppf a
+| TyNil -> fprintf ppf "nil"
+| TyPair (a,b) ->
+fprintf ppf "%a, %a" pp_ty a pp_compl_ty b
 
 let pp_expr: type a. 'c -> a expr -> unit =
-  let rec pp: type a. 'd -> a expr -> unit = fun ppf e -> fprintf ppf "%a:%a" pp_desc e.texpr_desc pp_ty e.texpr_type
+  let rec pp: type a. 'd -> a expr -> unit = fun ppf e -> fprintf ppf "%a:%a" pp_desc e.texpr_desc pp_compl_ty e.texpr_type
   and pp_elist: type a. 'd -> a expr_list -> unit = fun ppf l ->
     match l with
     | ELNil -> ()

@@ -22,27 +22,26 @@ type ct =
 *)
 type 'a cexpr = {
   texpr_desc  : 'a cexpr_desc ;
-  texpr_type  : 'a ty ;
+  texpr_type  : 'a compl_ty ;
   texpr_clock : ct ;
   texpr_loc   : location
 }
 
 
 and 'a cexpr_desc =
-  | CConst : 'a const -> 'a cexpr_desc
-  | CIdent : 'a var_ident -> 'a cexpr_desc
-  | CPair  : 'a cexpr * 'b cexpr -> ('a * 'b) cexpr_desc
-  | CFby   : 'a const * 'a cexpr -> 'a cexpr_desc
-  | CBOp    : ('a, 'b) binop * 'a cexpr * 'a cexpr -> 'b cexpr_desc
-  | CUOp    : ('a, 'b) unop * 'a cexpr -> 'b cexpr_desc
-  | CApp    : ('a, 'b) tagged_ident * 'a cexpr_list * 'c cexpr -> 'b cexpr_desc
-  | CWhen  : 'a cexpr * ident * 'b var_ident -> 'a cexpr_desc
+  | CConst : 'a const -> 'a ty cexpr_desc
+  | CIdent : 'a ty var_ident -> 'a ty cexpr_desc
+  | CFby   : 'a const * 'a ty cexpr -> 'a ty cexpr_desc
+  | CBOp    : ('a, 'b) binop * 'a ty cexpr * 'a ty cexpr -> 'b ty cexpr_desc
+  | CUOp    : ('a, 'b) unop * 'a ty cexpr -> 'b ty cexpr_desc
+  | CApp    : ('a, 'b) tagged_ident * 'a cexpr_list * bool ty cexpr -> 'b cexpr_desc
+  | CWhen  : 'a cexpr * ident * 'b ty var_ident -> 'a cexpr_desc
   | CMerge : ident * (ident * 'a cexpr) list -> 'a cexpr_desc
 
 and 'a cexpr_list =
   | CLNil : unit cexpr_list
-  | CLSing : 'a cexpr -> 'a cexpr_list
-  | CLCons : 'a cexpr * 'b cexpr_list -> ('a * 'b) cexpr_list
+  | CLSing : 'a ty cexpr -> 'a ty cexpr_list
+  | CLCons : 'a ty cexpr * 'b cexpr_list -> ('a ty * 'b) cexpr_list
 
 
 (** Programs *)
