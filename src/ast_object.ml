@@ -78,6 +78,7 @@ let rec pp_expr: type a. 'c -> a oexpr -> unit = fun ppf -> function
 let rec pp_ostatement ppf = function
   | SAssign { n; expr } ->
     fprintf ppf "%a := %a;" pp_expr (EVar n) pp_expr expr
+  | SSeq(a, SSkip) -> pp_ostatement ppf a
   | SSeq(a, b) -> fprintf ppf "%a@\n%a" pp_ostatement a pp_ostatement b
   | SSkip -> fprintf ppf "skip;"
   | SCall(args, mach, ids) ->
