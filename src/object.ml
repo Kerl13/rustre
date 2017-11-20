@@ -46,7 +46,8 @@ and obc_expr: type a. nl -> a nexpr -> a oexpr = fun nl expr ->
     EBOp(op, obc_expr nl e1, obc_expr nl e2)
   | Ast_normalized.NUOp (op, e1) ->
     EUOp(op, obc_expr nl e1)
-  | Ast_normalized.NWhen (_,_,_) -> assert false
+  | Ast_normalized.NWhen (e,_,_) ->
+    obc_expr nl e
 
 let obc_eq (Ast_typed.NodeLocal local) (instances, s) = function
   | EquSimple(v, expr_merge) ->
