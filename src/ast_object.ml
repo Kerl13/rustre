@@ -88,9 +88,9 @@ let rec pp_ostatement ppf = function
   | SReset(machine_id) ->
     fprintf ppf "%s.reset();" machine_id
   | SCase(i, args) ->
-    fprintf ppf "case %a {\n%a\n}"
+    fprintf ppf "@[<h 2>case %a {%a@]@\n}"
       pp_expr (EVar i)
-      (pp_list "\n" (fun ppf (s, i) -> fprintf ppf "%s -> {\n%a\n}" i pp_ostatement s))
+      (pp_list "" (fun ppf (s, i) -> fprintf ppf "@\n@[<h 2>%s -> {@\n%a@]@\n}" i pp_ostatement s))
       (List.mapi (fun _ (i, s) -> (s, i)) args)
 
 
