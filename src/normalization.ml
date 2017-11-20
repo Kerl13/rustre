@@ -173,8 +173,26 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_typed.node_loca
      | Ast_typed.VEmpty ->
        EquApp(pat, name, vl, ev) :: a, b, Unit
     )
-  | CWhen (_, _, _) -> assert false
-  | CMerge (id, cexprs) ->
+  | CWhen (expr, constr, cond) ->
+    let a, b, Expr expr = normalize_expr a b None expr in
+    let nexpr = {
+      nexpr_desc = NWhen(expr, constr, cond);
+      nexpr_type = expr.nexpr_type;
+      nexpr_clock = texpr_clock;
+      nexpr_loc = texpr_loc;
+    } in
+    let nexpr_merge = {
+      nexpr_merge_desc = NExpr nexpr;
+      nexpr_merge_type = expr.nexpr_type;
+      nexpr_merge_clock = texpr_clock;
+      nexpr_merge_loc = texpr_loc;
+    } in
+    (match pat with
+     | Some pat ->
+       let Ast_typed.VIdent(v, _) = pat.Ast_typed.pat_desc in
+       EquSimple(v, nexpr_merge) :: a, b, Expr nexpr
+     | None -> a,b, Expr nexpr)
+  | CMerge (_, _) ->
     let a, b, nmerge = normalize_merge a b expr in
     match pat with
     | None ->

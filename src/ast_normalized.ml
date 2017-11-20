@@ -24,10 +24,10 @@ type 'a nexpr = {
 (** named `e` in the article *)
 and 'a nexpr_desc =
   | NConst : 'a const -> 'a nexpr_desc
-  | NIdent : 'a var_ident -> 'a nexpr_desc
+  | NIdent : 'a ty var_ident -> 'a nexpr_desc
   | NBOp    : ('a, 'b) binop * 'a nexpr * 'a nexpr -> 'b nexpr_desc
   | NUOp    : ('a, 'b) unop * 'a nexpr -> 'b nexpr_desc
-  | NWhen  : 'a nexpr * ident * 'b var_ident -> 'a nexpr_desc
+  | NWhen  : 'a nexpr * ident * 'b ty var_ident -> 'a nexpr_desc
   (** not in the article, paired expressions, i.e. lists *)
 and 'a nexpr_paired =
   | NExpr : 'a nexpr -> 'a nexpr_paired

@@ -237,10 +237,14 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
         with
         | Not_found -> raise (Node_undefined (node_name, Ast_parsing.(expr.expr_loc)))
       end
-
     | Ast_parsing.EWhen (e1,var,constructor) ->
-      let e = do_typing_expr env file ty e1 in
-      EWhen(e, var, constructor), e.texpr_type
+      begin
+        match ty with
+        | VIdent(_, _) ->
+          let e = do_typing_expr env file ty e1 in
+          EWhen(e, var, constructor), e.texpr_type
+        | _ -> raise Bad_type
+      end
     | Ast_parsing.EMerge (var, id_exprs) ->
       match ty with
       | VIdent(_, _) ->

@@ -32,7 +32,7 @@ and 'a cexpr_desc =
   | CBOp    : ('a, 'b) binop * 'a ty cexpr * 'a ty cexpr -> 'b ty cexpr_desc
   | CUOp    : ('a, 'b) unop * 'a ty cexpr -> 'b ty cexpr_desc
   | CApp    : ('a, 'b) tagged_ident * 'a cexpr_list * bool ty cexpr -> 'b cexpr_desc
-  | CWhen  : 'a cexpr * ident * 'b ty var_ident -> 'a cexpr_desc
+  | CWhen  : 'a ty cexpr * ident * 'b ty var_ident -> 'a ty cexpr_desc
   | CMerge : ident * (ident * 'a ty cexpr) list -> 'a ty cexpr_desc
 
 and 'a cexpr_list =
