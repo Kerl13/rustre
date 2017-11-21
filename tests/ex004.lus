@@ -1,0 +1,5 @@
+node check (x: bool) = (OK: bool)
+with var n1, n2: int in
+  n1 = if x then (pre n1) + 1 else pre n1;
+  n2 = 0 fby (n2 - 1);
+  OK = n1 > n2
