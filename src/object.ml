@@ -1,6 +1,12 @@
 open Ast_object
 open Ast_normalized
 
+let new_instance =
+  let counter = ref 0 in
+  fun () ->
+    incr counter;
+    Format.sprintf "inst%d" !counter
+
 let obc_varlist vl =
   let rec aux: type a. a Ast_typed.var_list -> var_list = function
     | Ast_typed.VIdent(a, ty) -> [a, Sty (ty)]
@@ -40,7 +46,7 @@ and obc_expr: type a. nl -> a nexpr -> a oexpr = fun nl expr ->
     EConst oc
   | Ast_normalized.NIdent v ->
     if is_in nl_ v then
-      EVar (State v)
+      EVar (Loc v)
     else EVar (Var v)
   | Ast_normalized.NBOp (op,e1,e2) ->
     EBOp(op, obc_expr nl e1, obc_expr nl e2)
@@ -51,32 +57,41 @@ and obc_expr: type a. nl -> a nexpr -> a oexpr = fun nl expr ->
 
 let obc_eq (Ast_typed.NodeLocal local) (instances, s) = function
   | EquSimple(v, expr_merge) ->
-    let v = if is_in local v then State v else Var v in
+    let v = if is_in local v then Loc v else Var v in
     instances,
     (SSeq (obc_expr_merge (Ast_typed.NodeLocal local) v expr_merge, s))
   | EquFby(v, _, expr_merge) ->
     (* apart from the scheduling, equfby is the same thing as equsimple *)
-    let v = if is_in local v then State v else assert false in
-    instances,
-    (SSeq (SAssign { n = v; expr = obc_expr (Ast_typed.NodeLocal local) expr_merge; }, s))
+    let state, instances = instances in
+    (((v:var_id), Sty expr_merge.nexpr_type) :: state, instances),
+    (SSeq (SAssign { n = State v; expr = obc_expr (Ast_typed.NodeLocal local) expr_merge; }, s))
   | EquApp(pat, id, vl, _) ->
     let Ast_typed.Tagged(_, _, machine_id) = id in
     let args = obc_varlist vl in
-    let args = List.map (fun (v, _) -> if is_in local v then State v else Var v) args in
+    let args = List.map (fun (v, _) -> if is_in local v then Loc v else Var v) args in
     let res = obc_varlist pat.Ast_typed.pat_desc in
-    let res = List.map (fun (v, _) -> if is_in local v then State v else Var v) res in
-    instances,
-    (SSeq ((SCall(args, machine_id, res)), s))
+    let res = List.map (fun (v, _) -> if is_in local v then Loc v else Var v) res in
+    let i = new_instance () in
+    let state, instances = instances in
+    (state, (i, machine_id)::instances),
+    (SSeq ((SCall(args, i, machine_id, res)), s))
 
 let obc_node (NNode desc) =
-  let instances, step = List.fold_left (obc_eq desc.n_local) ([], SSkip) desc.n_eqs in
-  { memory =
-      (let Ast_typed.NodeLocal nl = desc.n_local in
-       obc_varlist nl);
+  let (state, instances), step = List.fold_left (obc_eq desc.n_local) (([], []), SSkip) desc.n_eqs in
+  let step = List.fold_left (fun a ((b, _) : var_id * 'a) ->
+      let Ast_typed.NodeLocal nl = desc.n_local in
+      let v = if is_in nl b then
+          (Loc b) else (Var b)
+      in
+      SSeq (SAssign { n = v;  expr = EVar (State b); }, a)) step state in
+  { memory = state;
     name = (let Ast_typed.Tagged(_, _, n) = desc.n_name in n);
     instances = instances;
     reset = SSkip;
     step = obc_varlist desc.n_input,
+           (let Ast_typed.NodeLocal nl = desc.n_local in
+            obc_varlist nl),
+           obc_varlist desc.n_output,
            step; }
 
 let from_normalized file =

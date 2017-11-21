@@ -92,20 +92,7 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_typed.node_loca
     } in
 
     let a, b, Expr nexpr_e = normalize_expr a b None e in
-    let v', b = new_var b ty in
-    let nexpr' = {
-      nexpr_desc = NIdent v';
-      nexpr_type = ty;
-      nexpr_clock = texpr_clock;
-      nexpr_loc = texpr_loc;
-    } in
-    let nexpr' = {
-      nexpr_merge_desc = NExpr nexpr';
-      nexpr_merge_type = ty;
-      nexpr_merge_clock = texpr_clock;
-      nexpr_merge_loc = texpr_loc;
-    } in
-    EquFby (v', c, nexpr_e) :: EquSimple(v, nexpr') :: a, b, Expr nexpr
+    EquFby (v, c, nexpr_e) :: a, b, Expr nexpr
 
   | CBOp (op, e1, e2) ->
     let a, b, Expr e1 = normalize_expr a b None e1 in
