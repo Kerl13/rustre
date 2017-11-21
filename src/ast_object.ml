@@ -19,6 +19,8 @@ type _ oconst =
   | CInt  : int -> int num_ty oconst
   | CReal : float -> float num_ty oconst
 
+type wconst = Const: 'a oconst -> wconst
+
 type _ oexpr =
   | EVar      : ident -> 'a oexpr
   | EConst    : 'a oconst -> 'a oexpr
