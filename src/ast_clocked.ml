@@ -7,11 +7,13 @@ open Ast_typed
 
 type ck =
   | CBase : ck
-  | COn : ck * ident * 'b var_ident -> ck
-
-type ct =
-  | CSingle : ck -> ct
-  | CProd : ct list -> ct
+  | COn : ck * ident * _ var_ident -> ck
+  | CVar : cvar -> ck
+  
+and ct = ck list
+  
+and cvar = { id: int; mutable def: ck option}
+           
 
 (**
  * Expressions
