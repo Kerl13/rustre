@@ -9,10 +9,12 @@ type location = Lexing.position * Lexing.position
 
 
 (** Types *)
+type enum = string * string list
 type ty =
   | TyBool
   | TyInt
   | TyReal
+  | TyEnum of enum
 
 
 (** Builtin operators *)
@@ -49,7 +51,10 @@ and expr_desc =
 
 
 (** Programs *)
-type file = node list
+type file = {
+  f_typedefs : enum list ;
+  f_nodes : node list
+}
 
 and node = {
   n_name   : ident ;
@@ -135,6 +140,7 @@ let pp_ty ppf = function
   | TyBool -> fprintf ppf "bool"
   | TyInt -> fprintf ppf "int"
   | TyReal -> fprintf ppf "real"
+  | TyEnum (name, _) -> fprintf ppf "%s" name
 
 let pp_equation ppf eq =
   fprintf ppf "%a = %a" pp_pat eq.eq_pat pp_expr eq.eq_expr
@@ -149,4 +155,9 @@ let pp_node ppf n =
     (pp_list "; " pp_arg) n.n_local
     (pp_list ";\n" pp_equation) n.n_eqs
 
-let pp_file ppf f = fprintf ppf "%a" (pp_list "\n\n" pp_node) f
+let pp_file ppf f =
+  let pp_typedef ppf (name, enum) =
+    fprintf ppf "%s ::= " name;
+    fprintf ppf "%a" (pp_list " + " (fun ppf -> fprintf ppf "%s")) enum in
+  fprintf ppf "%a" (pp_list "\n\n" pp_typedef) f.f_typedefs;
+  fprintf ppf "%a" (pp_list "\n\n" pp_node) f.f_nodes

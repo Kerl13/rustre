@@ -11,6 +11,8 @@ type 'a num_ty =
   | TyZ : int num_ty
   | TyReal : float num_ty
 
+type enum
+
 (**
  * Types
  * tagged with a phantom type
@@ -18,13 +20,11 @@ type 'a num_ty =
 type _ ty =
   | TyBool : bool ty
   | TyNum  : 'a num_ty -> 'a num_ty ty
-
-type 'a simp
-type 'a compl
+  | TyEnum : string * string list -> enum ty
 
 type _ compl_ty =
   | TySing : 'a ty -> 'a ty compl_ty
-  | TyNil: unit compl_ty
+  | TyNil  : unit compl_ty
   | TyPair : 'a ty * 'b compl_ty -> ('a ty * 'b) compl_ty
 
 
@@ -51,7 +51,7 @@ type (_, _) binop =
   | OpGt   : ('a num_ty, bool) binop
   | OpGe   : ('a num_ty, bool) binop
   | OpEq   : ('a, bool) binop
-  | OpNeq   : ('a, bool) binop
+  | OpNeq  : ('a, bool) binop
   | OpAnd  : (bool, bool) binop
   | OpOr   : (bool, bool) binop
   | OpImpl : (bool, bool) binop
@@ -174,6 +174,7 @@ let pp_ty: type a. 'b -> a ty -> unit = fun ppf -> function
   | TyBool -> fprintf ppf "bool"
   | TyNum TyZ -> fprintf ppf "int"
   | TyNum TyReal -> fprintf ppf "real"
+  | TyEnum (name, _) -> fprintf ppf "%s" name
 
 let rec pp_compl_ty: type a. 'b -> a compl_ty -> unit = fun ppf l ->
 match l with
