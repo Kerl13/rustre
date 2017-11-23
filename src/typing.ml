@@ -14,6 +14,7 @@ let ty_to_typed_ty = function
   | Ast_parsing.TyBool -> TypedTy TyBool
   | Ast_parsing.TyInt -> TypedTy (TyNum TyZ)
   | Ast_parsing.TyReal -> TypedTy (TyNum TyReal)
+  | Ast_parsing.TyEnum (name, dcs) -> TypedTy (TyEnum (name, dcs))
 
 exception Bad_type
 exception Expected_num of location
@@ -323,3 +324,6 @@ let do_typing_node (env:file) (node:Ast_parsing.node) =
 
 let do_typing f =
   List.fold_left do_typing_node [] f
+
+(* FIXME *)
+let do_typing f = do_typing f.Ast_parsing.f_nodes
