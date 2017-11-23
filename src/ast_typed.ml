@@ -100,6 +100,14 @@ and 'a expr_list =
   | ELCons : 'a ty expr * 'b expr_list -> ('a ty * 'b) expr_list
 
 (** Programs *)
+type 'a pattern = {
+  pat_desc : 'a pattern_desc ;
+  pat_loc  : location
+}
+
+and 'a pattern_desc = 'a var_list
+
+  
 type file = node list
 
 and node = Node: ('a, 'b) node_desc -> node
@@ -117,12 +125,6 @@ and node_local = NodeLocal: 'c var_list -> node_local
 
 and equation = Equ: 'a pattern * 'a expr -> equation
 
-and 'a pattern = {
-  pat_desc : 'a pattern_desc ;
-  pat_loc  : location
-}
-
-and 'a pattern_desc = 'a var_list
 
 
 
