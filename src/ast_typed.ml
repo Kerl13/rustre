@@ -88,9 +88,9 @@ and 'a expr_desc =
   | EConst : 'a const -> 'a ty expr_desc
   | EIdent : 'a ty var_ident -> 'a ty expr_desc
   | EFby   : 'a const * 'a ty expr -> 'a ty expr_desc
-  | EBOp    : ('a, 'b) binop * 'a ty expr * 'a ty expr -> 'b ty expr_desc
-  | EUOp    : ('a, 'b) unop * 'a ty expr -> 'b ty expr_desc
-  | EApp    : ('a, 'b) tagged_ident * 'a expr_list * bool ty expr -> 'b expr_desc
+  | EBOp   : ('a, 'b) binop * 'a ty expr * 'a ty expr -> 'b ty expr_desc
+  | EUOp   : ('a, 'b) unop * 'a ty expr -> 'b ty expr_desc
+  | EApp   : ('a, 'b) tagged_ident * 'a expr_list * bool ty expr -> 'b expr_desc
   | EWhen  : 'a ty expr * ident * 'b ty var_ident -> 'a ty expr_desc
   | EMerge : ident * (ident * 'a ty expr) list -> 'a ty expr_desc
 
@@ -107,7 +107,7 @@ type 'a pattern = {
 
 and 'a pattern_desc = 'a var_list
 
-  
+
 type file = node list
 
 and node = Node: ('a, 'b) node_desc -> node

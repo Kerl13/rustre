@@ -1,3 +1,3 @@
 open Ast_typed
 
-val get_desc: file -> ('a, 'b) tagged_ident -> ('a, 'b) node_desc
+val var_list_fold : ('a -> 'b var_ident -> 'a) -> 'a -> 'b var_list -> 'a
