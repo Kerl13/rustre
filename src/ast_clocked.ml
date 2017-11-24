@@ -9,11 +9,11 @@ type ck =
   | CBase : ck
   | COn : ck * ident * _ var_ident -> ck
   | CVar : cvar -> ck
-  
+
 and ct = ck list
-  
-and cvar = { id: int; mutable def: ck option}
-           
+
+and cvar = { id: int; mutable def: ck option }
+
 
 (**
  * Expressions
