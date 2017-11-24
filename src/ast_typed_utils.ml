@@ -1,6 +1,6 @@
 open Ast_typed
 
-let rec var_list_fold : type b. ('a -> b var_ident -> 'a) -> 'a -> b var_list -> 'a
+let rec var_list_fold : type b. ('a -> Ast_parsing.ident -> 'a) -> 'a -> b var_list -> 'a
   = fun f acc v_list -> match v_list with
     | VIdent (x, _) -> f acc x
     | VEmpty -> acc
