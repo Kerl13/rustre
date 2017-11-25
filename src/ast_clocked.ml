@@ -7,11 +7,13 @@ open Ast_typed
 
 type ck =
   | CBase : ck
-  | COn : ck * ident * 'b var_ident -> ck
+  | COn : ck * ident * _ var_ident -> ck
+  | CVar : cvar -> ck
 
-type ct =
-  | CSingle : ck -> ct
-  | CProd : ct list -> ct
+and ct = ck list
+
+and cvar = { id: int; mutable def: ck option }
+
 
 (**
  * Expressions
@@ -29,9 +31,9 @@ and 'a cexpr_desc =
   | CConst : 'a const -> 'a ty cexpr_desc
   | CIdent : 'a ty var_ident -> 'a ty cexpr_desc
   | CFby   : 'a const * 'a ty cexpr -> 'a ty cexpr_desc
-  | CBOp    : ('a, 'b) binop * 'a ty cexpr * 'a ty cexpr -> 'b ty cexpr_desc
-  | CUOp    : ('a, 'b) unop * 'a ty cexpr -> 'b ty cexpr_desc
-  | CApp    : ('a, 'b) tagged_ident * 'a cexpr_list * bool ty cexpr -> 'b cexpr_desc
+  | CBOp   : ('a, 'b) binop * 'a ty cexpr * 'a ty cexpr -> 'b ty cexpr_desc
+  | CUOp   : ('a, 'b) unop * 'a ty cexpr -> 'b ty cexpr_desc
+  | CApp   : ('a, 'b) tagged_ident * 'a cexpr_list * bool ty cexpr -> 'b cexpr_desc
   | CWhen  : 'a ty cexpr * ident * 'b ty var_ident -> 'a ty cexpr_desc
   | CMerge : ident * (ident * 'a ty cexpr) list -> 'a ty cexpr_desc
 

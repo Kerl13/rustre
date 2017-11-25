@@ -30,12 +30,12 @@
 %}
 
 
-%token <string> STRING
+%token <string> IDENT DCIDENT
 %token <bool> CONST_BOOL
 %token <int> CONST_INT
 %token <float> CONST_REAL
 
-%token BOOL INT REAL
+%token BOOL INT REAL TYPE
 
 %token PLUS MINUS STAR SLASH MOD
 %token LT LE GT GE
@@ -86,7 +86,8 @@
 | x = X COMMA xs = separated_nonempty_list(COMMA, X)  { x :: xs }
 
 
-ident: s = STRING  { s }
+ident:    s = IDENT    { s }
+dcident : s = DCIDENT  { s }
 
 
 typ:
@@ -95,7 +96,14 @@ typ:
 | REAL   { TyReal }
 
 
-file: nodes = list(node) EOF  { nodes }
+file:
+  typedefs = list(typedef) nodes = list(node) EOF
+  {{ f_typedefs = typedefs; f_nodes = nodes }}
+
+
+typedef:
+  TYPE t = ident EQUAL dcs = separated_nonempty_list(PLUS, dcident)
+  { t, dcs }
 
 
 node:

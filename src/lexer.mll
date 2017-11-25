@@ -31,7 +31,12 @@
         "with", WITH;
       ];
     fun s ->
-      try Hashtbl.find h s with Not_found -> STRING s
+      try Hashtbl.find h s with Not_found -> IDENT s
+
+  let dc = function
+    | "True" -> CONST_BOOL true
+    | "False" -> CONST_BOOL false
+    | s -> DCIDENT s
 
   let newline lexbuf =
     let pos = lexbuf.lex_curr_p in
@@ -39,13 +44,17 @@
       { pos with pos_lnum = pos.pos_lnum + 1; pos_bol = pos.pos_cnum }
 }
 
-let alpha = ['a'-'z' 'A'-'Z']
+let lowercase = ['a'-'z']
+let uppercase = ['A'-'Z']
+let alpha = lowercase | uppercase
 let digit = ['0'-'9']
 let exponent = ('e' | 'E') ('+' | '-')? digit+
 let float = digit+ '.' digit* exponent?
           | digit* '.'digit+ exponent?
           | digit+ exponent
-let ident = alpha (alpha | '_' | digit)*
+let ident = lowercase (alpha | '_' | digit)*
+let dcident = uppercase (alpha | '_' | digit)*
+(** Identifiers starting with an uppercase letter are data constructors *)
 
 rule token = parse
   | '\n'                    { newline lexbuf; token lexbuf }
@@ -53,6 +62,7 @@ rule token = parse
   | "--" [^ '\n']* ['\n']   { newline lexbuf; token lexbuf }
   | "/*"                    { comment lexbuf; token lexbuf }
   | ident                   { id_or_keyword (lexeme lexbuf) }
+  | dcident                 { dc (lexeme lexbuf) }
   | digit+ as n             { CONST_INT (int_of_string n) }
   | float as f              { CONST_REAL (float_of_string f) }
   | "-"                     { MINUS }
