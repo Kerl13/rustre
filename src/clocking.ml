@@ -3,9 +3,7 @@ open Ast_clocked
 module type Clocking = sig
   val clock_file: Ast_typed.file -> Ast_clocked.file
 end
-(*
- * /!\ This is not done yet...
- *)
+
 module W = struct
   (** W algorithm usual stuff ***********************************************)
   module V = struct
@@ -20,6 +18,8 @@ module W = struct
   end
 
   module Vset = Set.Make(V)
+
+  type schema = { vars : Vset.t ; ck : ck }
 
   let rec head = function
     | CVar { id = _ ; def = Some c } -> head c
@@ -49,18 +49,28 @@ module W = struct
       if occur v c2
       then unification_error c1 c2
       else v.def <- Some c2
-    | c1, CVar v -> unify c2 c1
+    | c1, CVar _ -> unify c2 c1
     | _, _ -> unification_error c1 c2
+
+  let rec unify_ct ct1 ct2 = match (ct1, ct2) with
+    | [], [] -> ()
+    | c1 :: ct1, c2 :: ct2 -> unify c1 c2 ; unify_ct ct1 ct2
+    | _ -> assert false
 
   let rec fvars c = match head c with
     | CBase -> Vset.empty
     | COn (c, _, _) -> fvars c
     | CVar v -> Vset.singleton v
 
-  type schema = { vars : Vset.t ; ck : ck }
-
   module Smap = Map.Make(String)
   module Vmap = Map.Make(V)
+
+  let rec subst map c = match head c with
+    | CBase -> CBase
+    | COn (c, dc, x) -> COn (subst map c, dc, x)
+    | CVar v ->
+      let v' = try Vmap.find v map with Not_found -> v in
+      CVar v'
 
   (** Environment mapping variables to clocks *)
   module Env = struct
@@ -75,13 +85,6 @@ module W = struct
       fvars = Vset.union (fvars c.ck) env.fvars
     }
 
-    let rec subst map c = match head c with
-      | CBase -> CBase
-      | COn (c, dc, x) -> COn (subst map c, dc, x)
-      | CVar v ->
-        let v' = try Vmap.find v map with Not_found -> v in
-        CVar v'
-
     let refresh schema =
       let fv = Vset.filter (fun v -> v.def = None) schema.vars in
       let map = Vset.fold (fun v -> Vmap.add v (V.create ())) fv Vmap.empty in
@@ -94,33 +97,142 @@ module W = struct
 
   (** Environment mapping nodes to clocks *)
   module NodeEnv = struct
-    type t = (ct * ct) Smap.t
+    exception Env_not_found of string
+    type t = (Vset.t * ct * ct) Smap.t
 
     let empty : t = Smap.empty
 
-    let add x in_ct out_ct (env : t) = Smap.add x (in_ct, out_ct) env
+    let add x in_ct out_ct (env : t) =
+      let add_fv sch (vars, ct) =
+        let fv = Vset.filter (fun v -> v.def = None) sch.vars in
+        let vars = Vset.union vars fv in
+        (vars, sch.ck :: ct)
+      in
+      let vars, in_ct = List.fold_right add_fv in_ct (Vset.empty, []) in
+      let vars, out_ct = List.fold_right add_fv out_ct (vars, []) in
+      Smap.add x (vars, in_ct, out_ct) env
+
+    let refresh (vars, in_ct, out_ct) =
+      let fv = Vset.filter (fun v -> v.def = None) vars in
+      let map = Vset.fold (fun v -> Vmap.add v (V.create ())) fv Vmap.empty in
+      fv, List.map (subst map) in_ct, List.map (subst map) out_ct
+
+    let find x env =
+      try refresh (Smap.find x env)
+      with Not_found -> raise (Env_not_found x)
   end
 
   (* Clock inferrence *****************************************************)
-    (*
-  let rec var_list_fold : type a b. (a -> b Ast_typed.var_ident -> a) -> a -> b Ast_typed.var_list -> a
-    = fun f acc v_list -> match v_list with
-      | Ast_typed.VIdent (x, _) -> f acc x
-      | Ast_typed.VEmpty -> acc
-      | Ast_typed.VTuple (x, _, v_list) -> var_list_fold f (f acc x) v_list
-*)
-  let clock_node_desc node_env node_desc =
-    let env = assert false in
-    env
 
-  let ct_from_varlist env v_list =
-    Ast_typed_utils.var_list_fold (fun ct x -> (Env.find x env).ck :: ct) [] v_list
+  exception ArityException of Ast_typed.location * ct
+  let arity_exception loc ct = raise (ArityException (loc, List.map canon ct))
+
+  let rec cts_from_expr_list : type a. ct list -> a cexpr_list -> ct list
+    = fun cts es -> match es with
+    | CLNil -> cts
+    | CLSing e -> e.texpr_clock :: cts
+    | CLCons (e, es) -> cts_from_expr_list (e.texpr_clock :: cts) es
+  let cts_from_expr_list es = cts_from_expr_list [] es
+
+  let rec clock_expr : type a. NodeEnv.t -> Env.t -> a Ast_typed.expr -> a cexpr
+    = fun node_env env expr ->
+      let (desc : a cexpr_desc), ct =
+        begin match expr.Ast_typed.texpr_desc with
+        | Ast_typed.EConst c -> CConst c, [CBase]
+        | Ast_typed.EIdent x -> CIdent x, [(Env.find x env).ck]
+        | Ast_typed.EFby (c, e) ->
+          let e = clock_expr node_env env e in
+          unify_ct [CBase] e.texpr_clock ;
+          CFby (c, e), [CBase]
+        | Ast_typed.EBOp (op, e1, e2) ->
+          let e1 = clock_expr node_env env e1 in
+          let e2 = clock_expr node_env env e2 in
+          unify_ct e1.texpr_clock e2.texpr_clock ;
+          CBOp (op, e1, e2), e1.texpr_clock
+        | Ast_typed.EUOp (op, e) ->
+          let e = clock_expr node_env env e in
+          CUOp (op, e), e.texpr_clock
+        | Ast_typed.EApp (f, arg, every) ->
+          let Ast_typed.Tagged (_, _, f_id) = f in
+          let _, ct1, ct2 = NodeEnv.find f_id node_env in
+          let arg = clock_expr_list node_env env arg in
+          let cts = cts_from_expr_list arg in
+          List.iter2 unify_ct (List.map (fun c -> [c]) ct1) cts;
+          let every = clock_expr node_env env every in
+          (* FIXME: what should the clock of [every] be? *)
+          CApp (f, arg, every), ct2
+        | Ast_typed.EWhen (e, c, x) ->
+          let e = clock_expr node_env env e in
+          let ck = match e.texpr_clock with
+            | [ck] -> ck
+            | ct -> arity_exception e.texpr_loc ct
+          in
+          CWhen (e, c, x), [COn (ck, c, x)]
+        | Ast_typed.EMerge (x, cases) ->
+          assert false
+        end in
+    { texpr_desc = desc ;
+      texpr_type = expr.Ast_typed.texpr_type ;
+      texpr_clock = ct ;
+      texpr_loc = expr.Ast_typed.texpr_loc }
+
+  and clock_expr_list : type a. NodeEnv.t -> Env.t -> a Ast_typed.expr_list -> a cexpr_list
+    = fun node_env env -> function
+    | Ast_typed.ELNil -> CLNil
+    | Ast_typed.ELSing e -> CLSing (clock_expr node_env env e)
+    | Ast_typed.ELCons (e, es) ->
+      let e = clock_expr node_env env e in
+      let es = clock_expr_list node_env env es in
+      CLCons (e, es)
+
+  let clock_equation node_env env eq clocked_eqs =
+    let Ast_typed.Equ (pat, expr) = eq in
+    let expr = clock_expr node_env env expr in
+    let unify_ct ct x = match ct with
+      | ck :: ct ->
+        unify ck (Env.find x env).ck ;
+        ct
+      | _ -> assert false (* should not happen *)
+    in
+    let _ = Ast_typed_utils.var_list_fold unify_ct expr.texpr_clock pat.Ast_typed.pat_desc in
+    Equ (pat, expr) :: clocked_eqs
+
+  let clock_equations node_env env eqs =
+    List.fold_right (clock_equation node_env env) eqs []
+
+  let schs_from_varlist env v_list =
+    Ast_typed_utils.var_list_fold (fun ct x -> Env.find x env :: ct) [] v_list
+
+  let env_from_varlist env v_list =
+    Ast_typed_utils.var_list_fold
+      (fun env x -> Env.add x { vars = Vset.empty ; ck = CVar (V.create ()) } env)
+      env
+      v_list
 
   let clock_node (node_env, clocked_nodes) (Ast_typed.Node n) =
-    let env, clocked_node = clock_node_desc node_env n in
-    let in_clocks = ct_from_varlist env n.Ast_typed.n_input in
-    let out_clocks = ct_from_varlist env n.Ast_typed.n_output in
     let Ast_typed.Tagged (_, _, node_name) = n.Ast_typed.n_name in
+    let Ast_typed.NodeLocal locals = n.Ast_typed.n_local in
+    let inputs = n.Ast_typed.n_input in
+    let outputs = n.Ast_typed.n_output in
+    let loc = n.Ast_typed.n_loc in
+
+    let env = Env.empty in
+    let env = env_from_varlist env inputs in
+    let env = env_from_varlist env locals in
+    let env = env_from_varlist env outputs in
+
+    let clocked_eqs = clock_equations node_env env n.Ast_typed.n_eqs in
+    let clocked_node = Node {
+      n_name = n.Ast_typed.n_name ;
+      n_input = inputs ;
+      n_output = outputs ;
+      n_local = n.Ast_typed.n_local ;
+      n_eqs = clocked_eqs ;
+      n_loc = loc
+    } in
+
+    let in_clocks = schs_from_varlist env inputs in
+    let out_clocks = schs_from_varlist env outputs in
     let node_env = NodeEnv.add node_name in_clocks out_clocks node_env in
     node_env, clocked_node :: clocked_nodes
 
@@ -187,16 +299,6 @@ function
     (* To create H_r (not instantiated yet *)
     let _ = List.map (fun x -> Hashtbl.add env x None) var_local in
     env
-
-  (** TODO: something more involved **)
-  let clock_compatible (c1:ct) (c2: ct) = (c1 = c2)
-
-  let is_compatible (env:env) (s:Ast_parsing.ident) (cl:ct) : bool =
-    let current_val = Hashtbl.find env s in
-    match current_val with
-    | None -> Hashtbl.replace env s (Some cl); true
-    | Some sc -> clock_compatible sc cl
-
 
   let clock_node_desc : type a b. (a, b) Ast_typed.node_desc -> (a, b) Ast_clocked.node_desc = fun node ->
     let n_name = node.Ast_typed.n_name
