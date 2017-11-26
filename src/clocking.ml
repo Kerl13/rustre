@@ -79,7 +79,7 @@ module W = struct
     }
 
     let reset_exprs (env : t) = { env with bindings_expr = Smap.empty }
-    let get_exprs (env : t) = env.bindings_expr
+    let get_exprs (env : t) = Smap.map canon env.bindings_expr
 
     let add_expr x ck (env : t) = {
       bindings_expr = Smap.add x ck env.bindings_expr ;
@@ -209,6 +209,7 @@ module W = struct
 
   let clock_node (env, clocked_nodes) (Ast_typed.Node n) =
     let Ast_typed.Tagged (_, _, node_name) = n.Ast_typed.n_name in
+    Format.printf "Clocking %s…@." node_name;
     let Ast_typed.NodeLocal locals = n.Ast_typed.n_local in
     let inputs = n.Ast_typed.n_input in
     let outputs = n.Ast_typed.n_output in
@@ -232,8 +233,8 @@ module W = struct
 
     let in_clocks = ct_from_varlist env inputs in
     let out_clocks = ct_from_varlist env outputs in
-    let node_env = Env.add_node node_name in_clocks out_clocks env in
-    node_env, clocked_node :: clocked_nodes
+    let env = Env.add_node node_name in_clocks out_clocks env in
+    env, clocked_node :: clocked_nodes
 
   let clock_file file =
     let (_, file) = List.fold_left clock_node (Env.empty, []) file in

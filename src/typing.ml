@@ -324,6 +324,7 @@ let do_typing_node (env:file) (node:Ast_parsing.node) =
 
 let do_typing f =
   List.fold_left do_typing_node [] f
+  |> List.rev
 
 (* FIXME *)
 let do_typing f = do_typing f.Ast_parsing.f_nodes
