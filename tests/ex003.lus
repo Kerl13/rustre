@@ -4,7 +4,7 @@ n1 = if x then 0 else 1;
 n2 = if x then 1 else 0;
   a = n1 + n2
 
-node check2 (x: bool) = (OK: bool)
+node check2 (x: bool) = (ok: bool)
 with var n1, n2: int; b: bool in
   (n1, n2) = check(x);
-  OK = (n1 + 1) = n2
+  ok = (n1 + 1) = n2

@@ -177,11 +177,11 @@ let pp_ty: type a. 'b -> a ty -> unit = fun ppf -> function
   | TyEnum (name, _) -> fprintf ppf "%s" name
 
 let rec pp_compl_ty: type a. 'b -> a compl_ty -> unit = fun ppf l ->
-match l with
-| TySing a -> pp_ty ppf a
-| TyNil -> fprintf ppf "nil"
-| TyPair (a,b) ->
-fprintf ppf "%a, %a" pp_ty a pp_compl_ty b
+  match l with
+  | TySing a -> pp_ty ppf a
+  | TyNil -> fprintf ppf "nil"
+  | TyPair (a,b) ->
+    fprintf ppf "%a, %a" pp_ty a pp_compl_ty b
 
 let pp_expr: type a. 'c -> a expr -> unit =
   let rec pp: type a. 'd -> a expr -> unit = fun ppf e -> fprintf ppf "%a:%a" pp_desc e.texpr_desc pp_compl_ty e.texpr_type
