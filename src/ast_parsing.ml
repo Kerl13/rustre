@@ -85,12 +85,9 @@ and pattern_desc =
  * Pretty printer
  **)
 
-let fprintf = Format.fprintf
 
-let rec pp_list sep pp ppf = function
-  | [] -> fprintf ppf ""
-  | [x] -> fprintf ppf "%a" pp x
-  | x :: xs -> fprintf ppf "%a%s%a" pp x sep (pp_list sep pp) xs
+let fprintf = Format.fprintf
+let pp_list = Misc.pp_list
 
 let pp_const ppf = function
   | CNil -> fprintf ppf "nil"

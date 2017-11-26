@@ -48,7 +48,9 @@ let () =
     Format.printf "Typing…@.";
     let typed = Typing.do_typing file in
     Format.printf "%a@.ok@." Ast_typed.pp_file typed;
+    Format.printf "Clocking…@.";
     let clocked = Clocking.clock_file typed in
+    Format.printf "%a\nok@." Ast_clocked.pp_clocks_file clocked;
     let normalized = Normalization.normalize_file clocked in
     let obc = Object.from_normalized normalized in
     Format.printf "Object:@.%a@." Ast_object.pp_file obc;
