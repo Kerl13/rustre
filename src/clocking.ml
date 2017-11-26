@@ -19,8 +19,6 @@ module W = struct
 
   module Vset = Set.Make(V)
 
-  type schema = { vars : Vset.t ; ck : ck }
-
   let rec head = function
     | CVar { id = _ ; def = Some c } -> head c
     | c -> c
@@ -62,7 +60,6 @@ module W = struct
     | COn (c, _, _) -> fvars c
     | CVar v -> Vset.singleton v
 
-  module Smap = Map.Make(String)
   module Vmap = Map.Make(V)
 
   module Env = struct
@@ -70,7 +67,7 @@ module W = struct
     exception Node_not_found of string
 
     type t = {
-      bindings_expr : schema Smap.t ;
+      bindings_expr : ck Smap.t ;
       bindings_node : (Vset.t * ct * ct) Smap.t ;
       fvars : Vset.t
     }
@@ -81,17 +78,19 @@ module W = struct
       fvars = Vset.empty
     }
 
-    let add_expr x c (env : t) = {
-      bindings_expr = Smap.add x c env.bindings_expr ;
+    let reset_exprs (env : t) = { env with bindings_expr = Smap.empty }
+    let get_exprs (env : t) = env.bindings_expr
+
+    let add_expr x ck (env : t) = {
+      bindings_expr = Smap.add x ck env.bindings_expr ;
       bindings_node = env.bindings_node ;
-      fvars = Vset.union (fvars c.ck) env.fvars
+      fvars = Vset.union (fvars ck) env.fvars
     }
 
     let add_node x in_ct out_ct (env : t) =
-      let add_fv sch (vars, ct) =
-        let fv = Vset.filter (fun v -> v.def = None) sch.vars in
-        let vars = Vset.union vars fv in
-        (vars, sch.ck :: ct)
+      let add_fv ck (vars, ct) =
+        let vars = Vset.union vars (fvars ck) in
+        (vars, ck :: ct)
       in
       let vars, in_ct = List.fold_right add_fv in_ct (Vset.empty, []) in
       let vars, out_ct = List.fold_right add_fv out_ct (vars, []) in
@@ -107,13 +106,8 @@ module W = struct
       let v' = try Vmap.find v map with Not_found -> v in
       CVar v'
 
-    let refresh_expr schema =
-      let fv = Vset.filter (fun v -> v.def = None) schema.vars in
-      let map = Vset.fold (fun v -> Vmap.add v (V.create ())) fv Vmap.empty in
-      { vars = fv ; ck = subst map schema.ck }
-
     let find_expr x (env : t) =
-      try refresh_expr (Smap.find x env.bindings_expr)
+      try Smap.find x env.bindings_expr
       with Not_found -> raise (Expr_not_found x)
 
     let refresh_node (vars, in_ct, out_ct) =
@@ -143,7 +137,7 @@ module W = struct
       let (desc : a cexpr_desc), ct =
         begin match expr.Ast_typed.texpr_desc with
         | Ast_typed.EConst c -> CConst c, [CBase]
-        | Ast_typed.EIdent x -> CIdent x, [(Env.find_expr x env).ck]
+        | Ast_typed.EIdent x -> CIdent x, [Env.find_expr x env]
         | Ast_typed.EFby (c, e) ->
           let e = clock_expr env e in
           unify_ct [CBase] e.texpr_clock ;
@@ -194,7 +188,7 @@ module W = struct
     let expr = clock_expr env expr in
     let unify_ct ct x = match ct with
       | ck :: ct ->
-        unify ck (Env.find_expr x env).ck ;
+        unify ck (Env.find_expr x env) ;
         ct
       | _ -> assert false (* should not happen *)
     in
@@ -204,12 +198,12 @@ module W = struct
   let clock_equations env eqs =
     List.fold_right (clock_equation env) eqs []
 
-  let schs_from_varlist env v_list =
+  let ct_from_varlist env v_list =
     Ast_typed_utils.var_list_fold (fun ct x -> Env.find_expr x env :: ct) [] v_list
 
   let env_from_varlist env v_list =
     Ast_typed_utils.var_list_fold
-      (fun env x -> Env.add_expr x { vars = Vset.empty ; ck = CVar (V.create ()) } env)
+      (fun env x -> Env.add_expr x (CVar (V.create ())) env)
       env
       v_list
 
@@ -220,6 +214,7 @@ module W = struct
     let outputs = n.Ast_typed.n_output in
     let loc = n.Ast_typed.n_loc in
 
+    let env = Env.reset_exprs env in
     let env = env_from_varlist env inputs in
     let env = env_from_varlist env locals in
     let env = env_from_varlist env outputs in
@@ -231,11 +226,12 @@ module W = struct
       n_output = outputs ;
       n_local = n.Ast_typed.n_local ;
       n_eqs = clocked_eqs ;
-      n_loc = loc
+      n_loc = loc ;
+      n_clocks = Env.get_exprs env
     } in
 
-    let in_clocks = schs_from_varlist env inputs in
-    let out_clocks = schs_from_varlist env outputs in
+    let in_clocks = ct_from_varlist env inputs in
+    let out_clocks = ct_from_varlist env outputs in
     let node_env = Env.add_node node_name in_clocks out_clocks env in
     node_env, clocked_node :: clocked_nodes
 
@@ -311,8 +307,18 @@ function
     and n_loc = node.Ast_typed.n_loc in
 
     let c_env = create_base_env node in
+    let get = function
+      | Some [ck] -> ck
+      | _ -> CBase
+    in
+    let map = Hashtbl.fold (fun x c map -> Smap.add x (get c) map) c_env Smap.empty in
     let n_eqs = List.map (clock_eq c_env) node.Ast_typed.n_eqs in
-    { n_name=n_name; n_input=n_input; n_output=n_output; n_local=n_local; n_loc=n_loc; n_eqs=n_eqs }
+    { n_name = n_name;
+      n_input = n_input;
+      n_output = n_output;
+      n_local = n_local;
+      n_clocks = map ;
+      n_loc = n_loc; n_eqs = n_eqs }
 
   let clock_node (Ast_typed.Node e:Ast_typed.node) : node =
     Node (clock_node_desc e)
