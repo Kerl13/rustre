@@ -209,7 +209,6 @@ module W = struct
 
   let clock_node (env, clocked_nodes) (Ast_typed.Node n) =
     let Ast_typed.Tagged (_, _, node_name) = n.Ast_typed.n_name in
-    Format.printf "Clocking %s…@." node_name;
     let Ast_typed.NodeLocal locals = n.Ast_typed.n_local in
     let inputs = n.Ast_typed.n_input in
     let outputs = n.Ast_typed.n_output in
