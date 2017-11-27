@@ -18,7 +18,6 @@ let ty_to_typed_ty = function
   | Ast_parsing.TyReal -> TypedTy (TyNum TyReal)
   | Ast_parsing.TyEnum (name, dcs) -> TypedTy (TyEnum (name, dcs))
 
-exception Bad_type
 exception Expected_num of location
 exception Node_undefined of string * location
 exception Empty_merge
