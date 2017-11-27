@@ -164,11 +164,13 @@ module W = struct
           CApp (f, arg, every), ct2
         | Ast_typed.EWhen (e, c, x) ->
           let e = clock_expr env e in
-          let ck = match e.texpr_clock with
-            | [ck] -> ck
+          let ck_e = match e.texpr_clock with
+            | [ck_e] -> ck_e
             | ct -> arity_exception e.texpr_loc ct
           in
-          CWhen (e, c, x), [COn (ck, c, x)]
+          let ck_x = Env.find_expr x env in
+          unify ck_e ck_x;
+          CWhen (e, c, x), [COn (ck_e, c, x)]
         | Ast_typed.EMerge (x, cases) ->
           let ck = Env.find_expr x env in
           let cases = clock_match_cases ck x env cases in
