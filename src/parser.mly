@@ -5,6 +5,9 @@
   let dummy_loc e pos = { expr_desc = e ; expr_loc = (pos, pos) }
   let pat_descs patterns = List.map (fun p -> p.pat_desc) patterns
 
+  (* Type definitions *)
+  let data_constructors = Hashtbl.create 17
+
   (** Syntactic sugar *)
 
   let mk_false_at pos = dummy_loc (EConst (CBool false)) pos
@@ -94,9 +97,10 @@ dcident_or_boolean:
 
 
 typ:
-| BOOL   { TyBool }
-| INT    { TyInt }
-| REAL   { TyReal }
+| BOOL       { TyBool }
+| INT        { TyInt }
+| REAL       { TyReal }
+| t = ident  { TyEnum (t, Hashtbl.find data_constructors t) }
 
 
 file:
@@ -106,7 +110,7 @@ file:
 
 typedef:
   TYPE t = ident EQUAL dcs = separated_nonempty_list(PLUS, dcident)
-  { t, dcs }
+  { Hashtbl.add data_constructors t dcs ; (t, dcs) }
 
 
 node:
@@ -196,3 +200,4 @@ const:
 | b = CONST_BOOL  { CBool b }
 | n = CONST_INT   { CInt n }
 | f = CONST_REAL  { CReal f }
+| dc = dcident    { CDataCons dc }

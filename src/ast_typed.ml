@@ -73,6 +73,7 @@ type _ const =
   | CBool : bool -> bool const
   | CInt  : int -> int num_ty const
   | CReal : float -> float num_ty const
+  | CDataCons : ident -> enum const
 
 (**
  * Expressions
@@ -108,7 +109,10 @@ type 'a pattern = {
 and 'a pattern_desc = 'a var_list
 
 
-type file = node list
+type file = {
+  tf_typedefs : (ident * ident list) list ;
+  tf_nodes : node list
+}
 
 and node = Node: ('a, 'b) node_desc -> node
 
@@ -136,17 +140,15 @@ and equation = Equ: 'a pattern * 'a expr -> equation
  **)
 
 let fprintf = Format.fprintf
-
-let rec pp_list sep pp ppf = function
-  | [] -> fprintf ppf ""
-  | [x] -> fprintf ppf "%a" pp x
-  | x :: xs -> fprintf ppf "%a%s%a" pp x sep (pp_list sep pp) xs
+let pp_list = Misc.pp_list
+let pp_string = Misc.pp_string
 
 let pp_const: type a. 'b -> a const -> unit = fun ppf -> function
   | CNil -> fprintf ppf "nil"
   | CInt n -> fprintf ppf "%d" n
   | CReal f -> fprintf ppf "%f" f
   | CBool b -> fprintf ppf "%B" b
+  | CDataCons dc -> fprintf ppf "%s" dc
 
 let pp_bop: type a b. 'c -> (a, b) binop -> unit = fun ppf -> function
   | OpAdd -> fprintf ppf "+"
@@ -225,4 +227,6 @@ let pp_node ppf (Node n) =
     pp_vl n_local
     (pp_list ";\n" pp_equation) n.n_eqs
 
-let pp_file ppf f = fprintf ppf "%a" (pp_list "\n\n" pp_node) f
+let pp_file fmt f =
+  fprintf fmt "%a\n\n" (pp_list "\n" Ast_parsing.pp_typedef) f.tf_typedefs ;
+  fprintf fmt "%a" (pp_list "\n\n" pp_node) f.tf_nodes

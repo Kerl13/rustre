@@ -32,6 +32,7 @@ type const =
   | CInt of int
   | CReal of float
   | CBool of bool
+  | CDataCons of ident
 
 (** Expressions *)
 type expr = {
@@ -88,12 +89,14 @@ and pattern_desc =
 
 let fprintf = Format.fprintf
 let pp_list = Misc.pp_list
+let pp_string = Misc.pp_string
 
 let pp_const ppf = function
   | CNil -> fprintf ppf "nil"
   | CInt n -> fprintf ppf "%d" n
   | CReal f -> fprintf ppf "%f" f
   | CBool b -> fprintf ppf "%B" b
+  | CDataCons dc -> fprintf ppf "%s" dc
 
 let pp_op ppf = function
   | OpAdd -> fprintf ppf "+"
@@ -152,9 +155,11 @@ let pp_node ppf n =
     (pp_list "; " pp_arg) n.n_local
     (pp_list ";\n" pp_equation) n.n_eqs
 
+let pp_typedef fmt (ty_name, enum) =
+  fprintf fmt "type %s = %a" ty_name (pp_list " + " pp_string) enum
+
+
 let pp_file ppf f =
-  let pp_typedef ppf (name, enum) =
-    fprintf ppf "%s ::= " name;
-    fprintf ppf "%a" (pp_list " + " (fun ppf -> fprintf ppf "%s")) enum in
-  fprintf ppf "%a" (pp_list "\n\n" pp_typedef) f.f_typedefs;
+  fprintf ppf "%a" (pp_list "\n" pp_typedef) f.f_typedefs;
+  fprintf ppf "\n\n";
   fprintf ppf "%a" (pp_list "\n\n" pp_node) f.f_nodes

@@ -260,6 +260,9 @@ module W = struct
   let clock_file file =
     let (_, file) = List.fold_left clock_node (Env.empty, []) file in
     List.rev file
+  let clock_file file =
+    (* FIXME *)
+    clock_file file.Ast_typed.tf_nodes
 end
 
 module Stupid = struct
@@ -347,5 +350,5 @@ function
 
 
 
-  let clock_file (f:Ast_typed.file) : file = List.map clock_node f
+  let clock_file (f:Ast_typed.file) : file = List.map clock_node f.Ast_typed.tf_nodes
 end

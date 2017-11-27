@@ -26,6 +26,7 @@
         "real", REAL;
         "then", THEN;
         "true", CONST_BOOL(true);
+        "type", TYPE;
         "var", VAR;
         "when", WHEN;
         "with", WITH;
