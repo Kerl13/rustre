@@ -1,4 +1,3 @@
-exception Bad_type
 exception Expected_num of Ast_parsing.location
 exception Type_error_at of Ast_parsing.location
 type typed_ty_wrapped = TypedTy: 'a Ast_typed.ty -> typed_ty_wrapped
