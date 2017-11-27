@@ -47,7 +47,10 @@ and 'a cexpr_list =
 
 
 (** Programs *)
-type file = node list
+type file = {
+  cf_typedefs : (ident * ident list) list ;
+  cf_nodes : node list
+}
 
 and node = Node: ('a, 'b) node_desc -> node
 
@@ -91,4 +94,4 @@ let pp_clocks_node fmt (Node n : node) =
   fprintf fmt "%a" pp_vl n.n_output
 
 let pp_clocks_file fmt file =
-  fprintf fmt "%a" (pp_list "\n\n" pp_clocks_node) file
+  fprintf fmt "%a" (pp_list "\n\n" pp_clocks_node) file.cf_nodes

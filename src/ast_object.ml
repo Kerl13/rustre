@@ -48,7 +48,10 @@ type machine = {
   step: var_list * var_list * var_list * ostatement; (* in, tmp var, out *)
 }
 
-type file = machine list
+type file = {
+  objf_typedefs : (Ast_typed.ident * Ast_typed.ident list) list ;
+  objf_machines : machine list
+}
 
 
 
@@ -120,4 +123,4 @@ let pp_machine ppf m =
     (pp_list ", " (fun ppf (s, Sty ty) -> fprintf ppf "%s:%a" s pp_ty ty)) var_tmp
     pp_ostatement stmt
 
-let pp_file = pp_list "" pp_machine
+let pp_file fmt file = pp_list "" pp_machine fmt file.objf_machines

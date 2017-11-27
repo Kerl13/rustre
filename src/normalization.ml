@@ -271,4 +271,7 @@ let normalize_node (Ast_clocked.Node desc) =
     }
 
 
-let normalize_file = List.map normalize_node
+let normalize_file (file : Ast_clocked.file) : Ast_normalized.nfile =
+  let open Ast_normalized in
+  let nodes = List.map normalize_node file.Ast_clocked.cf_nodes in
+  { nf_typedefs = file.Ast_clocked.cf_typedefs ; nf_nodes = nodes }

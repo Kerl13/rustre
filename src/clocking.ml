@@ -31,6 +31,8 @@ module W = struct
 
   exception ClockUnificationError of ck * ck
   let unification_error c1 c2 = raise (ClockUnificationError (canon c1, canon c2))
+  exception ArityException of location * ct
+  let arity_exception loc ct = raise (ArityException (loc, List.map canon ct))
 
   let rec occur v c = match head c with
     | CBase -> false
@@ -123,11 +125,6 @@ module W = struct
 
   (* Clock inferrence *****************************************************)
 
-  exception ArityException of location * ct
-  let arity_exception loc ct = raise (ArityException (loc, List.map canon ct))
-  exception IllClocked of location * ct * ct
-  let ill_clocked loc expected inferred = raise (IllClocked (loc, expected, inferred))
-
   let rec cts_from_expr_list : type a. ct list -> a cexpr_list -> ct list
     = fun cts es -> match es with
     | CLNil -> cts
@@ -160,8 +157,7 @@ module W = struct
           let cts = cts_from_expr_list arg in
           List.iter2 unify_ct (List.map (fun c -> [c]) ct1) cts;
           let every = clock_expr env every in
-          if every.texpr_clock <> [CBase] then
-            ill_clocked every.texpr_loc [CBase] every.texpr_clock;
+          unify_ct every.texpr_clock [CBase];
           CApp (f, arg, every), ct2
         | Ast_typed.EWhen (e, c, x) ->
           let e = clock_expr env e in
@@ -259,11 +255,8 @@ module W = struct
     env, clocked_node :: clocked_nodes
 
   let clock_file file =
-    let (_, file) = List.fold_left clock_node (Env.empty, []) file in
-    List.rev file
-  let clock_file file =
-    (* FIXME *)
-    clock_file file.Ast_typed.tf_nodes
+    let (_, nodes) = List.fold_left clock_node (Env.empty, []) file.Ast_typed.tf_nodes in
+    { cf_typedefs = file.Ast_typed.tf_typedefs ; cf_nodes = List.rev nodes }
 end
 
 module Stupid = struct
@@ -349,7 +342,8 @@ function
   let clock_node (Ast_typed.Node e:Ast_typed.node) : node =
     Node (clock_node_desc e)
 
-
-
-  let clock_file (f:Ast_typed.file) : file = List.map clock_node f.Ast_typed.tf_nodes
+  let clock_file (f:Ast_typed.file) : file = {
+    cf_typedefs = f.Ast_typed.tf_typedefs ;
+    cf_nodes = List.map clock_node f.Ast_typed.tf_nodes
+  }
 end

@@ -103,4 +103,5 @@ let obc_node (NNode desc) =
            step; }
 
 let from_normalized file =
-  List.map obc_node file
+  let machines = List.map obc_node file.Ast_normalized.nf_nodes in
+  { objf_typedefs = file.Ast_normalized.nf_typedefs ; objf_machines = machines }

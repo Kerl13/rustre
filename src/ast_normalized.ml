@@ -49,7 +49,10 @@ and 'a nexpr_merge = {
 
 
 (** Programs *)
-type nfile = nnode list
+type nfile = {
+  nf_typedefs : (ident * ident list) list ;
+  nf_nodes : nnode list
+}
 
 and nnode = NNode: ('a, 'b) nnode_desc -> nnode
 
