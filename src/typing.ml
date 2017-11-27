@@ -34,13 +34,13 @@ let do_typing_const: type a. a ty -> location -> Ast_parsing.const -> a const = 
    | Ast_parsing.CInt a -> (match ty with
        | TyNum TyZ -> CInt a
        | TyNum TyReal -> CReal (float_of_int a)
-       | _ -> raise Bad_type)
+       | _ -> raise (Expected_type(TypedTy (TyNum TyZ), TypedTy(ty), loc)))
    | Ast_parsing.CReal a -> (match ty with
        | TyNum TyReal -> CReal a
        | _ -> raise (Expected_type(TypedTy (TyNum TyReal), TypedTy(ty), loc)))
    | Ast_parsing.CBool a ->  (match ty with
        | TyBool -> CBool a
-       | _ -> raise Bad_type))
+       | _ -> raise (Expected_type(TypedTy TyBool, TypedTy(ty), loc))))
 
 let op_to_ty_op = function
   | Ast_parsing.OpAdd -> OpAdd
@@ -284,6 +284,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
 
 
 let do_typing_equation env file eq =
+  let loc = eq.Ast_parsing.eq_pat.Ast_parsing.pat_loc in
   let pat_desc_to_var_list = function
     | Ast_parsing.PIdent v ->
       let Var(id, ty) = VarMap.find v env in
@@ -296,8 +297,8 @@ let do_typing_equation env file eq =
           | Ast_parsing.PIdent v ->
             let Var(id, ty) = VarMap.find v env in
             VarList (VTuple(id, ty, vl))
-          | _ -> raise Bad_type) v q
-    | _ -> raise Bad_type in
+          | _ -> raise (Type_error_at loc)) v q
+    | _ -> raise (Type_error_at loc) in
 
   let VarList var_list = pat_desc_to_var_list eq.Ast_parsing.eq_pat.Ast_parsing.pat_desc in
   Equ ({ pat_desc = var_list; pat_loc = eq.Ast_parsing.eq_pat.Ast_parsing.pat_loc; }, do_typing_expr env file var_list eq.Ast_parsing.eq_expr)
