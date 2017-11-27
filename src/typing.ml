@@ -25,6 +25,7 @@ exception Empty_merge
 exception Redundant_merge of location * ident
 exception Non_exhaustive_merge of location
 exception Expected_type of typed_ty_wrapped * typed_ty_wrapped * location
+exception Type_error_at of location
 
 
 let do_typing_const: type a. a ty -> location -> Ast_parsing.const -> a const = fun ty loc a ->
@@ -87,7 +88,7 @@ let rec infer_type_opt: var_env VarMap.t -> file -> Ast_parsing.expr -> typed_ty
      | Ast_parsing.EIdent v ->
        let Var (_, t) = VarMap.find v env in (*XXX: handle Not_found*)
        Some (TypedTy t)
-     | Ast_parsing.ETuple _ -> raise Bad_type
+     | Ast_parsing.ETuple _ -> raise (Type_error_at expr.Ast_parsing.expr_loc)
      | Ast_parsing.EFby (c,e) ->
        (match c with
         | Ast_parsing.CNil -> infer_type_opt env file e
@@ -100,7 +101,7 @@ let rec infer_type_opt: var_env VarMap.t -> file -> Ast_parsing.expr -> typed_ty
                (match infer_type_opt env file a with
                 | Some s -> Some s
                 | None -> infer_type_opt env file b)
-             | _ -> raise Bad_type)
+             | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
          | _ -> Some (TypedTy TyBool))
      | Ast_parsing.EApp (node_name,_,_) ->
        let node = List.find (fun (Node desc) ->
@@ -110,7 +111,7 @@ let rec infer_type_opt: var_env VarMap.t -> file -> Ast_parsing.expr -> typed_ty
        let Tagged(_, out_args, _) = node_desc.n_name in
        (match out_args with
         | VIdent(_, a) -> Some (TypedTy a)
-        | _ -> raise Bad_type)
+        | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
      | Ast_parsing.EWhen (a,_,_) -> infer_type_opt env file a
      | Ast_parsing.EMerge (_,e) ->
        if e = [] then raise Empty_merge
@@ -184,7 +185,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
          if TypedTy var_ty = TypedTy ty then
            let (ty: a compl_ty) = TySing ty in
            EIdent var_name, ty
-         else raise Bad_type
+         else  raise (Type_error_at expr.Ast_parsing.expr_loc)
        | _ -> raise Bad_type)
     | Ast_parsing.ETuple _ ->
       raise Bad_type

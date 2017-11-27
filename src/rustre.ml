@@ -80,6 +80,9 @@ let () =
     let Typing.(TypedTy a, TypedTy b) = a, b in
     Format.eprintf "got %a expected %a at %@." Ast_typed.pp_ty a Ast_typed.pp_ty b;
     report_loc loc
+  | Typing.Type_error_at(loc) ->
+    report_loc loc;
+    Format.eprintf "Type error@."
   | Typing.Expected_num(loc) ->
     Format.eprintf "Expected num at ";
     report_loc loc
