@@ -177,7 +177,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
          let (c: a expr_desc) = EConst c in
          let (ty: a compl_ty) = TySing ty in
          c, ty
-       | _ -> raise Bad_type)
+       | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
     | Ast_parsing.EIdent a ->
       (match ty with
        | VIdent(_, ty) ->
@@ -186,14 +186,14 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
            let (ty: a compl_ty) = TySing ty in
            EIdent var_name, ty
          else  raise (Type_error_at expr.Ast_parsing.expr_loc)
-       | _ -> raise Bad_type)
+       | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
     | Ast_parsing.ETuple _ ->
-      raise Bad_type
+      raise (Type_error_at expr.Ast_parsing.expr_loc)
     | Ast_parsing.EFby (a,b) ->
       (match ty with
        | VIdent(_, ty2) ->
          EFby(do_typing_const ty2 expr.Ast_parsing.expr_loc a, do_typing_expr env file ty b), TySing ty2
-       | _ -> raise Bad_type)
+       | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
     | Ast_parsing.EOp (op, exprs) -> (match op with
         | Ast_parsing.OpAdd | Ast_parsing.OpSub | Ast_parsing.OpMul
         | Ast_parsing.OpDiv | Ast_parsing.OpMod ->
@@ -212,20 +212,20 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
              (match inf_type with
               | Ast_typed.TyNum _ ->
                 binary_expr env file inf_type TyBool (op_to_ty_op_cmp op) exprs, TySing TyBool
-              | _ -> raise Bad_type)
-           | _ -> raise Bad_type)
+              | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
+           | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
         | Ast_parsing.OpEq
         | Ast_parsing.OpNeq ->
           (match ty with
            | VIdent (_, TyBool) ->
              let TypedTy inf_type = infer_type2 env file exprs in
              binary_expr env file inf_type TyBool (op_to_ty_op_eq op) exprs, TySing TyBool
-           | _ -> raise Bad_type)
+           | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
         | Ast_parsing.OpAnd | Ast_parsing.OpOr | Ast_parsing.OpImpl ->
             (match ty with
              | VIdent (_, TyBool) ->
                binary_expr env file TyBool TyBool (op_to_ty_op_bool op) exprs, TySing TyBool
-             | _ -> raise Bad_type)
+             | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
         | Ast_parsing.OpNot ->
             (match ty with
              | VIdent (_, TyBool) ->
@@ -234,7 +234,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
                  | _ -> assert false
                in
                EUOp (OpNot, do_typing_expr env file ty e), TySing TyBool
-             | _ -> raise Bad_type))
+             | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc)))
     | Ast_parsing.EApp (node_name, args, every) ->
       begin
         try
@@ -247,7 +247,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
           let every_expr = do_typing_expr env file (VIdent("", TyBool)) every in
           if varlist_eq out_args ty then
             EApp (Tagged(in_args, ty, node_name), in_expr, every_expr), varlist_to_ty ty
-          else raise Bad_type
+          else raise (Type_error_at expr.Ast_parsing.expr_loc)
         with
         | Not_found -> raise (Node_undefined (node_name, Ast_parsing.(expr.expr_loc)))
       end
@@ -257,7 +257,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
         | VIdent(_, _) ->
           let e = do_typing_expr env file ty e1 in
           EWhen(e, var, constructor), e.texpr_type
-        | _ -> raise Bad_type
+        | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc)
       end
     | Ast_parsing.EMerge (var, id_exprs) ->
       match ty with
@@ -266,19 +266,19 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
         let Var (_, ty_x) = VarMap.find var env in
         let expected_dcs = begin match ty_x with
           | TyBool -> SSet.of_list ["True"; "False"]
-          | _ -> raise Bad_type
+          | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc)
         end in
         let seen_dcs = SSet.empty in
         let seen_dcs, e = List.fold_left (fun (seen, cases) (id, e) ->
             if SSet.mem id seen then raise (Redundant_merge (expr.Ast_parsing.expr_loc, id));
-            if not (SSet.mem id expected_dcs) then raise Bad_type;
+            if not (SSet.mem id expected_dcs) then raise (Type_error_at expr.Ast_parsing.expr_loc);
             (SSet.add id seen), (id, do_typing_expr env file ty e) :: cases
           ) (seen_dcs, []) id_exprs in
         let missing = SSet.diff expected_dcs seen_dcs in
         if not (SSet.is_empty missing) then
           raise (Non_exhaustive_merge expr.Ast_parsing.expr_loc);
         EMerge(var, e), (List.hd e |> snd).texpr_type
-      | _ -> raise Bad_type
+      | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc)
   in
   {texpr_desc = descr; texpr_type = ty; texpr_loc = Ast_parsing.(expr.expr_loc); }
 
