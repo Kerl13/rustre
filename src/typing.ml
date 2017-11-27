@@ -220,17 +220,20 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
              let TypedTy inf_type = infer_type2 env file exprs in
              binary_expr env file inf_type TyBool (op_to_ty_op_eq op) exprs, TySing TyBool
            | _ -> raise Bad_type)
-        | Ast_parsing.OpAnd | Ast_parsing.OpOr | Ast_parsing.OpImpl
+        | Ast_parsing.OpAnd | Ast_parsing.OpOr | Ast_parsing.OpImpl ->
+            (match ty with
+             | VIdent (_, TyBool) ->
+               binary_expr env file TyBool TyBool (op_to_ty_op_bool op) exprs, TySing TyBool
+             | _ -> raise Bad_type)
         | Ast_parsing.OpNot ->
-          (match ty with
-           | VIdent (_, TyBool) ->
-             let e = match exprs with
-               | [e] -> e
-               | _ -> assert false
-             in
-             let e = do_typing_expr env file ty e in
-             EUOp (OpNot, e), TySing TyBool
-           | _ -> raise Bad_type))
+            (match ty with
+             | VIdent (_, TyBool) ->
+               let e = match exprs with
+                 | [e] -> e
+                 | _ -> assert false
+               in
+               EUOp (OpNot, do_typing_expr env file ty e), TySing TyBool
+             | _ -> raise Bad_type))
     | Ast_parsing.EApp (node_name, args, every) ->
       begin
         try
