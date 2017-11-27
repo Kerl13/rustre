@@ -224,7 +224,12 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
         | Ast_parsing.OpNot ->
           (match ty with
            | VIdent (_, TyBool) ->
-             binary_expr env file TyBool TyBool (op_to_ty_op_bool op) exprs, TySing TyBool
+             let e = match exprs with
+               | [e] -> e
+               | _ -> assert false
+             in
+             let e = do_typing_expr env file ty e in
+             EUOp (OpNot, e), TySing TyBool
            | _ -> raise Bad_type))
     | Ast_parsing.EApp (node_name, args, every) ->
       begin
