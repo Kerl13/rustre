@@ -125,7 +125,7 @@ let infer_type: var_env VarMap.t -> file -> Ast_parsing.expr -> typed_ty_wrapped
     | Some s -> s
     | _ -> TypedTy (TyNum TyZ)
 
-let infer_type2 env file e =
+let infer_type2 env loc file e =
   match e with
   | [a; b] ->
     (match infer_type_opt env file a with
@@ -133,10 +133,10 @@ let infer_type2 env file e =
      | None -> match infer_type_opt env file b with
        | None -> TypedTy (TyNum TyZ)
        | Some s -> s)
-  | _ -> raise Bad_type
+  | _ -> raise (Type_error_at loc)
 
-let rec do_typing_tuple: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsing.expr list -> a expr_list =
-  fun env file ty expr ->
+let rec do_typing_tuple: type a. var_env VarMap.t -> location -> file -> a var_list -> Ast_parsing.expr list -> a expr_list =
+  fun env loc file ty expr ->
 
     begin
       match ty with
@@ -144,18 +144,18 @@ let rec do_typing_tuple: type a. var_env VarMap.t -> file -> a var_list -> Ast_p
         begin match expr with
           | [t] ->
             ELSing (do_typing_expr env file (VIdent (var_name, var_ty)) t)
-          | _ -> raise Bad_type
+          | _ -> raise (Type_error_at loc)
         end
       | Ast_typed.VEmpty -> (match expr with
           | [] -> ELNil
-          | _::_ -> raise Bad_type)
+          | _::_ -> raise (Type_error_at loc))
       | Ast_typed.VTuple (var_name, var_ty, b) ->
         begin match expr with
           | t::q ->
             let p1 = do_typing_expr env file (VIdent (var_name, var_ty)) t in
-            let p2 = do_typing_tuple env file b q in
+            let p2 = do_typing_tuple env loc file b q in
             ELCons(p1, p2)
-          | [] -> raise Bad_type
+          | [] -> raise (Type_error_at loc)
         end
     end
 
@@ -218,7 +218,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
         | Ast_parsing.OpNeq ->
           (match ty with
            | VIdent (_, TyBool) ->
-             let TypedTy inf_type = infer_type2 env file exprs in
+             let TypedTy inf_type = infer_type2 env expr.Ast_parsing.expr_loc file exprs in
              binary_expr env file inf_type TyBool (op_to_ty_op_eq op) exprs, TySing TyBool
            | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
         | Ast_parsing.OpAnd | Ast_parsing.OpOr | Ast_parsing.OpImpl ->
@@ -243,7 +243,7 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
               i = node_name) file in
           let Node node_desc = node in
           let Tagged(in_args, out_args, _) = node_desc.n_name in
-          let in_expr = do_typing_tuple env file in_args args in
+          let in_expr = do_typing_tuple env expr.Ast_parsing.expr_loc file in_args args in
           let every_expr = do_typing_expr env file (VIdent("", TyBool)) every in
           if varlist_eq out_args ty then
             EApp (Tagged(in_args, ty, node_name), in_expr, every_expr), varlist_to_ty ty
