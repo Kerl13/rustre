@@ -2,6 +2,8 @@ open Ast_typed
 
 module Smap = Map.Make(String)
 
+type location = Ast_typed.location
+
 (**
  * Clocked and Typed AST
  **)

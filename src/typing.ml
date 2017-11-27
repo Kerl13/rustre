@@ -10,6 +10,8 @@ module VarMap = Map.Make(struct
     let compare = compare
   end)
 
+module SSet = Set.Make(String)
+
 let ty_to_typed_ty = function
   | Ast_parsing.TyBool -> TypedTy TyBool
   | Ast_parsing.TyInt -> TypedTy (TyNum TyZ)
@@ -20,6 +22,8 @@ exception Bad_type
 exception Expected_num of location
 exception Node_undefined of string * location
 exception Empty_merge
+exception Redundant_merge of location * ident
+exception Non_exhaustive_merge of location
 exception Expected_type of typed_ty_wrapped * typed_ty_wrapped * location
 
 
@@ -249,8 +253,21 @@ and do_typing_expr: type a. var_env VarMap.t -> file -> a var_list -> Ast_parsin
     | Ast_parsing.EMerge (var, id_exprs) ->
       match ty with
       | VIdent(_, _) ->
-        let e = List.map (fun (id, e) -> id, do_typing_expr env file ty e) id_exprs in
-        if e = [] then raise Empty_merge;
+        (* TODO: generalize this with enum types *)
+        let Var (_, ty_x) = VarMap.find var env in
+        let expected_dcs = begin match ty_x with
+          | TyBool -> SSet.of_list ["True"; "False"]
+          | _ -> raise Bad_type
+        end in
+        let seen_dcs = SSet.empty in
+        let seen_dcs, e = List.fold_left (fun (seen, cases) (id, e) ->
+            if SSet.mem id seen then raise (Redundant_merge (expr.Ast_parsing.expr_loc, id));
+            if not (SSet.mem id expected_dcs) then raise Bad_type;
+            (SSet.add id seen), (id, do_typing_expr env file ty e) :: cases
+          ) (seen_dcs, []) id_exprs in
+        let missing = SSet.diff expected_dcs seen_dcs in
+        if not (SSet.is_empty missing) then
+          raise (Non_exhaustive_merge expr.Ast_parsing.expr_loc);
         EMerge(var, e), (List.hd e |> snd).texpr_type
       | _ -> raise Bad_type
   in
