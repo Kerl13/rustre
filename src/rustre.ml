@@ -38,6 +38,7 @@ let report_loc (b,e) =
 
 let () =
   let module Clocking = Clocking.W in
+  let module Scheduling = Scheduling.Stupid in
   let c = open_in file in
   let lb = Lexing.from_channel c in
   try
@@ -61,8 +62,12 @@ let () =
     let normalized = Normalization.normalize_file clocked in
     Format.printf "ok@." ;
 
+    Format.printf "Scheduling… @?";
+    let scheduled = Scheduling.schedule normalized main_node in
+    Format.printf "ok@." ;
+
     Format.printf "Translation into the object language… @?";
-    let obc = Object.from_normalized normalized in
+    let obc = Object.from_normalized scheduled in
     Format.printf "ok\n=== Object =====\n";
     Format.printf "%a\n@." Ast_object.pp_file obc;
 
