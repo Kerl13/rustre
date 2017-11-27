@@ -17,4 +17,5 @@ debug:
 
 clean:
 	ocamlbuild -clean
-	rm -rf $(BIN)
+	rm -f *.byte *.native
+	rm -f $(BIN)
