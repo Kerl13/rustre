@@ -5,7 +5,7 @@ with var xt, xf : int; b: bool in
   xf = x when False(b) ;
   y = merge b (True -> xt) (False -> xf)
 
-node check(x: bool) = (ok: bool)
+node check(x: int) = (ok: bool)
 with var y: int in
   y = dummy_merge(x);
   ok = (x = y)
