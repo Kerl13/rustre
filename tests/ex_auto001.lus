@@ -1,18 +1,18 @@
 /* From Colaço, Pagano, Pouzet 2005 */
 
-node chrono (StSt: bool; Rst: bool) = (disp_1: int; disp_2: int) 
+node chrono (StSt: bool; rst: bool) = (disp_1: int; disp_2: int)
 with var shared m, s: int; shared run: bool  in
   automaton
-    state CHRONO 
+    state CHRONO
       do automaton
-        state STOP 
+        state STOP
           do s = 0 -> last s;
             m = 0 -> last m;
             run = false
             unless StSt continue START
         state START
           with var d: int in
-          do 
+          do
             d = 0 -> (pre d + 1) mod 100;
             s = 0 -> if d < pre d
                 then (last s + 1) mod 60
@@ -23,13 +23,13 @@ with var shared m, s: int; shared run: bool  in
             run = true
             unless StSt continue STOP
        end
-       until Rst and not run then CHRONO
-  end; 
+       until rst and not run then CHRONO
+  end;
   automaton
     state TIME
       do disp_1 = s;
         disp_2 = m
-        until Rst and run then LAP
+        until rst and run then LAP
     state LAP
-      do until Rst then TIME
+      do until rst then TIME
   end

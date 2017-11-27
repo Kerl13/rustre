@@ -1,4 +1,5 @@
 *~
 *.byte
 *.native
+rustre
 _build
