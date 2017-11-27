@@ -1,0 +1,11 @@
+node dummy_merge (x: int) = (y: int)
+with var xt, xf : int; b: bool in
+  b = true fby (not b) ;
+  xt = x when True(b) ;
+  xf = x when False(b) ;
+  y = merge b (True -> xt) (False -> xf)
+
+node check(x: bool) = (ok: bool)
+with var y: int in
+  y = dummy_merge(x);
+  ok = (x = y)

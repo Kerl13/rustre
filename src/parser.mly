@@ -88,6 +88,9 @@
 
 ident:    s = IDENT    { s }
 dcident : s = DCIDENT  { s }
+dcident_or_boolean:
+| dc = dcident         { dc }
+| b = CONST_BOOL       { if b then "True" else "False" }
 
 
 typ:
@@ -178,14 +181,15 @@ expr:
   ev = option(preceded(EVERY, located(expr)))  { application f args ev $endpos }
 
 | e = located(expr)
-  WHEN c = ident LPAR x = ident RPAR           { EWhen (e, c, x) }
+  WHEN dc = dcident_or_boolean
+  LPAR x = ident RPAR                          { EWhen (e, dc, x) }
 | MERGE x = ident
   clauses = nonempty_list(merge_clause)        { EMerge (x, clauses) }
 
 
 merge_clause:
-  LPAR i = ident ARROW e = located(expr) RPAR
-  { (i, e) }
+  LPAR dc = dcident_or_boolean ARROW e = located(expr) RPAR
+  { (dc, e) }
 
 
 const:
