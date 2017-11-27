@@ -37,24 +37,34 @@ let report_loc (b,e) =
 
 
 let () =
-  let module Clocking = Clocking.Stupid in
+  let module Clocking = Clocking.W in
   let c = open_in file in
   let lb = Lexing.from_channel c in
   try
     let file = Parser.file Lexer.token lb in
     close_in c;
 
-    Format.printf "=== Parsed file =====\n%a@." Ast_parsing.pp_file file;
-    Format.printf "Typing…@.";
-    let typed = Typing.do_typing file in
-    Format.printf "%a@.ok@." Ast_typed.pp_file typed;
-    Format.printf "Clocking…@.";
-    let clocked = Clocking.clock_file typed in
-    Format.printf "%a\nok@." Ast_clocked.pp_clocks_file clocked;
-    let normalized = Normalization.normalize_file clocked in
-    let obc = Object.from_normalized normalized in
-    Format.printf "Object:@.%a@." Ast_object.pp_file obc;
+    Format.printf "=== Parsed file =====\n" ;
+    Format.printf "%a\n@." Ast_parsing.pp_file file ;
 
+    Format.printf "Typing… @?";
+    let typed = Typing.do_typing file in
+    Format.printf "ok\n=== Typed file =====\n";
+    Format.printf "%a\n@." Ast_typed.pp_file typed;
+
+    Format.printf "Clocking… @?";
+    let clocked = Clocking.clock_file typed in
+    Format.printf "ok\n=== Clocks =====\n";
+    Format.printf "%a\n@." Ast_clocked.pp_clocks_file clocked;
+
+    Format.printf "Normalization… @?";
+    let normalized = Normalization.normalize_file clocked in
+    Format.printf "ok@." ;
+
+    Format.printf "Translation into the object language… @?";
+    let obc = Object.from_normalized normalized in
+    Format.printf "ok\n=== Object =====\n";
+    Format.printf "%a\n@." Ast_object.pp_file obc;
 
     exit 0
   with

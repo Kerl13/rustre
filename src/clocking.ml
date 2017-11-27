@@ -79,7 +79,7 @@ module W = struct
     }
 
     let reset_exprs (env : t) = { env with bindings_expr = Smap.empty }
-    let get_exprs (env : t) = env.bindings_expr
+    let get_exprs (env : t) = Smap.map canon env.bindings_expr
 
     let add_expr x ck (env : t) = {
       bindings_expr = Smap.add x ck env.bindings_expr ;
@@ -122,8 +122,10 @@ module W = struct
 
   (* Clock inferrence *****************************************************)
 
-  exception ArityException of Ast_typed.location * ct
+  exception ArityException of location * ct
   let arity_exception loc ct = raise (ArityException (loc, List.map canon ct))
+  exception IllClocked of location * ct * ct
+  let ill_clocked loc expected inferred = raise (IllClocked (loc, expected, inferred))
 
   let rec cts_from_expr_list : type a. ct list -> a cexpr_list -> ct list
     = fun cts es -> match es with
@@ -157,7 +159,8 @@ module W = struct
           let cts = cts_from_expr_list arg in
           List.iter2 unify_ct (List.map (fun c -> [c]) ct1) cts;
           let every = clock_expr env every in
-          (* FIXME: what should the clock of [every] be? *)
+          if every.texpr_clock <> [CBase] then
+            ill_clocked every.texpr_loc [CBase] every.texpr_clock;
           CApp (f, arg, every), ct2
         | Ast_typed.EWhen (e, c, x) ->
           let e = clock_expr env e in
@@ -167,12 +170,29 @@ module W = struct
           in
           CWhen (e, c, x), [COn (ck, c, x)]
         | Ast_typed.EMerge (x, cases) ->
-          assert false
+          let ck = Env.find_expr x env in
+          let cases = clock_match_cases ck x env cases in
+          CMerge (x, cases), [ck]
         end in
     { texpr_desc = desc ;
       texpr_type = expr.Ast_typed.texpr_type ;
       texpr_clock = ct ;
       texpr_loc = expr.Ast_typed.texpr_loc }
+
+  and clock_match_cases : type a. ck -> string -> Env.t -> (string * a Ast_typed.expr) list -> (string * a cexpr) list
+    = fun ck x env cases ->
+    let rec clock_cases clocked_cases = function
+      | [] -> clocked_cases
+      | (dc, e) :: cases ->
+        let e = clock_expr env e in
+        let ck_e = match e.texpr_clock with
+          | [ck] -> ck
+          | ct -> arity_exception e.texpr_loc ct
+        in
+        unify ck_e (COn (ck, dc, x));
+        clock_cases ((dc, e) :: clocked_cases) cases
+    in
+    List.rev (clock_cases [] cases)
 
   and clock_expr_list : type a. Env.t -> a Ast_typed.expr_list -> a cexpr_list
     = fun env e_list -> match e_list with
@@ -232,8 +252,8 @@ module W = struct
 
     let in_clocks = ct_from_varlist env inputs in
     let out_clocks = ct_from_varlist env outputs in
-    let node_env = Env.add_node node_name in_clocks out_clocks env in
-    node_env, clocked_node :: clocked_nodes
+    let env = Env.add_node node_name in_clocks out_clocks env in
+    env, clocked_node :: clocked_nodes
 
   let clock_file file =
     let (_, file) = List.fold_left clock_node (Env.empty, []) file in
