@@ -14,10 +14,13 @@ type memory = var_list
 
 type ident = Var of var_id | State of var_id | Loc of var_id
 
+type enum = Ast_typed.enum
+
 type _ oconst =
   | CBool : bool -> bool oconst
   | CInt  : int -> int num_ty oconst
   | CReal : float -> float num_ty oconst
+  | CDataCons : Ast_typed.ident -> enum oconst
 
 type wconst = Const: 'a oconst -> wconst
 
@@ -69,6 +72,7 @@ let pp_oconst: type a. 'b -> a oconst -> unit = fun ppf -> function
   | CInt n -> fprintf ppf "%d" n
   | CReal f -> fprintf ppf "%f" f
   | CBool b -> fprintf ppf "%B" b
+  | CDataCons dc -> fprintf ppf "%s" dc
 
 let rec pp_expr: type a. 'c -> a oexpr -> unit = fun ppf -> function
   | EConst c -> fprintf ppf "%a" pp_oconst c

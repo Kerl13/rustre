@@ -2,8 +2,6 @@ open Ast_typed
 
 module Smap = Map.Make(String)
 
-type location = Ast_typed.location
-
 (**
  * Clocked and Typed AST
  **)
@@ -28,7 +26,7 @@ type 'a cexpr = {
   texpr_desc  : 'a cexpr_desc ;
   texpr_type  : 'a compl_ty ;
   texpr_clock : ct ;
-  texpr_loc   : location
+  texpr_loc   : Ast_typed.location
 }
 
 
@@ -59,7 +57,7 @@ and ('a, 'b) node_desc = {
   n_output : 'b var_list;
   n_local  : node_local;
   n_eqs    : equation list ;
-  n_loc    : location ;
+  n_loc    : Ast_typed.location ;
   n_clocks : ck Smap.t
 }
 

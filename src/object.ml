@@ -28,10 +28,12 @@ let obc_const: type a. a Ast_typed.ty -> a Ast_typed.const -> a oconst = fun ty 
       | Ast_typed.TyBool -> CBool true
       | Ast_typed.TyNum (Ast_typed.TyZ) -> CInt 42
       | Ast_typed.TyNum (Ast_typed.TyReal) -> CReal 0.
+      | Ast_typed.TyEnum (_, dcs) -> CDataCons (List.hd dcs)
     end
   | Ast_typed.CBool a -> CBool a
   | Ast_typed.CInt a -> CInt a
   | Ast_typed.CReal a -> CReal a
+  | Ast_typed.CDataCons dc -> CDataCons dc
 
 let rec obc_expr_merge: type a. nl -> ident -> a nexpr_merge -> ostatement = fun nl v expr ->
   match expr.nexpr_merge_desc with
@@ -89,7 +91,6 @@ let obc_node (NNode desc) =
       in
       SSeq (SAssign { n = v;  expr = EVar (State b); }, a)) step state in
   let reset = List.fold_left (fun a (((b:var_id), _), (Const c)) ->
-      let Ast_typed.NodeLocal nl = desc.n_local in
       SSeq (SAssign { n = State b;  expr = EConst c; }, a)) SSkip state in
   { memory = List.map fst state;
     name = (let Ast_typed.Tagged(_, _, n) = desc.n_name in n);

@@ -1,4 +1,5 @@
 open Ast_clocked
+type location = Ast_typed.location
 
 module type Clocking = sig
   val clock_file: Ast_typed.file -> Ast_clocked.file
