@@ -89,7 +89,6 @@ and pattern_desc =
 
 let fprintf = Format.fprintf
 let pp_list = Misc.pp_list
-let pp_string = Misc.pp_string
 
 let pp_const ppf = function
   | CNil -> fprintf ppf "nil"
@@ -156,7 +155,7 @@ let pp_node ppf n =
     (pp_list ";\n" pp_equation) n.n_eqs
 
 let pp_typedef fmt (ty_name, enum) =
-  fprintf fmt "type %s = %a" ty_name (pp_list " + " pp_string) enum
+  fprintf fmt "type %s = %a" ty_name (pp_list " + " Format.pp_print_string) enum
 
 
 let pp_file ppf f =
