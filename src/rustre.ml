@@ -91,6 +91,10 @@ let () =
     Format.eprintf "Type error@.";
     exit 1
   | Typing.Expected_num(loc) ->
-    Format.eprintf "Expected num at ";
     report_loc loc;
+    Format.eprintf "Expected num at ";
+    exit 1
+  | Clocking.ClockingError (loc, message) ->
+    report_loc loc;
+    Format.eprintf "%s" message;
     exit 1

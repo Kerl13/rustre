@@ -2,10 +2,13 @@ open Ast_clocked
 type location = Ast_typed.location
 
 module type Clocking = sig
+  exception ClockingError of location * string
   val clock_file: Ast_typed.file -> Ast_clocked.file
 end
 
 module W = struct
+  exception ClockingError of location * string
+
   (** W algorithm usual stuff ***********************************************)
   module V = struct
     type t = cvar
@@ -29,33 +32,33 @@ module W = struct
     | COn (c, dc, x) -> COn (canon c, dc, x)
     | CVar v -> CVar v
 
-  exception ClockUnificationError of ck * ck
-  let unification_error c1 c2 = raise (ClockUnificationError (canon c1, canon c2))
-  exception ArityException of location * ct
-  let arity_exception loc ct = raise (ArityException (loc, List.map canon ct))
+  exception ClockUnificationError of location * ck * ck
+  let unification_error loc c1 c2 = raise (ClockUnificationError (loc, canon c1, canon c2))
+  exception ArityException of location * int * ct
+  let arity_exception loc n ct = raise (ArityException (loc, n, List.map canon ct))
 
   let rec occur v c = match head c with
     | CBase -> false
     | COn (c, _, _) -> occur v c
     | CVar v' -> V.equal v v'
 
-  let rec unify c1 c2 = match head c1, head c2 with
+  let rec unify (at : location) c1 c2 = match head c1, head c2 with
     | CBase, CBase -> ()
     | COn (c1, dc1, x1), COn (c2, dc2, x2) ->
         if x1 = x2 && dc1 = dc2 (* FIXME: maybe a bit too restrictive *)
-        then unify c1 c2
-        else unification_error c1 c2
+        then unify at c1 c2
+        else unification_error at c1 c2
     | CVar v1, CVar v2 when V.equal v1 v2 -> ()
     | CVar v, c2 ->
       if occur v c2
-      then unification_error c1 c2
+      then unification_error at c1 c2
       else v.def <- Some c2
-    | c1, CVar _ -> unify c2 c1
-    | _, _ -> unification_error c1 c2
+    | c1, CVar _ -> unify at c2 c1
+    | _, _ -> unification_error at c1 c2
 
-  let rec unify_ct ct1 ct2 = match (ct1, ct2) with
+  let rec unify_ct (at : location) ct1 ct2 = match (ct1, ct2) with
     | [], [] -> ()
-    | c1 :: ct1, c2 :: ct2 -> unify c1 c2 ; unify_ct ct1 ct2
+    | c1 :: ct1, c2 :: ct2 -> unify at c1 c2 ; unify_ct at ct1 ct2
     | _ -> assert false
 
   let rec fvars c = match head c with
@@ -66,8 +69,8 @@ module W = struct
   module Vmap = Map.Make(V)
 
   module Env = struct
-    exception Expr_not_found of string
-    exception Node_not_found of string
+    exception Expr_not_found of location * string
+    exception Node_not_found of location * string
 
     type t = {
       bindings_expr : ck Smap.t ;
@@ -109,18 +112,18 @@ module W = struct
       let v' = try Vmap.find v map with Not_found -> v in
       CVar v'
 
-    let find_expr x (env : t) =
+  let find_expr (at : location) x (env : t) =
       try Smap.find x env.bindings_expr
-      with Not_found -> raise (Expr_not_found x)
+      with Not_found -> raise (Expr_not_found (at, x))
 
     let refresh_node (vars, in_ct, out_ct) =
       let fv = Vset.filter (fun v -> v.def = None) vars in
       let map = Vset.fold (fun v -> Vmap.add v (V.create ())) fv Vmap.empty in
       fv, List.map (subst map) in_ct, List.map (subst map) out_ct
 
-    let find_node x (env : t) =
+    let find_node (at : location) x (env : t) =
       try refresh_node (Smap.find x env.bindings_node)
-      with Not_found -> raise (Node_not_found x)
+      with Not_found -> raise (Node_not_found (at, x))
   end
 
   (* Clock inferrence *****************************************************)
@@ -135,41 +138,43 @@ module W = struct
   let rec clock_expr : type a. Env.t -> a Ast_typed.expr -> a cexpr
     = fun env expr ->
       let (desc : a cexpr_desc), ct =
+        let eloc = expr.Ast_typed.texpr_loc in
         begin match expr.Ast_typed.texpr_desc with
         | Ast_typed.EConst c -> CConst c, [CBase]
-        | Ast_typed.EIdent x -> CIdent x, [Env.find_expr x env]
+        | Ast_typed.EIdent x -> CIdent x, [Env.find_expr eloc x env]
         | Ast_typed.EFby (c, e) ->
           let e = clock_expr env e in
-          unify_ct [CBase] e.texpr_clock ;
+          unify_ct e.texpr_loc [CBase] e.texpr_clock ;
           CFby (c, e), [CBase]
         | Ast_typed.EBOp (op, e1, e2) ->
           let e1 = clock_expr env e1 in
           let e2 = clock_expr env e2 in
-          unify_ct e1.texpr_clock e2.texpr_clock ;
+          unify_ct e2.texpr_loc e1.texpr_clock e2.texpr_clock ;
           CBOp (op, e1, e2), e1.texpr_clock
         | Ast_typed.EUOp (op, e) ->
           let e = clock_expr env e in
           CUOp (op, e), e.texpr_clock
         | Ast_typed.EApp (f, arg, every) ->
           let Ast_typed.Tagged (_, _, f_id) = f in
-          let _, ct1, ct2 = Env.find_node f_id env in
+          let loc = expr.Ast_typed.texpr_loc in
+          let _, ct1, ct2 = Env.find_node loc f_id env in
           let arg = clock_expr_list env arg in
           let cts = cts_from_expr_list arg in
-          List.iter2 unify_ct (List.map (fun c -> [c]) ct1) cts;
+          List.iter2 (unify_ct loc) (List.map (fun c -> [c]) ct1) cts;
           let every = clock_expr env every in
-          unify_ct every.texpr_clock [CBase];
+          unify_ct every.texpr_loc every.texpr_clock [CBase];
           CApp (f, arg, every), ct2
         | Ast_typed.EWhen (e, c, x) ->
           let e = clock_expr env e in
           let ck_e = match e.texpr_clock with
             | [ck_e] -> ck_e
-            | ct -> arity_exception e.texpr_loc ct
+            | ct -> arity_exception e.texpr_loc 1 ct
           in
-          let ck_x = Env.find_expr x env in
-          unify ck_e ck_x;
+          let ck_x = Env.find_expr eloc x env in
+          unify e.texpr_loc ck_e ck_x;
           CWhen (e, c, x), [COn (ck_e, c, x)]
         | Ast_typed.EMerge (x, cases) ->
-          let ck = Env.find_expr x env in
+          let ck = Env.find_expr eloc x env in
           let cases = clock_match_cases ck x env cases in
           CMerge (x, cases), [ck]
         end in
@@ -186,9 +191,9 @@ module W = struct
         let e = clock_expr env e in
         let ck_e = match e.texpr_clock with
           | [ck] -> ck
-          | ct -> arity_exception e.texpr_loc ct
+          | ct -> arity_exception e.texpr_loc 1 ct
         in
-        unify ck_e (COn (ck, dc, x));
+        unify e.texpr_loc ck_e (COn (ck, dc, x));
         clock_cases ((dc, e) :: clocked_cases) cases
     in
     List.rev (clock_cases [] cases)
@@ -205,9 +210,10 @@ module W = struct
   let clock_equation env eq clocked_eqs =
     let Ast_typed.Equ (pat, expr) = eq in
     let expr = clock_expr env expr in
+    let loc = expr.texpr_loc in
     let unify_ct ct x = match ct with
       | ck :: ct ->
-        unify ck (Env.find_expr x env) ;
+        unify loc ck (Env.find_expr loc x env) ;
         ct
       | _ -> assert false (* should not happen *)
     in
@@ -217,8 +223,8 @@ module W = struct
   let clock_equations env eqs =
     List.fold_right (clock_equation env) eqs []
 
-  let ct_from_varlist env v_list =
-    Ast_typed_utils.var_list_fold (fun ct x -> Env.find_expr x env :: ct) [] v_list
+  let ct_from_varlist loc env v_list =
+    Ast_typed_utils.var_list_fold (fun ct x -> Env.find_expr loc x env :: ct) [] v_list
 
   let env_from_varlist env v_list =
     Ast_typed_utils.var_list_fold
@@ -249,17 +255,37 @@ module W = struct
       n_clocks = Env.get_exprs env
     } in
 
-    let in_clocks = ct_from_varlist env inputs in
-    let out_clocks = ct_from_varlist env outputs in
+    let in_clocks = ct_from_varlist loc env inputs in
+    let out_clocks = ct_from_varlist loc env outputs in
     let env = Env.add_node node_name in_clocks out_clocks env in
     env, clocked_node :: clocked_nodes
 
   let clock_file file =
     let (_, nodes) = List.fold_left clock_node (Env.empty, []) file.Ast_typed.tf_nodes in
     { cf_typedefs = file.Ast_typed.tf_typedefs ; cf_nodes = List.rev nodes }
+  let clock_file file =
+    try
+      clock_file file
+    with
+    | ClockUnificationError (loc, c1, c2) ->
+      let message = Format.asprintf "Incompatible clocks: [%a] and [%a]" pp_ck c1 pp_ck c2 in
+      raise (ClockingError (loc, message))
+    | ArityException (loc, n, ct) ->
+      let message = Format.asprintf
+          "Composite clock [%a] is expected to have arity %d but has arity %d"
+          (pp_list ", " pp_ck) ct n (List.length ct) in
+      raise (ClockingError (loc, message))
+    | Env.Node_not_found (loc, name) ->
+      let message = Format.sprintf "Unbound node %s" name in
+      raise (ClockingError (loc, message))
+    | Env.Expr_not_found (loc, name) ->
+      let message = Format.sprintf "Unbound variable %s" name in
+      raise (ClockingError (loc, message))
 end
 
 module Stupid = struct
+  exception ClockingError of Ast_typed.location * string
+
   type env = (string, ct option) Hashtbl.t
 
   let rec clock_expr : type a. env -> a Ast_typed.expr -> a cexpr = fun env ->
