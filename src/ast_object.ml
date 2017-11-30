@@ -123,4 +123,6 @@ let pp_machine ppf m =
     (pp_list ", " (fun ppf (s, Sty ty) -> fprintf ppf "%s:%a" s pp_ty ty)) var_tmp
     pp_ostatement stmt
 
-let pp_file fmt file = pp_list "" pp_machine fmt file.objf_machines
+let pp_file fmt file =
+  fprintf fmt "%a\n\n" (pp_list "\n" Ast_parsing.pp_typedef) file.objf_typedefs ;
+  fprintf fmt "%a" (pp_list "" pp_machine) file.objf_machines
