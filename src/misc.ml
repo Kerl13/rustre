@@ -1,3 +1,7 @@
+let is_empty_list = function
+  | [] -> true
+  | _ :: _ -> false
+
 let rec pp_list sep pp ppf = function
   | [] -> Format.fprintf ppf ""
   | [x] -> Format.fprintf ppf "%a" pp x

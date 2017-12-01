@@ -38,7 +38,7 @@ let report_loc (b,e) =
 
 let () =
   let module Clocking = Clocking.W in
-  let module Scheduling = Scheduling.Stupid in
+  let module Scheduling = Scheduling.Simple in
   let c = open_in file in
   let lb = Lexing.from_channel c in
   try
@@ -64,7 +64,8 @@ let () =
 
     Format.printf "Scheduling… @?";
     let scheduled = Scheduling.schedule normalized main_node in
-    Format.printf "ok@." ;
+    Format.printf "ok\n=== Scheduled nodes =====\n";
+    Format.printf "%a\n@." Ast_normalized.pp_file scheduled;
 
     Format.printf "Translation into the object language… @?";
     let obc = Object.from_normalized scheduled in
@@ -98,3 +99,5 @@ let () =
     report_loc loc;
     Format.eprintf "%s" message;
     exit 1
+  | Scheduling.SchedulingError message ->
+    Format.eprintf "%s" message
