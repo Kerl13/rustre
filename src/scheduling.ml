@@ -94,6 +94,7 @@ module Simple = struct
         let vars = vars_expr vars every in
         defmap, vars
     in (i+1, (i, eq, vars) :: eqs, defmap)
+
   let number_and_build_defmap node_name eqs =
     let (_, eqs, defmap) = List.fold_left (number_and_resolve_deps node_name) (0, [], Smap.empty) eqs in
     eqs, defmap
@@ -111,7 +112,9 @@ module Simple = struct
       | Not_found -> g
     in
     let g = List.fold_left
-      (fun g (i, eq, vars) -> List.fold_left (add_edge_opt (i, eq)) g vars)
+        (fun g (i, eq, vars) ->
+           let g = Graph.add_vertex g (i, eq) in
+           List.fold_left (add_edge_opt (i, eq)) g vars)
       Graph.empty
       eqs
     in
