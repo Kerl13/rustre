@@ -69,8 +69,8 @@ module E = struct
              match s with
              | Var s | Loc s -> fprintf p "%s" s
              | State s -> fprintf p "state_%s" s)) result
-        node inst
-        (pp_list " " pp_expr) (List.map (fun i -> EVar i) args)
+        inst node
+        (pp_list " " print_expr) (List.map (fun i -> EVar i) args)
         (pp_list_brk "" (fun p s ->
              match s with
              | State s -> fprintf p "state.%s := state_%s;" s s
@@ -105,7 +105,7 @@ module E = struct
 
   let print_step ppf mach =
     let var_in, _, var_out, stat = mach.step in
-    fprintf ppf "@[<2>let step (state:state) %a: (%a) =@\n%a@\n%a@]"
+    fprintf ppf "@[<2>let step (state:state) %a: (%a) =@\n%a@\n(%a)@]"
       (pp_list_brk " " (fun ppf (var, sty) ->
            fprintf ppf "(%s: %a)" var  print_sty sty)) var_in
       (pp_list_brk ", " (fun ppf (_, sty) ->
@@ -119,7 +119,12 @@ module E = struct
       print_statement mach.reset
 
   let print_machine ppf mach =
-    fprintf ppf "@[<h 2>module Node%s@\nuse import int.Int@\nuse import Types@\n@\n%a@\n@\n%a@\n@\n%a@]@\n@\nend" mach.name print_state mach print_step mach print_reset mach
+    fprintf ppf "@[<h 2>module Node%s@\nuse import int.Int@\nuse Types@\n%a@\n@\n%a@\n@\n%a@\n@\n%a@]@\n@\nend"
+      mach.name
+      (pp_list_n "" (fun ppf (_, m) -> fprintf ppf "use Node%s" m)) mach.instances
+      print_state mach
+      print_step mach
+      print_reset mach
 
   let extract_to ppf f =
     fprintf ppf "%a\n@\n%a" print_typedefs f.objf_typedefs (pp_list_n "\n" print_machine) f.objf_machines
