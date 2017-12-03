@@ -56,7 +56,7 @@ module E = struct
     | Ast_object.SAssign {n = (Var s | Loc s); expr } ->
       fprintf ppf "let %s = %a in" s print_expr expr
     | Ast_object.SAssign {n = State s; expr } ->
-      fprintf ppf "state.%s := %a;" s print_expr expr
+      fprintf ppf "state.%s <- %a;" s print_expr expr
     | Ast_object.SSeq (a,SSkip) ->
       print_statement ppf a
     | Ast_object.SSeq (a,b) ->
@@ -94,11 +94,14 @@ module E = struct
 
 
   let print_state ppf mach =
-    fprintf ppf "type state = { @[%a %a@]}"
-      (pp_list_brk "" (fun ppf (var, sty) ->
-           fprintf ppf "%s: %a;" var  print_sty sty)) mach.memory
-      (pp_list_brk "" (fun ppf (i, m) ->
-           fprintf ppf "%s: Node%s.state;" i m)) mach.instances
+    if mach.memory = [] then
+      fprintf ppf "type state = unit"
+    else
+      fprintf ppf "type state = { @[%a %a@]}"
+        (pp_list_brk "" (fun ppf (var, sty) ->
+             fprintf ppf "mutable %s: %a;" var  print_sty sty)) mach.memory
+        (pp_list_brk "" (fun ppf (i, m) ->
+             fprintf ppf "%s: Node%s.state;" i m)) mach.instances
 
   let print_step ppf mach =
     let var_in, _, var_out, stat = mach.step in
@@ -116,7 +119,7 @@ module E = struct
       print_statement mach.reset
 
   let print_machine ppf mach =
-    fprintf ppf "@[<h 2>module Node%s@\n@\n%a@\n@\n%a@\n@\n%a@]@\n@\nend" mach.name print_state mach print_step mach print_reset mach
+    fprintf ppf "@[<h 2>module Node%s@\nuse import int.Int@\nuse import Types@\n@\n%a@\n@\n%a@\n@\n%a@]@\n@\nend" mach.name print_state mach print_step mach print_reset mach
 
   let extract_to ppf f =
     fprintf ppf "%a\n@\n%a" print_typedefs f.objf_typedefs (pp_list_n "\n" print_machine) f.objf_machines
