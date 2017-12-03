@@ -83,7 +83,7 @@ let () =
     Format.printf "ok\n=== Object =====\n";
     Format.printf "%a\n@." Ast_object.pp_file obc;
 
-    Format.printf "Extracting…";
+    Format.printf "Extracting…@\n";
     Format.printf "%a@." Extractor.extract_to obc;
 
     exit 0

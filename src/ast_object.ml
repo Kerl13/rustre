@@ -35,7 +35,7 @@ type ostatement =
   | SSeq of ostatement * ostatement
   | SSkip
   | SCall of ident list * instance * machine_id * ident list (* args, node name, result vars *)
-  | SReset of machine_id
+  | SReset of machine_id * instance
   | SCase of ident * (string * ostatement) list (* Constructors are numbered, the nth
                                                    statement corresponds to the nth
                                                    constructor -- 2 in case of Booleans *)
@@ -60,12 +60,7 @@ type file = {
  * Pretty printer
  **)
 
-let fprintf = Format.fprintf
-
-let rec pp_list sep pp ppf = function
-  | [] -> fprintf ppf ""
-  | [x] -> fprintf ppf "%a" pp x
-  | x :: xs -> fprintf ppf "%a%s%a" pp x sep (pp_list sep pp) xs
+open Pp_utils
 
 
 
@@ -95,8 +90,8 @@ let rec pp_ostatement ppf = function
       (pp_list ", " pp_expr) (List.map (fun i -> EVar i) args)
       inst
 
-  | SReset(machine_id) ->
-    fprintf ppf "%s.reset();" machine_id
+  | SReset(machine_id, inst) ->
+    fprintf ppf "%s.reset() with %s;" machine_id inst
   | SCase(i, args) ->
     fprintf ppf "@[<h 2>case %a {%a@]@\n}"
       pp_expr (EVar i)
@@ -111,7 +106,7 @@ let pp_sty: type a. 'b -> a Ast_normalized.sty -> unit = fun ppf -> function
 
 let pp_machine ppf m =
   let var_in, var_tmp, var_out, stmt = m.step in
-  fprintf ppf "@[<h 2>machine %s {@\n@[<h 2>memory: %a@]@\n@[<h 2>instances: %a@]@\n@[<h 2>reset () {@\n%a@]@\n@\n}@\n@[<h 2>step (%a): %a {@\nvar %a in@\n%a@]@\n}@]@\n}@."
+  fprintf ppf "@[<2>machine %s {@\n@[<h 2>memory: %a@]@\n@[<h 2>instances: %a@]@\n@[<h 2>reset () {@\n%a@]@\n}@\n@[<h 2>step (%a): %a {@\nvar %a in@\n%a@]@\n}@]@\n}@."
     m.name
     (pp_list ", " (fun ppf (s, Sty ty) -> fprintf ppf "%s:%a" s pp_ty ty)) m.memory
     (pp_list ", " (fun ppf (s, mach) -> fprintf ppf "%s:%s" s mach)) m.instances
@@ -122,5 +117,5 @@ let pp_machine ppf m =
     pp_ostatement stmt
 
 let pp_file fmt file =
-  fprintf fmt "%a\n\n" (pp_list "\n" Ast_parsing.pp_typedef) file.objf_typedefs ;
+  fprintf fmt "%a@\n" (pp_list_n "\n" Ast_parsing.pp_typedef) file.objf_typedefs ;
   fprintf fmt "%a" (pp_list "" pp_machine) file.objf_machines
