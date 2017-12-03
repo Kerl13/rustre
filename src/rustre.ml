@@ -5,12 +5,14 @@ let usage = Format.sprintf "usage: %s [options] file.lus main" Sys.argv.(0)
 
 type extractor = Rust | Why3
 
-let file, main_node, extractor =
+let file, main_node, extractor, output =
   let extractor = ref Rust in
+  let output = ref "" in
   let spec = ["-extract",
               Arg.Symbol (["why3"; "rust"], (fun s ->
                   extractor := if s = "why3" then Why3 else Rust)),
-              "Extract to why3 or rust"] in
+              "Extract to why3 or rust";
+              "-o", Arg.Set_string output, "File to write the generated code."] in
   let file = ref None in
   let main = ref None in
 
@@ -33,7 +35,8 @@ let file, main_node, extractor =
   Arg.parse spec set usage;
   (match !file with Some f -> f | None -> Arg.usage spec usage; exit 1),
   (match !main with Some n -> n | None -> Arg.usage spec usage; exit 1),
-  !extractor
+  !extractor,
+  !output
 
 module Extractor = (val (match extractor with
     | Rust -> (module Extract_rust.E)
@@ -84,7 +87,9 @@ let () =
     Format.printf "%a\n@." Ast_object.pp_file obc;
 
     Format.printf "Extracting…@\n";
-    Format.printf "%a@." Extractor.extract_to obc;
+    if output = "" then
+      Format.printf "%a@." Extractor.extract_to obc
+    else Extractor.extract_to (Format.formatter_of_out_channel (open_out output)) obc;
 
     exit 0
   with
