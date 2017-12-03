@@ -60,8 +60,6 @@ type file = {
  * Pretty printer
  **)
 
-(* XXX add some boxes here and there *)
-
 let fprintf = Format.fprintf
 
 let rec pp_list sep pp ppf = function

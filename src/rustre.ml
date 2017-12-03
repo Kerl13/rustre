@@ -2,9 +2,15 @@ open Lexing
 
 let usage = Format.sprintf "usage: %s [options] file.lus main" Sys.argv.(0)
 
-let spec = []
 
-let file, main_node =
+type extractor = Rust | Why3
+
+let file, main_node, extractor =
+  let extractor = ref Rust in
+  let spec = ["-extract",
+              Arg.Symbol (["why3"; "rust"], (fun s ->
+                  extractor := if s = "why3" then Why3 else Rust)),
+              "Extract to why3 or rust"] in
   let file = ref None in
   let main = ref None in
 
@@ -26,7 +32,12 @@ let file, main_node =
 
   Arg.parse spec set usage;
   (match !file with Some f -> f | None -> Arg.usage spec usage; exit 1),
-  (match !main with Some n -> n | None -> Arg.usage spec usage; exit 1)
+  (match !main with Some n -> n | None -> Arg.usage spec usage; exit 1),
+  !extractor
+
+module Extractor = (val (match extractor with
+    | Rust -> (module Extract_rust.E)
+    | Why3 -> (module Extract_why3.E)): Extract.E)
 
 
 let report_loc (b,e) =
@@ -71,6 +82,9 @@ let () =
     let obc = Object.from_normalized scheduled in
     Format.printf "ok\n=== Object =====\n";
     Format.printf "%a\n@." Ast_object.pp_file obc;
+
+    Format.printf "Extracting…";
+    Format.printf "%a@." Extractor.extract_to obc;
 
     exit 0
   with
