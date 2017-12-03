@@ -94,7 +94,7 @@ module E = struct
 
 
   let print_state ppf mach =
-    if mach.memory = [] then
+    if mach.memory = [] && mach.instances = [] then
       fprintf ppf "type state = unit"
     else
       fprintf ppf "type state = { @[%a %a@]}"
