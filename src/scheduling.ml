@@ -106,6 +106,8 @@ module Simple = struct
     in
     let add_edge_opt ieq g x =
       try
+        (* XXX: check that the only vars that trigger this exception
+           are inputs. *)
         let ieq2 = Smap.find x defmap in
         Graph.add_edge g ieq ieq2
       with
