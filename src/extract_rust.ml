@@ -44,6 +44,12 @@ module E = struct
     | Ast_typed.OpNot -> fprintf ppf "!"
     | Ast_typed.OpUMinus -> fprintf ppf "-"
 
+  let pp_type sep pp ppf l =
+    if List.length l < 2 then
+      fprintf ppf "%a" (pp_list sep pp) l
+    else
+      fprintf ppf "(%a)" (pp_list sep pp) l
+
     
   let rec print_expr: type a. Format.formatter -> a oexpr -> unit = fun ppf e ->
     match e with
@@ -81,7 +87,7 @@ module E = struct
     | Ast_object.SCall (args, node, inst, result) ->
        (* todo : optimize if List.length result < 2 *)
        fprintf ppf "{@[<4>@\nlet (%a) = self.%s.step(%a);@\n%a@]@\n}"
-         (pp_list ", " (fun p s ->
+         (pp_type ", " (fun p s ->
               match s with
               | Var s | Loc s | State s -> fprintf p "tmp_%s" s)) result
          node
@@ -106,22 +112,23 @@ module E = struct
            (pp_list_n "" (fun ppf (s, o) ->
                 fprintf ppf "%s => {@[<4>%a@]}," s print_statement o)) b
 
+
       
   let print_step ppf mach =
     let var_in, loc_vars, var_out, stat = mach.step in
-    fprintf ppf "@[<4>pub fn step(&mut self, %a) -> (%a) {@\n%a@\n%a@\n@\n(%a)@]@\n}@\n"
+    fprintf ppf "@[<4>pub fn step(&mut self, %a) -> %a {@\n%a@\n%a@\n@\n%a@]@\n}@\n"
       (* input variables:types *)
       (pp_list_brk ", " (fun ppf (var, sty) ->
            fprintf ppf "%s:%a" var print_sty sty)) var_in
       (* output types *)
-      (pp_list ", " (fun ppf (_, sty) ->
+      (pp_type ", " (fun ppf (_, sty) ->
            print_sty ppf sty)) var_out
       (* variable declarations *)
       (pp_list_n "" (fun ppf (var, sty) -> fprintf ppf "let mut %s:%a;" var print_sty sty)) (loc_vars@var_out)
       (* statements *)
       print_statement stat
       (* output variables *)
-      (pp_list ", " (fun ppf (var, _) ->
+      (pp_type ", " (fun ppf (var, _) ->
            fprintf ppf "%s" var)) var_out
     
                           
