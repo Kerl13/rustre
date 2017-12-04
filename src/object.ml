@@ -95,8 +95,10 @@ let obc_node (NNode desc) =
       in
       SSeq (SAssign { n = v;  expr = EVar (State b); }, a)) step state in
   let step = SSeq(step, end_os) in
-  let reset = List.fold_left (fun a (((b:var_id), _), (Const c)) ->
-      SSeq (SAssign { n = State b;  expr = EConst c; }, a)) SSkip state in
+  let reset_var = List.fold_left (fun a (((b:var_id), _), (Const c)) ->
+                      SSeq (SAssign { n = State b;  expr = EConst c; }, a)) SSkip state in
+  let reset = List.fold_left (fun a (i, m) ->
+                  SSeq (SReset (m, i), a)) reset_var instances in
   { memory = List.map fst state;
     name = (let Ast_typed.Tagged(_, _, n) = desc.n_name in n);
     instances = instances;
