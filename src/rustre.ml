@@ -88,8 +88,8 @@ let () =
 
     Format.printf "Extracting…@\n";
     if output = "" then
-      Format.printf "%a@." Extractor.extract_to obc
-    else Extractor.extract_to (Format.formatter_of_out_channel (open_out output)) obc;
+      Format.printf "%a@." Extractor.extract_to (obc, main_node)
+    else Extractor.extract_to (Format.formatter_of_out_channel (open_out output)) (obc, main_node);
 
     exit 0
   with

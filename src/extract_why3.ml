@@ -126,6 +126,6 @@ module E = struct
       print_step mach
       print_reset mach
 
-  let extract_to ppf f =
+  let extract_to ppf (f,_) =
     fprintf ppf "%a\n@\n%a" print_typedefs f.objf_typedefs (pp_list_n "\n" print_machine) f.objf_machines
 end
