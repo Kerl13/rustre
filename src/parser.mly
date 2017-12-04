@@ -57,7 +57,8 @@
       List.fold_left find_in_node false node.n_eqs
     in
     if present then
-      { node with n_eqs = tfbyf :: node.n_eqs }
+      let node = { node with n_eqs = tfbyf :: node.n_eqs } in
+      { node with n_local = ("_TfbyF", TyBool) :: node.n_local }
     else
       node
 %}

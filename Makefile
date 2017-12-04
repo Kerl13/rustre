@@ -15,9 +15,6 @@ test:
 debug:
 	ocamlbuild -use-ocamlfind rustre.d.byte
 
-test:
-	./test.sh $(BIN)
-
 clean:
 	ocamlbuild -clean
 	rm -f *.byte *.native
