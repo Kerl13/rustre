@@ -77,7 +77,7 @@ module E = struct
              | _ -> assert false
            )) (List.filter (fun s -> match s with | State _ -> true | _ -> false) result)
     | Ast_object.SReset (mach, inst) ->
-      fprintf ppf "Node%s.reset %s" mach inst
+      fprintf ppf "Node%s.reset state.%s;" mach inst
     | Ast_object.SCase (a, b) ->
       let vars = analyze_defs s
                  |> filter_map (function
@@ -88,8 +88,9 @@ module E = struct
         (pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars
         print_expr a
         (pp_list_n "" (fun ppf (s, o) ->
-             fprintf ppf "| %s -> @[<2>%a@ %a@]" s
-               print_statement o(pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars))
+             fprintf ppf "| %s -> @[<2>%a@ (%a)@]" s
+               print_statement o
+               (pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars))
         b
 
 
