@@ -33,10 +33,14 @@ module Nodeswitcher
   let step (state:state) (v: int) 
     (b: bool): (int) =
     
+    let () = match false with
+      | True -> Nodeaccumulation.reset state.inst1; ()
+      | False ->  ()
+    end in
     let var2 = Nodeaccumulation.step state.inst1 v in 
-    let tot = match b with
-      | False -> let tot = 0 in tot
-      | True -> let tot = var2 in tot
+    let (tot) = match b with
+      | False -> let tot = 0 in (tot)
+      | True -> let tot = var2 in (tot)
     end in
     (tot)
   
