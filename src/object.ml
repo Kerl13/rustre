@@ -41,7 +41,7 @@ let rec obc_expr_merge: type a. nl -> ident -> a nexpr_merge -> ostatement = fun
   | NMerge(id, cases) ->
     let Ast_typed.NodeLocal local = nl in
     let id = if is_in local id then Loc id else Var id in
-    SCase(id, List.map (fun (constructor, expr) ->
+    SCase(EVar id, List.map (fun (constructor, expr) ->
         constructor, obc_expr_merge nl v expr) cases)
 
 and obc_expr: type a. nl -> a nexpr -> a oexpr = fun nl expr ->
@@ -73,16 +73,17 @@ let obc_eq (Ast_typed.NodeLocal local) (instances, s, end_os) = function
     ((((v:var_id), Sty expr_merge.nexpr_type), Const (obc_const expr_merge.nexpr_type c)) :: state, instances),
     s,
     (SSeq (end_os, SAssign { n = State v; expr = obc_expr (Ast_typed.NodeLocal local) expr_merge; }))
-  | EquApp(pat, id, vl, _) ->
+  | EquApp(pat, id, vl, every) ->
     let Ast_typed.Tagged(_, _, machine_id) = id in
     let args = obc_varlist vl in
     let args = List.map (fun (v, _) -> if is_in local v then Loc v else Var v) args in
     let res = obc_varlist pat.Ast_typed.pat_desc in
     let res = List.map (fun (v, _) -> if is_in local v then Loc v else Var v) res in
     let i = new_instance () in
+    let reset = SCase (obc_expr (Ast_typed.NodeLocal local) every, ["True", SReset (machine_id, i); "False", SSkip]) in
     let state, instances = instances in
     (state, (i, machine_id)::instances),
-    (SSeq (s, (SCall(args, i, machine_id, res)))),
+    (SSeq (s, SSeq (reset, SCall(args, i, machine_id, res)))),
     end_os
 
 let obc_node (NNode desc) =

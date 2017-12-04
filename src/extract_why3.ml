@@ -84,9 +84,9 @@ module E = struct
                      | State _ -> None
                      | Var s | Loc s -> Some s) in
 
-      fprintf ppf "@[<2>let @[<2>%a@] = match %a with@\n%a@]@\nend in"
+      fprintf ppf "@[<2>let (@[<2>%a@]) = match %a with@\n%a@]@\nend in"
         (pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars
-        print_expr (EVar a)
+        print_expr a
         (pp_list_n "" (fun ppf (s, o) ->
              fprintf ppf "| %s -> @[<2>%a@ %a@]" s
                print_statement o(pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars))

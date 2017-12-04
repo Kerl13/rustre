@@ -36,7 +36,7 @@ type ostatement =
   | SSkip
   | SCall of ident list * instance * machine_id * ident list (* args, node name, result vars *)
   | SReset of machine_id * instance
-  | SCase of ident * (string * ostatement) list (* Constructors are numbered, the nth
+  | SCase : 'a oexpr * (string * ostatement) list -> ostatement (* Constructors are numbered, the nth
                                                    statement corresponds to the nth
                                                    constructor -- 2 in case of Booleans *)
 
@@ -94,7 +94,7 @@ let rec pp_ostatement ppf = function
     fprintf ppf "%s.reset() with %s;" machine_id inst
   | SCase(i, args) ->
     fprintf ppf "@[<h 2>case %a {%a@]@\n}"
-      pp_expr (EVar i)
+      pp_expr i
       (pp_list "" (fun ppf (s, i) -> fprintf ppf "@\n@[<h 2>%s -> {@\n%a@]@\n}" i pp_ostatement s))
       (List.mapi (fun _ (i, s) -> (s, i)) args)
 
