@@ -1,0 +1,17 @@
+type dir = Up + Down + Left + Right
+type power = On + Off
+
+node vertical(x: dir) = (yes: bool)
+with
+  yes = merge x (Up    -> true  when Up(x))
+                (Down  -> true  when Down(x))
+                (Left  -> false when Left(x))
+                (Right -> false when Right(x))
+
+node check(x: bool) = (ok: bool)
+with var d1, d2, d3, d4: bool in
+  d1 = vertical(Up) ;
+  d2 = vertical(Down) ;
+  d3 = vertical(Right) ;
+  d4 = vertical(Left) ;
+  ok = d1 and d2 and (not d3) and (not d4)

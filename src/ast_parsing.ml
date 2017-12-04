@@ -9,10 +9,12 @@ type location = Lexing.position * Lexing.position
 
 
 (** Types *)
+type enum = string * string list
 type ty =
   | TyBool
   | TyInt
   | TyReal
+  | TyEnum of enum
 
 
 (** Builtin operators *)
@@ -23,6 +25,14 @@ type op =
   | OpAnd | OpOr | OpImpl
   | OpNot
 
+
+
+type const =
+  | CNil
+  | CInt of int
+  | CReal of float
+  | CBool of bool
+  | CDataCons of ident
 
 (** Expressions *)
 type expr = {
@@ -40,15 +50,12 @@ and expr_desc =
   | EWhen  of expr * ident * ident
   | EMerge of ident * (ident * expr) list
 
-and const =
-  | CNil
-  | CInt of int
-  | CReal of float
-  | CBool of bool
-
 
 (** Programs *)
-type file = node list
+type file = {
+  f_typedefs : enum list ;
+  f_nodes : node list
+}
 
 and node = {
   n_name   : ident ;
@@ -92,18 +99,16 @@ let rec visit f state e =
  * Pretty printer
  **)
 
-let fprintf = Format.fprintf
 
-let rec pp_list sep pp ppf = function
-  | [] -> fprintf ppf ""
-  | [x] -> fprintf ppf "%a" pp x
-  | x :: xs -> fprintf ppf "%a%s%a" pp x sep (pp_list sep pp) xs
+let fprintf = Format.fprintf
+let pp_list = Misc.pp_list
 
 let pp_const ppf = function
   | CNil -> fprintf ppf "nil"
   | CInt n -> fprintf ppf "%d" n
   | CReal f -> fprintf ppf "%f" f
   | CBool b -> fprintf ppf "%B" b
+  | CDataCons dc -> fprintf ppf "%s" dc
 
 let pp_op ppf = function
   | OpAdd -> fprintf ppf "+"
@@ -147,6 +152,7 @@ let pp_ty ppf = function
   | TyBool -> fprintf ppf "bool"
   | TyInt -> fprintf ppf "int"
   | TyReal -> fprintf ppf "real"
+  | TyEnum (name, _) -> fprintf ppf "%s" name
 
 let pp_equation ppf eq =
   fprintf ppf "%a = %a" pp_pat eq.eq_pat pp_expr eq.eq_expr
@@ -161,4 +167,11 @@ let pp_node ppf n =
     (pp_list "; " pp_arg) n.n_local
     (pp_list ";\n" pp_equation) n.n_eqs
 
-let pp_file ppf f = fprintf ppf "%a" (pp_list "\n\n" pp_node) f
+let pp_typedef fmt (ty_name, enum) =
+  fprintf fmt "type %s = %a" ty_name (pp_list " + " Format.pp_print_string) enum
+
+
+let pp_file ppf f =
+  fprintf ppf "%a" (pp_list "\n" pp_typedef) f.f_typedefs;
+  fprintf ppf "\n\n";
+  fprintf ppf "%a" (pp_list "\n\n" pp_node) f.f_nodes

@@ -1,0 +1,136 @@
+theory Stream
+
+  use import int.Int
+  use import bool.Bool
+  type stream 'a
+  type nat = O | S nat
+  function get (stream 'a) nat: 'a
+
+  function s (i: nat): nat =
+    match i with
+    | O -> O
+    | S i -> S (s i)
+    end
+
+  goal test: forall i: nat. s i = i
+
+  function splus (stream int) (stream int): stream int
+  function spre (stream 'a): stream 'a
+  function sconst int: stream int
+  function sgt (stream int) (stream int): stream bool
+  function sif (stream bool) (stream 'a) (stream 'a): stream 'a
+  function sfby 'a (stream 'a): stream 'a
+
+  axiom splus_ax: forall a, b, c: stream int.
+    (forall n: nat. get a n + get b n = get c n) <-> c = splus a b
+
+  goal splus_com: forall a, b: stream int.
+    splus a b = splus b a
+
+
+  (*    axiom splus_fby: forall c, a:stream 'a.
+  (get (sfby c a) O = c /\ forall n. get (sfby c a) (S n) = get a n)
+
+  axiom ext: forall a, b: stream 'a. (forall n. get a n = get b n) -> a = b*)
+
+  axiom splus_fby: forall c, a, b:stream 'a.
+    (get b O = c /\ forall n. get b (S n) = get a n) <-> b = sfby c a
+
+
+  predicate step_state (x: stream bool) (ok: stream bool) =
+    exists n1, n2: stream int.
+      n1 = sif x (splus (spre n1) (sconst 1)) (spre n1) /\
+      n2 = sfby 0 (splus n2 (sconst (-1))) /\
+      ok = sgt n1 n2
+
+end
+
+module Proof1
+  use import Stream
+  use import int.Int
+  use import bool.Bool
+  predicate step_state1 (a: stream int) (b: stream int) (c: stream int) =
+    c = splus a b
+  function a: stream int
+  function b: stream int
+  function c: stream int
+
+  function step_func1 (a: int) (b: int): int =
+    a + b
+
+  axiom step_state_a_b_c: forall n: nat. get c n = step_func1 (get a n) (get b n  )
+
+  goal valid: step_state1 a b c
+end
+
+module Proof2
+  use import Stream
+  use import int.Int
+  use import bool.Bool
+  function a: stream int
+  function b: stream int
+  function c: stream int
+
+  predicate step_state1 (a: stream int) (c: stream int) =
+    c = sfby 0 a
+
+  function step_func1 (a: int) (var1: int) : (int, int) =
+    let n = var1 in
+    let var1 = a in
+    (n, var1)
+
+  function step_reset (): int =
+    0
+
+  axiom reset_b: get b O = step_reset ()
+  axiom step_state_a_b_c:
+  forall n: nat. (get c n, get b (S n)) = step_func1 (get a n) (get b n)
+
+  goal valid: step_state1 a c
+end
+
+module Check
+  use import int.Int
+
+  type state = { mutable var1:int; mutable var2:int; mutable n2:int; }
+
+
+  function step_func (s: state) (x:bool) : (bool, state) =
+  let n2 = s.n2 in
+  let var2 = s.var2 in
+  let var1 = s.var1 in
+  let n1 =
+  match x with
+  | True -> var1 + 1
+  | False -> var2
+  end in
+  let svar1 = n1 in
+  let svar2 = n1 in
+  let sn2 = n2 - 1 in
+
+  let ok = n1 > n2 in
+  (ok, { var1 = svar1; var2 = svar2; n2 = sn2; })
+
+
+  let step (s: state) (x:bool) : bool
+  ensures { (result, s) = step_func (old s) x }
+  =
+  let n2 = s.n2 in
+  let var2 = s.var2 in
+  let var1 = s.var1 in
+  let n1 =
+  match x with
+  | True -> var1 + 1
+  | False -> var2
+  end in
+  s.var1 <- n1;
+  s.var2 <- n1;
+  s.n2 <- n2 - 1;
+
+  let ok = n1 > n2 in
+  ok
+
+  let iter(a:unit) : bool
+  ensures { result = true } =
+  step({var1 = 0; var2 = 0; n2 = 0;}) false
+end

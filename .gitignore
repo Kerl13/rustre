@@ -1,4 +1,11 @@
 *~
 *.byte
 *.native
+rustre
 _build
+tests/ocaml/_build
+tests/ocaml/*.ml
+*.xml
+*.gz
+.*.sw*
+*.bak

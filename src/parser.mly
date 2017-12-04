@@ -1,9 +1,12 @@
 %{
-  open Parse_ast
+  open Ast_parsing
 
 
   let dummy_loc e pos = { expr_desc = e ; expr_loc = (pos, pos) }
   let pat_descs patterns = List.map (fun p -> p.pat_desc) patterns
+
+  (* Type definitions *)
+  let data_constructors = Hashtbl.create 17
 
   (** Syntactic sugar *)
 
@@ -60,12 +63,12 @@
 %}
 
 
-%token <string> STRING
+%token <string> IDENT DCIDENT
 %token <bool> CONST_BOOL
 %token <int> CONST_INT
 %token <float> CONST_REAL
 
-%token BOOL INT REAL
+%token BOOL INT REAL TYPE
 
 %token PLUS MINUS STAR SLASH MOD
 %token LT LE GT GE
@@ -98,7 +101,7 @@
 
 
 %start file
-%type <Parse_ast.file> file
+%type <Ast_parsing.file> file
 
 %%
 
@@ -116,16 +119,28 @@
 | x = X COMMA xs = separated_nonempty_list(COMMA, X)  { x :: xs }
 
 
-ident: s = STRING  { s }
+ident:    s = IDENT    { s }
+dcident : s = DCIDENT  { s }
+dcident_or_boolean:
+| dc = dcident         { dc }
+| b = CONST_BOOL       { if b then "True" else "False" }
 
 
 typ:
-| BOOL   { TyBool }
-| INT    { TyInt }
-| REAL   { TyReal }
+| BOOL       { TyBool }
+| INT        { TyInt }
+| REAL       { TyReal }
+| t = ident  { TyEnum (t, Hashtbl.find data_constructors t) }
 
 
-file: nodes = list(node) EOF  { nodes }
+file:
+  typedefs = list(typedef) nodes = list(node) EOF
+  {{ f_typedefs = typedefs; f_nodes = nodes }}
+
+
+typedef:
+  TYPE t = ident EQUAL dcs = separated_nonempty_list(PLUS, dcident)
+  { Hashtbl.add data_constructors t dcs ; (t, dcs) }
 
 
 node:
@@ -203,17 +218,19 @@ expr:
   ev = option(preceded(EVERY, located(expr)))  { application f args ev $endpos }
 
 | e = located(expr)
-  WHEN c = ident LPAR x = ident RPAR           { EWhen (e, c, x) }
+  WHEN dc = dcident_or_boolean
+  LPAR x = ident RPAR                          { EWhen (e, dc, x) }
 | MERGE x = ident
   clauses = nonempty_list(merge_clause)        { EMerge (x, clauses) }
 
 
 merge_clause:
-  LPAR i = ident ARROW e = located(expr) RPAR
-  { (i, e) }
+  LPAR dc = dcident_or_boolean ARROW e = located(expr) RPAR
+  { (dc, e) }
 
 
 const:
 | b = CONST_BOOL  { CBool b }
 | n = CONST_INT   { CInt n }
 | f = CONST_REAL  { CReal f }
+| dc = dcident    { CDataCons dc }

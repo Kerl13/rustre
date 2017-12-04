@@ -1,8 +1,5 @@
-node incr (tic: bool) = (cpt: int)
-with
-  cpt = (0 -> pre cpt) + if tic then 1 else 0
-
 node check (x: bool) = (ok: bool)
-with var cpt : int in
-  cpt = incr(x);
-  ok = true -> (pre cpt) <= cpt
+with var n1, n2: int in
+  n1 = if x then (pre n1) + 1 else pre n1;
+  n2 = 0 fby (n2 - 1);
+  ok = n1 > n2

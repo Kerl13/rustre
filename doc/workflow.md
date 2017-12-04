@@ -11,16 +11,31 @@ See also Fig. 6 of the article.
 * Output: typed Minilustre AST
 * Testing functions?
 
-## Clock annotation
+## Clock annotation/inference
 /!\ Looks like the article mentions clock annotation checking (Fig. 2), but we'll need to do clock annotation inference
 
 * Output: typed and clock-annotated AST
 * Testing functions?
 
+## Normalization
+* Output: a typed, clock-annotated AST in normal form
+  The article mentions a grammar for these terms, but:
+  > Note that it would also be possible to introduce a new intermediate
+  > language instead of the source-to-source transformation. This is
+  > essentially a matter of taste, the main advantage of the present
+  > formulation being to save the redefinition of auxiliary notions.
+* Testing functions?
+
 ## Dependencies and scheduling
 This phase checks that there is no dependency loop/causality error and then creates a scheduling. Using just a topological sort isn't the best option.
-* Output: typed, clock-annotated AST 
+* Output: typed, clock-annotated AST
 * Testing functions?
+
+## Nil analysis
+
+## Translation to Obc
+
+## Translation to Rust
 
 ### Possible optimizations
 > The data-flow nature of this language makes the implementation of
@@ -36,17 +51,8 @@ This phase checks that there is no dependency loop/causality error and then crea
 > copy variables in classical compilation terminology [19]). As
 > mentioned in [15], a stream x and its previous value pre x can be
 > stored in the same variable if the computation of x is not followed
-> by a use of pre x. 
+> by a use of pre x.
 
-
-## Normalization
-* Output: a typed, clock-annotated AST in normal form
-  The article mentions a grammar for these terms, but:
-  > Note that it would also be possible to introduce a new intermediate
-  > language instead of the source-to-source transformation. This is
-  > essentially a matter of taste, the main advantage of the present
-  > formulation being to save the redefinition of auxiliary notions.
-* Testing functions?
 
 ## Translation into a simple object-based language
 * Output: the AST of this object-based language

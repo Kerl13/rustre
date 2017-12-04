@@ -1,0 +1,17 @@
+node dummy_merge (x: int; b: bool) = (y: int)
+with var xt, xf : int in
+  xt = x when True(b) ;
+  xf = x when False(b) ;
+  y = merge b (True -> xt) (False -> xf)
+
+
+node check(x: int; b: bool) = (ok: bool)
+with var y, z: int; b1, b2: bool in
+  -- b2 and z are only defined at even steps on the base clock
+  b1 = true fby (not b1);
+  b2 = b when True(b1);
+  z = x when True(b1);
+  -- y should be equal to z
+  -- both should have clock [base on True(b1)]
+  y = dummy_merge(z, b2);
+  ok = (z = y)

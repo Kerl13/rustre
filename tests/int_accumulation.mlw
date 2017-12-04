@@ -1,0 +1,51 @@
+module Types
+  
+end
+
+module Nodeaccumulation
+  use import int.Int
+  use Types
+  
+  
+  type state = { mutable var1: int; }
+  
+  let step (state:state) (v: int): (int) =
+    let var1 = state.var1 in
+    
+    let tot = var1 + v in
+    
+    state.var1 <- tot + v;
+    (tot)
+  
+  let reset (state:state): unit =
+    state.var1 <- 0;
+    ()
+
+end
+
+module Nodeswitcher
+  use import int.Int
+  use Types
+  use Nodeaccumulation
+  
+  type state = {  inst1: Nodeaccumulation.state;}
+  
+  let step (state:state) (v: int) 
+    (b: bool): (int) =
+    
+    let () = match false with
+      | True -> Nodeaccumulation.reset state.inst1; ()
+      | False ->  ()
+    end in
+    let var2 = Nodeaccumulation.step state.inst1 v in 
+    let (tot) = match b with
+      | False -> let tot = 0 in (tot)
+      | True -> let tot = var2 in (tot)
+    end in
+    (tot)
+  
+  let reset (state:state): unit =
+    
+    ()
+
+end

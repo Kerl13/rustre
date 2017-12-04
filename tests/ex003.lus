@@ -1,9 +1,11 @@
-node check (x: bool) = (OK: bool)
-with var n1, n2: int;
-         b1, b2, b1b2: bool in
-  n1 = 0 -> pre n1 + 1;
-  n2 = 0 -> pre (0 -> pre (n1 + 2));
-  b1 = false -> true;
-  b2 = false -> pre b1;
-  b1b1 = b1 and b2;
-  OK = if b1b2 then n1 = n2 else true
+node check (x: bool) = (a, b: int)
+with var n1, n2: int in
+  n1 = if x then 0 else 1;
+  n2 = if x then 1 else 0;
+  a = n1 + n2;
+  b = 0
+
+node check2 (x: bool) = (ok: bool)
+with var n1, n2: int; b: bool in
+  (n1, n2) = check(x);
+  ok = (n1 + 1) = n2
