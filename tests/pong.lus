@@ -1,0 +1,21 @@
+type dir = Left + Right
+
+node lat_move(x : int; d : dir) = (x2 : int)
+with
+  x2 = merge d (Left  -> x - 10 when Left(d))
+               (Right -> x + 10 when Right(d))
+
+node hor_move(y : int) = (y2, gradient : int)
+with var overflow : bool in
+  y2 = y + gradient ;
+  overflow = ((y2 >= 400) or (y2 < 0)) ;
+  gradient = 8 fby (if overflow then (- gradient) else gradient)
+
+node pong(wind : int) = (x, y : int; paddle : int)
+with var dir : dir; gradient, y2, x2 : int in
+  x2 = lat_move(x, dir) ;
+  x = 100 fby x2 ;
+  (y2, gradient) = hor_move(y) ;
+  y = 300 fby y2 ;
+  dir = (Right fby (Right fby dir)) ;
+  paddle = 200
