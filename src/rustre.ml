@@ -112,11 +112,12 @@ let () =
     exit 1
   | Typing.Expected_num(loc) ->
     report_loc loc;
-    Format.eprintf "Expected num at ";
+    Format.eprintf "Expected num at @.";
     exit 1
   | Clocking.ClockingError (loc, message) ->
     report_loc loc;
-    Format.eprintf "%s" message;
+    Format.eprintf "%s@." message;
     exit 1
   | Scheduling.SchedulingError message ->
-    Format.eprintf "%s" message
+    Format.eprintf "%s@." message
+    exit 1   
