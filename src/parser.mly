@@ -93,8 +93,8 @@
 %left OR
 %left AND
 %left EQUAL NEQ LT LE GT GE
-%right PLUS MINUS
 %right WHEN
+%right PLUS MINUS
 %left STAR SLASH MOD
 %right EVERY
 %right NOT
