@@ -1,3 +1,5 @@
+(* not working for enums *)
+(* create real main function... *)
 open Ast_object         
          
 module E = struct
@@ -5,13 +7,16 @@ module E = struct
 
   let build_filename a = a ^ ".rs"
 
+  (* In type t = A + B, enum is t, A is datacons *)
+  let print_enum ppf n = fprintf ppf "Ty_%s" n
+  let print_datacons ppf l = fprintf ppf "Dc_%s" l
+                       
   let print_sty ppf (Sty ty) =
-    fprintf ppf "%s" (match ty with
-                      | Ast_typed.TyBool -> "bool"
-                      | Ast_typed.TyNum Ast_typed.TyZ -> "i64"
-                      | Ast_typed.TyNum Ast_typed.TyReal -> "f64"
-                      | Ast_typed.TyEnum(n, _) -> failwith "rust / print_sty / TyEnum: Not Implemented")
-                        
+    match ty with
+    | Ast_typed.TyBool -> fprintf ppf "bool"
+    | Ast_typed.TyNum Ast_typed.TyZ -> fprintf ppf "i64"
+    | Ast_typed.TyNum Ast_typed.TyReal -> fprintf ppf "f64"
+    | Ast_typed.TyEnum(n, _) -> fprintf ppf "%a" print_enum n
                         
   let print_mach_inst pff m = fprintf pff "node_%s::Machine" m
                        
@@ -65,13 +70,12 @@ module E = struct
          | CReal i ->
             fprintf ppf "%f" i
          | CDataCons s ->
-            (* todo *)
-            failwith "rust / print_expr / DataCons : not implemented"
+            print_datacons ppf s
        end
     | EBOp (a, b, c) ->
        fprintf ppf "%a %a %a" print_expr b pp_bop a print_expr c
     | EUOp (a, b) ->
-       fprintf ppf "%a %a" print_expr b pp_uop a
+       fprintf ppf "(%a %a)" pp_uop a print_expr b
     
   let rec print_statement ppf (s:ostatement) = match s with
     | Ast_object.SAssign { n = (Var s | Loc s); expr } ->
@@ -86,7 +90,7 @@ module E = struct
        fprintf ppf ""
     | Ast_object.SCall (args, node, inst, result) ->
        (* todo : optimize if List.length result < 2 *)
-       fprintf ppf "{@[<4>@\nlet (%a) = self.%s.step(%a);@\n%a@]@\n}"
+       fprintf ppf "{@[<4>@\nlet %a = self.%s.step(%a);@\n%a@]@\n}"
          (pp_type ", " (fun p s ->
               match s with
               | Var s | Loc s | State s -> fprintf p "tmp_%s" s)) result
@@ -135,11 +139,23 @@ module E = struct
   let print_reset ppf mach =
     fprintf ppf "@[<4>pub fn reset(&mut self) {@\n%a@]@\n}@\n" print_statement mach.reset
                        
-  let print_machine ppf mach =
-    fprintf ppf "@[<4>mod node_%s {@\n%a@\n@\n%a@\n@[<4>impl Machine {@\n%a@\n%a@]@\n}@]@\n}"
+  let print_use_typedef ppf i = 
+    fprintf ppf "use %a;@\nuse %a::*;@\n"
+      print_enum i
+      print_enum i
+
+  let print_use_typedefs ppf type_list =
+    fprintf ppf "%a@\n"
+      (pp_list_n "" print_use_typedef) type_list
+
+
+  let print_machine ppf enum_list mach = 
+    fprintf ppf "@[<4>mod node_%s {@\n%a@\n%a@\n@\n%a@\n@[<4>impl Machine {@\n%a@\n%a@]@\n}@]@\n}"
       mach.name
-      (* import of other instances *)
-      (pp_list_n "" (fun ppf (_, m) -> fprintf ppf "use node_%s;" m)) mach.instances
+      (* import of other instances (we need one import only per instance *)
+      (pp_list_n "" (fun ppf m -> fprintf ppf "use node_%s;" m)) (List.sort_uniq Pervasives.compare (List.map (fun (_, m) -> m) mach.instances))
+      (* import enum types *)
+      print_use_typedefs enum_list
       (* definition of struct Machine *)
       print_state mach
       (* then implementation of reset and step *)
@@ -149,7 +165,18 @@ module E = struct
   let print_main ppf main_node =
     (* todo: a real main *)
     fprintf ppf "pub fn main() {@\n    let mut mach:node_%s::Machine = Default::default();@\n    mach.reset();@\n    mach.step(true);@\n}" main_node
+
+    
+  let print_typedef ppf (i, l) =
+    fprintf ppf "pub enum %a { %a }"
+      print_enum i
+      (pp_list ", " (fun ppf x -> print_datacons ppf x)) l
+
+  let print_types ppf type_list =
+    fprintf ppf "%a@\n"
+      (pp_list_n "" print_typedef) type_list
     
   let extract_to ppf (f, main_node) =
-    fprintf ppf "%a@\n@\n%a@\n" (pp_list_n "\n" print_machine) f.objf_machines print_main main_node
+    let enum_list = List.map (fun (x, _) -> x) f.objf_typedefs in
+    fprintf ppf "%a@\n@\n%a@\n@\n%a@\n" print_types f.objf_typedefs (pp_list_n "\n" (fun ppf x -> print_machine ppf enum_list x)) f.objf_machines print_main main_node
 end
