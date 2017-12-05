@@ -136,6 +136,7 @@ let pp_expr =
     | EFby (v, e) -> fprintf ppf "(%a fby %a)" pp_const v pp e
     | EOp (op, [e1; e2]) -> fprintf ppf "(%a %a %a)" pp e1 pp_op op pp e2
     | EOp (OpNot, [e]) -> fprintf ppf "(%a %a)" pp_op OpNot pp e
+    | EOp (OpSub, [e]) -> fprintf ppf "(%a %a)" pp_op OpSub pp e
     | EOp _ -> assert false
     | EApp (f, args, ev) -> fprintf ppf "(%s(%a) every %a)" f (pp_list ", " pp) args pp ev
     | EWhen (e, c, x) -> fprintf ppf "(%a when %s(%s))" pp e c x

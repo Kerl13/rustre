@@ -4,6 +4,7 @@
 
   let dummy_loc e pos = { expr_desc = e ; expr_loc = (pos, pos) }
   let pat_descs patterns = List.map (fun p -> p.pat_desc) patterns
+  let zero = dummy_loc (EConst (CInt 0)) Lexing.dummy_pos
 
   (* Type definitions *)
   let data_constructors = Hashtbl.create 17
@@ -210,7 +211,7 @@ expr:
 | e1 = located(expr) OR    e2 = located(expr)  { EOp (OpOr, [e1 ; e2]) }
 | e1 = located(expr) IMPL  e2 = located(expr)  { EOp (OpImpl, [e1 ; e2]) }
 | NOT e = located(expr)                        { EOp (OpNot, [e]) }
-| MINUS e = located(expr)                      { EOp (OpSub, [e]) }
+| MINUS e = located(expr)                      { EOp (OpSub, [zero; e]) }
 | PRE e = located(expr)                        { pre e }
 | e1 = located(expr) ARROW e2 = located(expr)  { arrow e1 e2 $endpos }
 
