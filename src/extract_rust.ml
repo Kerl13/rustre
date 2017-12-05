@@ -1,5 +1,4 @@
-(* not working for enums *)
-(* create real main function... *)
+(* todo: clean (functions with tuples...) *)
 open Ast_object
 
 module E = struct
@@ -133,13 +132,24 @@ module E = struct
                          | State _ -> None
                          | Var s | Loc s -> Some s) in
        let vars = if List.length vars = 0 then ["()"] else vars in
-       fprintf ppf "@[<2>let %a = match %a {@\n%a@]};"
-         (pp_list_brk ", " (fun ppf -> fprintf ppf "%s")) vars
-         print_expr a
-         (pp_list_n "" (fun ppf (s, o) ->
-              fprintf ppf "%s => {@[<4>%a@ (%a)@]}" (if s = "True" || s = "False" then (String.lowercase_ascii s) else s)
-                print_statement o
-                (pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars)) b
+       if ((List.length b = 2) && ((fst (List.hd b) = "True") || (fst (List.hd b) = "False"))) then
+         fprintf ppf "@[<2>let %a = match %a {@\n%a@]};"
+           (pp_list_brk ", " (fun ppf -> fprintf ppf "%s")) vars
+           print_expr a
+           (pp_list_n "" (fun ppf (s, o) ->
+                fprintf ppf "%s => {@[<4>%a@ (%a)@]}"
+                  (String.lowercase_ascii s)
+                  print_statement o
+                  (pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars)) b
+       else
+         fprintf ppf "@[<2>let %a = match %a {@\n%a@]};"
+           (pp_list_brk ", " (fun ppf -> fprintf ppf "%s")) vars
+           print_expr a
+           (pp_list_n "" (fun ppf (s, o) ->
+                fprintf ppf "%a => {@[<4>%a@ (%a)@]}"
+                  print_datacons s
+                  print_statement o
+                  (pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars)) b
        (* if ((List.length b = 2) && ((fst (List.hd b) = "True") || (fst (List.hd b) = "False"))) then
         *   (\* we can reasonably assume that we're dealing with booleans *\)
         *   fprintf ppf "@[<4>match %a {@\n%a@]}"
@@ -158,7 +168,7 @@ module E = struct
     let var_in, loc_vars, var_out, stat = mach.step in
     fprintf ppf "@[<4>pub fn step(&mut self, %a) -> %a {@\n%a@\n@\n%a@]@\n}@\n"
       (* input variables:types *)
-      (pp_list_brk ", " (fun ppf (var, sty) ->
+      (pp_list ", " (fun ppf (var, sty) ->
            fprintf ppf "%s:%a" var print_sty sty)) var_in
       (* output types *)
       (pp_type ", " (fun ppf (_, sty) ->
@@ -180,36 +190,70 @@ module E = struct
       print_enum i
       print_enum i
 
-  let print_use_typedefs ppf type_list =
+  let print_use_typedefs ppf typedefs =
+    let type_list = List.map (fun (x, _) -> x) typedefs in
     fprintf ppf "%a@\n"
       (pp_list_n "" print_use_typedef) type_list
 
 
-  let print_machine ppf enum_list mach =
+  let print_machine ppf typedefs mach =
     fprintf ppf "@[<4>mod node_%s {@\n%a@\n%a@\n@\n%a@\n@[<4>impl Machine {@\n%a@\n%a@]@\n}@]@\n}"
       mach.name
       (* import of other instances (we need one import only per instance *)
       (pp_list_n "" (fun ppf m -> fprintf ppf "use node_%s;" m)) (List.sort_uniq Pervasives.compare (List.map (fun (_, m) -> m) mach.instances))
       (* import enum types *)
-      print_use_typedefs enum_list
+      print_use_typedefs typedefs
       (* definition of struct Machine *)
       print_state mach
       (* then implementation of reset and step *)
       print_step mach
       print_reset mach
 
+  let print_ask_input ppf vars_in =
+    fprintf ppf "println!(\"Input: %a\");@\n"
+      (pp_list ", " (fun ppf (var, sty) ->
+           fprintf ppf "%s:%a" var print_sty sty)) vars_in
 
-  let print_main ppf main_machine =
-    (* let (vars_in, _, _, _) = main_machine.step in
-     * (\* ask for input of given type *\)
-     * fprintf ppf "println!(Input: %a);@\n"
-     *   (pp_list_brk ", " (fun ppf (var, sty) ->
-     *        fprintf ppf "%s:%a" var print_sty sty)) vars_in
-     * (\* read input *\)
-     * 
-     * todo: a real main *)
-    fprintf ppf "pub fn main() {@\n    let mut mach:node_%s::Machine = Default::default();@\n    mach.reset();@\n    mach.step(true);@\n}" main_machine.name
+  let print_parse_type ppf (typedefs, n, Sty ty) =
+    match ty with
+    | Ast_typed.TyEnum(ty_enum, _) ->
+       let enum_name, enum_dcons = List.find (fun (x, y) -> x = ty_enum) typedefs in
+       fprintf ppf "@[<4>let arg%d = match splitted[%d] {@\n%a@\n%s@]@\n};"
+         n n
+         (pp_list_n "" (fun ppf x ->
+              fprintf ppf "\"%s\" => %a," enum_name print_datacons x)) enum_dcons
+         "_ => continue"
+    | _ ->
+       fprintf ppf "@[<4>let arg%d = match splitted[%d].parse::<%a>() {@\nOk(i) => i,@\nErr(..) => continue@]@\n};"
+         n n print_sty (Sty ty)
 
+
+  let rec print_parse_types ppf (typedefs, n, l) =
+    match l with
+    | [] ->
+       fprintf ppf ""
+    | x::xs ->
+       fprintf ppf "%a@\n%a"
+         print_parse_type (typedefs, n, snd x)
+         print_parse_types (typedefs, n+1, xs)
+
+    
+  let print_parse_args ppf (typedefs, var_in) =
+    fprintf ppf "use std::io;@\n@[<4>fn parse_args() -> %a {@\n%a@\n@[<4>loop {@\n%s@\n%a@\n%s@\n%s@\n%a@\nreturn %a;@]@\n}@]@\n}@\n"
+      (* output types *)
+      (pp_type ", " (fun ppf (_, sty) ->
+           print_sty ppf sty)) var_in
+      (* import of enum types *)
+      print_use_typedefs typedefs
+      "let mut input_text = String::new();"
+      (* ask for input values *)
+      print_ask_input var_in
+      "io::stdin().read_line(&mut input_text).expect(\"failed to read from stdin\");"
+      "let splitted:Vec<&str> = input_text.trim().split(' ').collect();"
+      (* let arg_i = match ....parse::<...> *)
+      print_parse_types (typedefs, 0, var_in)
+      (* (arg_0, ..., arg_N) *)
+      (pp_type ", " (fun ppf x -> fprintf ppf "%s" x)) (List.mapi (fun i (_, _) -> "arg" ^ (string_of_int i)) var_in)
 
   let print_typedef ppf (i, l) =
     fprintf ppf "#[derive(Clone, Copy)]@\npub enum %a { %a }@\nimpl Default for %a { fn default() -> %a { %a::%a }}@\n"
@@ -224,8 +268,18 @@ module E = struct
     fprintf ppf "%a@\n"
       (pp_list_n "" print_typedef) type_list
 
+  let print_main ppf (typedefs, main_machine) =
+    let (vars_in, _, _, _) = main_machine.step in
+    fprintf ppf "%a@\n@[<4>pub fn main() {@\nlet mut mach:node_%s::Machine = Default::default();@\nmach.reset();@\n@[<4>loop {@\nlet %a = parse_args();@\nprintln!(\"{:?}\", mach.step(%a));@]@\n}@]@\n}"
+      print_parse_args (typedefs, vars_in)
+      main_machine.name
+      (* (arg0, ..., argN) *)
+      (pp_type ", " (fun ppf x -> fprintf ppf "%s" x)) (List.mapi (fun i (_, _) -> "arg" ^ (string_of_int i)) vars_in)
+      (* arg0, ..., argN *)
+      (pp_list ", " (fun ppf x -> fprintf ppf "%s" x)) (List.mapi (fun i (_, _) -> "arg" ^ (string_of_int i)) vars_in)
+
+    
   let extract_to ppf (f, main_node) =
-    let enum_list = List.map (fun (x, _) -> x) f.objf_typedefs in
     let main_machine = List.find (fun m -> m.name = main_node) f.objf_machines in
-    fprintf ppf "%a@\n@\n%a@\n@\n%a@\n" print_types f.objf_typedefs (pp_list_n "\n" (fun ppf x -> print_machine ppf enum_list x)) f.objf_machines print_main main_machine
+    fprintf ppf "%a@\n@\n%a@\n@\n%a@\n" print_types f.objf_typedefs (pp_list_n "\n" (fun ppf x -> print_machine ppf f.objf_typedefs x)) f.objf_machines print_main (f.objf_typedefs, main_machine)
 end
