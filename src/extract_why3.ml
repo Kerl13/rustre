@@ -3,6 +3,8 @@ open Ast_object
 module E = struct
   open Pp_utils
 
+  let fprintf = Format.fprintf
+
   let build_filename a = a ^ ".mlw"
 
   let print_typedef ppf (i, ids) =

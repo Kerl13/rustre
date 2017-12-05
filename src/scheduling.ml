@@ -47,7 +47,7 @@ module Simple = struct
 
     let pop_leaf (g : t) =
       let key =
-        let leaves = EqMap.filter (fun _ -> Misc.is_empty_list) g in
+        let leaves = EqMap.filter (fun _ -> (=) []) g in
         if EqMap.is_empty leaves then raise (Cycle g);
         EqMap.choose leaves |> fst
       in
@@ -151,7 +151,7 @@ module Simple = struct
     | CausalityError (node_name, eqs) ->
       let message = Format.asprintf
         "Cyclic dependencies in node %s between the following equations:\n  %a"
-        node_name (Misc.pp_list "\n  " pp_eq) eqs
+        node_name (Pp_utils.pp_list "\n  " pp_eq) eqs
       in
       raise (SchedulingError message)
 end
