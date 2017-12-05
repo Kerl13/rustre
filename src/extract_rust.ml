@@ -2,6 +2,8 @@
 (* create real main function... *)
 open Ast_object
 
+let fprintf = Format.fprintf
+
 module E = struct
   open Pp_utils
 
