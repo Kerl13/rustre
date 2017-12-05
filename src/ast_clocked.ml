@@ -68,7 +68,7 @@ and equation = Equ: 'a pattern * 'a cexpr -> equation
 
 
 let fprintf = Format.fprintf
-let pp_list = Misc.pp_list
+let pp_list = Pp_utils.pp_list
 
 let rec pp_ck fmt = function
   | CBase -> fprintf fmt "base"

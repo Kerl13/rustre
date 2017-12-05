@@ -140,7 +140,7 @@ and equation = Equ: 'a pattern * 'a expr -> equation
  **)
 
 let fprintf = Format.fprintf
-let pp_list = Misc.pp_list
+let pp_list = Pp_utils.pp_list
 
 let pp_const: type a. 'b -> a const -> unit = fun ppf -> function
   | CNil -> fprintf ppf "nil"

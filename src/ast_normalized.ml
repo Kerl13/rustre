@@ -73,7 +73,7 @@ and nequation =
 
 
 let fprintf = Format.fprintf
-let pp_list = Misc.pp_list
+let pp_list = Pp_utils.pp_list
 
 let rec pp_expr : type a. Format.formatter -> a nexpr -> unit
   = fun fmt e -> match e.nexpr_desc with
