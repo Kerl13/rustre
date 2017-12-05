@@ -73,13 +73,28 @@ module E = struct
             print_datacons ppf s
        end
     | EBOp (a, b, c) ->
-      fprintf ppf "((%a) %a (%a))" print_expr b pp_bop a print_expr c
+      fprintf ppf "(%a %a %a)" print_expr b pp_bop a print_expr c
     | EUOp (a, b) ->
       fprintf ppf "(%a %a)" pp_uop a print_expr b
 
+  let rec filter_map: ('a -> 'b option) -> 'a list -> 'b list = fun f l ->
+    match l with
+    | [] -> []
+    | t::q -> match f t with
+      | Some s -> s :: filter_map f q
+      | None -> filter_map f q
+
+  let rec analyze_defs = function
+    | SAssign { n; _} -> [n]
+    | SSeq(a, b) -> analyze_defs a @ analyze_defs b
+    | SReset(_) | SSkip -> []
+    | SCall(_, _, _, res) -> res
+    | SCase(_, b) ->
+      List.hd b |> snd |> analyze_defs (* XXX alea jacta est *)
+
   let rec print_statement ppf (s:ostatement) = match s with
     | Ast_object.SAssign { n = (Var s | Loc s); expr } ->
-       fprintf ppf "%s = %a;" s print_expr expr
+       fprintf ppf "let %s = %a;" s print_expr expr
     | Ast_object.SAssign { n = State s; expr } ->
        fprintf ppf "self.%s = %a;" s print_expr expr
     | Ast_object.SSeq (a, SSkip) ->
@@ -90,37 +105,58 @@ module E = struct
        fprintf ppf ""
     | Ast_object.SCall (args, node, inst, result) ->
        (* todo : optimize if List.length result < 2 *)
-       fprintf ppf "{@[<4>@\nlet %a = self.%s.step(%a);@\n%a@]@\n}"
+       fprintf ppf "let %a = self.%s.step(%a);@\n"
          (pp_type ", " (fun p s ->
               match s with
-              | Var s | Loc s | State s -> fprintf p "tmp_%s" s)) result
+              | Var s | Loc s -> fprintf p "%s" s
+              | State s -> failwith "extract_rust: weird case")) result
          node
          (pp_list ", " print_expr) (List.map (fun i -> EVar i) args)
-         (pp_list_n "" (fun p s ->
-              match s with
-              | Var s | Loc s -> fprintf p "%s = tmp_%s;" s s
-              | State s -> fprintf p "self.%s = tmp_%s;" s s)) result
+       (* fprintf ppf "{@[<4>@\nlet %a = self.%s.step(%a);@\n%a@]@\n}"
+        *   (pp_type ", " (fun p s ->
+        *        match s with
+        *        | Var s | Loc s | State s -> fprintf p "tmp_%s" s)) result
+        *   node
+        *   (pp_list ", " print_expr) (List.map (fun i -> EVar i) args)
+        *   (pp_list_n "" (fun p s ->
+        *        match s with
+        *        | Var s | Loc s -> fprintf p "%s = tmp_%s;" s s
+        *        | State s -> fprintf p "self.%s = tmp_%s;" s s)) result *)
     | Ast_object.SReset (m, i) ->
        (* todo: no need for m ? *)
        fprintf ppf "self.%s.reset();" i
     | Ast_object.SCase (a, b) ->
-       if ((List.length b = 2) && ((fst (List.hd b) = "True") || (fst (List.hd b) = "False"))) then
-         (* we can reasonably assume that we're dealing with booleans *)
-         fprintf ppf "@[<4>match %a {@\n%a@]}"
-           print_expr a
-           (pp_list_n "" (fun ppf (s, o) ->
-                fprintf ppf "@[<4>%s => {%a@]}," (String.lowercase_ascii s) print_statement o)) b
-       else
-         fprintf ppf "match %a {@[<4>%a@]}"
-           print_expr a
-           (pp_list_n "" (fun ppf (s, o) ->
-                fprintf ppf "%s => {@[<4>%a@]}," s print_statement o)) b
+       (* todo: pourquoi on ne prend pas les state ? *)
+       (* todo: copie propre / merge avec le truc de Lucas *)
+       let vars = analyze_defs s
+                  |> filter_map (function
+                         | State _ -> None
+                         | Var s | Loc s -> Some s) in
+       let vars = if List.length vars = 0 then ["()"] else vars in
+       fprintf ppf "@[<2>let %a = match %a {@\n%a@]};"
+         (pp_list_brk ", " (fun ppf -> fprintf ppf "%s")) vars
+         print_expr a
+         (pp_list_n "" (fun ppf (s, o) ->
+              fprintf ppf "%s => {@[<4>%a@ (%a)@]}" (if s = "True" || s = "False" then (String.lowercase_ascii s) else s)
+                print_statement o
+                (pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars)) b
+       (* if ((List.length b = 2) && ((fst (List.hd b) = "True") || (fst (List.hd b) = "False"))) then
+        *   (\* we can reasonably assume that we're dealing with booleans *\)
+        *   fprintf ppf "@[<4>match %a {@\n%a@]}"
+        *     print_expr a
+        *     (pp_list_n "" (fun ppf (s, o) ->
+        *          fprintf ppf "@[<4>%s => {%a@]}," (String.lowercase_ascii s) print_statement o)) b
+        * else
+        *   fprintf ppf "match %a {@[<4>%a@]}"
+        *     print_expr a
+        *     (pp_list_n "" (fun ppf (s, o) ->
+        *          fprintf ppf "%s => {@[<4>%a@]}," s print_statement o)) b *)
 
 
 
   let print_step ppf mach =
     let var_in, loc_vars, var_out, stat = mach.step in
-    fprintf ppf "@[<4>pub fn step(&mut self, %a) -> %a {@\n%a@\n%a@\n@\n%a@]@\n}@\n"
+    fprintf ppf "@[<4>pub fn step(&mut self, %a) -> %a {@\n%a@\n@\n%a@]@\n}@\n"
       (* input variables:types *)
       (pp_list_brk ", " (fun ppf (var, sty) ->
            fprintf ppf "%s:%a" var print_sty sty)) var_in
@@ -128,7 +164,7 @@ module E = struct
       (pp_type ", " (fun ppf (_, sty) ->
            print_sty ppf sty)) var_out
       (* variable declarations *)
-      (pp_list_n "" (fun ppf (var, sty) -> fprintf ppf "let mut %s:%a;" var print_sty sty)) (loc_vars@var_out)
+      (* (pp_list_n "" (fun ppf (var, sty) -> fprintf ppf "let mut %s:%a;" var print_sty sty)) (loc_vars@var_out) *)
       (* statements *)
       print_statement stat
       (* output variables *)
@@ -164,21 +200,25 @@ module E = struct
 
 
   let print_main ppf main_machine =
-    let (vars_in, _, _, _) = main_machine.step in
-    (* ask for input of given type *)
-    fprintf ppf "println!(Input: %a);@\n"
-      (pp_list_brk ", " (fun ppf (var, sty) ->
-           fprintf ppf "%s:%a" var print_sty sty)) vars_in
-    (* read input *)
-    
-    (* todo: a real main *)
-    (* fprintf ppf "pub fn main() {@\n    let mut mach:node_%s::Machine = Default::default();@\n    mach.reset();@\n    mach.step(true);@\n}" main_machine.name *)
+    (* let (vars_in, _, _, _) = main_machine.step in
+     * (\* ask for input of given type *\)
+     * fprintf ppf "println!(Input: %a);@\n"
+     *   (pp_list_brk ", " (fun ppf (var, sty) ->
+     *        fprintf ppf "%s:%a" var print_sty sty)) vars_in
+     * (\* read input *\)
+     * 
+     * todo: a real main *)
+    fprintf ppf "pub fn main() {@\n    let mut mach:node_%s::Machine = Default::default();@\n    mach.reset();@\n    mach.step(true);@\n}" main_machine.name
 
 
   let print_typedef ppf (i, l) =
-    fprintf ppf "pub enum %a { %a }"
+    fprintf ppf "#[derive(Clone, Copy)]@\npub enum %a { %a }@\nimpl Default for %a { fn default() -> %a { %a::%a }}@\n"
       print_enum i
       (pp_list ", " (fun ppf x -> print_datacons ppf x)) l
+      print_enum i
+      print_enum i
+      print_enum i
+      print_datacons (List.hd l)
 
   let print_types ppf type_list =
     fprintf ppf "%a@\n"
