@@ -162,9 +162,17 @@ module E = struct
       print_step mach
       print_reset mach
 
-  let print_main ppf main_node =
+
+  let print_main ppf main_machine =
+    let (vars_in, _, _, _) = main_machine.step in
+    (* ask for input of given type *)
+    fprintf ppf "println!(Input: %a);@\n"
+      (pp_list_brk ", " (fun ppf (var, sty) ->
+           fprintf ppf "%s:%a" var print_sty sty)) vars_in
+    (* read input *)
+    
     (* todo: a real main *)
-    fprintf ppf "pub fn main() {@\n    let mut mach:node_%s::Machine = Default::default();@\n    mach.reset();@\n    mach.step(true);@\n}" main_node
+    (* fprintf ppf "pub fn main() {@\n    let mut mach:node_%s::Machine = Default::default();@\n    mach.reset();@\n    mach.step(true);@\n}" main_machine.name *)
 
     
   let print_typedef ppf (i, l) =
@@ -178,5 +186,6 @@ module E = struct
     
   let extract_to ppf (f, main_node) =
     let enum_list = List.map (fun (x, _) -> x) f.objf_typedefs in
-    fprintf ppf "%a@\n@\n%a@\n@\n%a@\n" print_types f.objf_typedefs (pp_list_n "\n" (fun ppf x -> print_machine ppf enum_list x)) f.objf_machines print_main main_node
+    let main_machine = List.find (fun m -> m.name = main_node) f.objf_machines in
+    fprintf ppf "%a@\n@\n%a@\n@\n%a@\n" print_types f.objf_typedefs (pp_list_n "\n" (fun ppf x -> print_machine ppf enum_list x)) f.objf_machines print_main main_machine
 end
