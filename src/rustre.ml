@@ -119,5 +119,5 @@ let () =
     Format.eprintf "%s@." message;
     exit 1
   | Scheduling.SchedulingError message ->
-    Format.eprintf "%s@." message
+    Format.eprintf "%s@." message;
     exit 1   
