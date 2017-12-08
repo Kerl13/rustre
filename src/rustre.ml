@@ -61,7 +61,8 @@ let () =
   try
     let file = Parser.file Lexer.token lb in
     close_in c;
-    let format = if verbose then Format.std_formatter else Format.str_formatter in
+    let empty_formatter = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in
+    let format = if verbose then Format.std_formatter else empty_formatter in
     
     Format.fprintf format "=== Parsed file =====\n" ;
     Format.fprintf format "%a\n@." Ast_parsing.pp_file file ;
@@ -72,7 +73,7 @@ let () =
     Format.fprintf format "%a\n@." Ast_typed.pp_file typed;
 
     Format.fprintf format "Clocking… @?";
-    let clocked = Clocking.clock_file typed in
+    let clocked = Clocking.clock_file typed main_node in
     Format.fprintf format "ok\n=== Clocks =====\n";
     Format.fprintf format "%a\n@." Ast_clocked.pp_clocks_file clocked;
 
@@ -124,4 +125,4 @@ let () =
     exit 1
   | Scheduling.SchedulingError message ->
     Format.eprintf "%s@." message;
-    exit 1   
+    exit 1
