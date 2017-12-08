@@ -5,14 +5,16 @@ let usage = Format.sprintf "usage: %s [options] file.lus main" Sys.argv.(0)
 
 type extractor = Rust | Why3
 
-let file, main_node, extractor, output =
+let file, main_node, extractor, output, verbose =
   let extractor = ref Rust in
   let output = ref "" in
+  let verbose = ref false in
   let spec = ["-extract",
               Arg.Symbol (["why3"; "rust"], (fun s ->
                   extractor := if s = "why3" then Why3 else Rust)),
               "Extract to why3 or rust";
-              "-o", Arg.Set_string output, "File to write the generated code."] in
+              "-o", Arg.Set_string output, "File to write the generated code.";
+              "-v", Arg.Set verbose, "Verbose output"] in
   let file = ref None in
   let main = ref None in
 
@@ -36,7 +38,8 @@ let file, main_node, extractor, output =
   (match !file with Some f -> f | None -> Arg.usage spec usage; exit 1),
   (match !main with Some n -> n | None -> Arg.usage spec usage; exit 1),
   !extractor,
-  !output
+  !output,
+  !verbose
 
 module Extractor = (val (match extractor with
     | Rust -> (module Extract_rust.E)
@@ -58,33 +61,35 @@ let () =
   try
     let file = Parser.file Lexer.token lb in
     close_in c;
+    let empty_formatter = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in
+    let format = if verbose then Format.std_formatter else empty_formatter in
+    
+    Format.fprintf format "=== Parsed file =====\n" ;
+    Format.fprintf format "%a\n@." Ast_parsing.pp_file file ;
 
-    Format.printf "=== Parsed file =====\n" ;
-    Format.printf "%a\n@." Ast_parsing.pp_file file ;
-
-    Format.printf "Typing… @?";
+    Format.fprintf format "Typing… @?";
     let typed = Typing.do_typing file in
-    Format.printf "ok\n=== Typed file =====\n";
-    Format.printf "%a\n@." Ast_typed.pp_file typed;
+    Format.fprintf format "ok\n=== Typed file =====\n";
+    Format.fprintf format "%a\n@." Ast_typed.pp_file typed;
 
-    Format.printf "Clocking… @?";
+    Format.fprintf format "Clocking… @?";
     let clocked = Clocking.clock_file typed main_node in
-    Format.printf "ok\n=== Clocks =====\n";
-    Format.printf "%a\n@." Ast_clocked.pp_clocks_file clocked;
+    Format.fprintf format "ok\n=== Clocks =====\n";
+    Format.fprintf format "%a\n@." Ast_clocked.pp_clocks_file clocked;
 
-    Format.printf "Normalization… @?";
+    Format.fprintf format "Normalization… @?";
     let normalized = Normalization.normalize_file clocked in
-    Format.printf "ok@." ;
+    Format.fprintf format "ok@." ;
 
-    Format.printf "Scheduling… @?";
+    Format.fprintf format "Scheduling… @?";
     let scheduled = Scheduling.schedule normalized main_node in
-    Format.printf "ok\n=== Scheduled nodes =====\n";
-    Format.printf "%a\n@." Ast_normalized.pp_file scheduled;
+    Format.fprintf format "ok\n=== Scheduled nodes =====\n";
+    Format.fprintf format "%a\n@." Ast_normalized.pp_file scheduled;
 
-    Format.printf "Translation into the object language… @?";
+    Format.fprintf format "Translation into the object language… @?";
     let obc = Object.from_normalized scheduled in
-    Format.printf "ok\n=== Object =====\n";
-    Format.printf "%a\n@." Ast_object.pp_file obc;
+    Format.fprintf format "ok\n=== Object =====\n";
+    Format.fprintf format "%a\n@." Ast_object.pp_file obc;
 
     Format.printf "Extracting…@\n";
     if output = "" then
@@ -92,7 +97,7 @@ let () =
     else Extractor.extract_to (Format.formatter_of_out_channel (open_out output)) (obc, main_node);
 
     exit 0
-  with
+    with
   | Lexer.Lexical_error s ->
     report_loc (lexeme_start_p lb, lexeme_end_p lb);
     Format.eprintf "lexical error: %s\n@." s;
