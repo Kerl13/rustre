@@ -1,0 +1,9 @@
+node id2(x : int; y : bool) = (xx : int; yy : bool)
+with
+  yy = y ;
+  xx = x
+
+node check(dummy : int) = (ok : bool)
+with var xx : int; yy : bool in
+  (xx, yy) = id2(42, True) ;
+  ok = (xx = 42 and yy)
