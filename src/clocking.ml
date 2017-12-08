@@ -3,7 +3,8 @@ type location = Ast_typed.location
 
 module type Clocking = sig
   exception ClockingError of location * string
-  val clock_file: Ast_typed.file -> Ast_clocked.file
+  val clock_file: Ast_typed.file -> string -> Ast_clocked.file
+  (** We must know which is the main node *)
 end
 
 module W = struct
@@ -140,12 +141,11 @@ module W = struct
       let (desc : a cexpr_desc), ct =
         let eloc = expr.Ast_typed.texpr_loc in
         begin match expr.Ast_typed.texpr_desc with
-        | Ast_typed.EConst c -> CConst c, [CBase]
+        | Ast_typed.EConst c -> CConst c, [CVar (V.create ())]
         | Ast_typed.EIdent x -> CIdent x, [Env.find_expr eloc x env]
         | Ast_typed.EFby (c, e) ->
           let e = clock_expr env e in
-          unify_ct e.texpr_loc [CBase] e.texpr_clock ;
-          CFby (c, e), [CBase]
+          CFby (c, e), e.texpr_clock
         | Ast_typed.EBOp (op, e1, e2) ->
           let e1 = clock_expr env e1 in
           let e2 = clock_expr env e2 in
@@ -226,13 +226,16 @@ module W = struct
   let ct_from_varlist loc env v_list =
     Ast_typed_utils.var_list_fold (fun ct x -> Env.find_expr loc x env :: ct) [] v_list
 
-  let env_from_varlist env v_list =
+  let env_from_varlist new_clock env v_list =
     Ast_typed_utils.var_list_fold
-      (fun env x -> Env.add_expr x (CVar (V.create ())) env)
+      (fun env x -> Env.add_expr x (new_clock ()) env)
       env
       v_list
 
-  let clock_node (env, clocked_nodes) (Ast_typed.Node n) =
+  let env_from_varlist_fresh env vl = env_from_varlist (fun () -> CVar (V.create ())) env vl
+  let env_from_varlist_base env vl = env_from_varlist (fun () -> CBase) env vl
+
+  let clock_node main (env, clocked_nodes) (Ast_typed.Node n) =
     let Ast_typed.Tagged (_, _, node_name) = n.Ast_typed.n_name in
     let Ast_typed.NodeLocal locals = n.Ast_typed.n_local in
     let inputs = n.Ast_typed.n_input in
@@ -240,9 +243,13 @@ module W = struct
     let loc = n.Ast_typed.n_loc in
 
     let env = Env.reset_exprs env in
-    let env = env_from_varlist env inputs in
-    let env = env_from_varlist env locals in
-    let env = env_from_varlist env outputs in
+    let env =
+      if node_name = main
+      then env_from_varlist_base env inputs
+      else env_from_varlist_fresh env inputs
+    in
+    let env = env_from_varlist_fresh env locals in
+    let env = env_from_varlist_fresh env outputs in
 
     let clocked_eqs = clock_equations env n.Ast_typed.n_eqs in
     let clocked_node = Node {
@@ -260,12 +267,12 @@ module W = struct
     let env = Env.add_node node_name in_clocks out_clocks env in
     env, clocked_node :: clocked_nodes
 
-  let clock_file file =
-    let (_, nodes) = List.fold_left clock_node (Env.empty, []) file.Ast_typed.tf_nodes in
+  let clock_file file main =
+    let (_, nodes) = List.fold_left (clock_node main) (Env.empty, []) file.Ast_typed.tf_nodes in
     { cf_typedefs = file.Ast_typed.tf_typedefs ; cf_nodes = List.rev nodes }
-  let clock_file file =
+  let clock_file file main =
     try
-      clock_file file
+      clock_file file main
     with
     | ClockUnificationError (loc, c1, c2) ->
       let message = Format.asprintf "Incompatible clocks: [%a] and [%a]" pp_ck c1 pp_ck c2 in
@@ -368,7 +375,7 @@ function
   let clock_node (Ast_typed.Node e:Ast_typed.node) : node =
     Node (clock_node_desc e)
 
-  let clock_file (f:Ast_typed.file) : file = {
+  let clock_file (f:Ast_typed.file) (_ : string) : file = {
     cf_typedefs = f.Ast_typed.tf_typedefs ;
     cf_nodes = List.map clock_node f.Ast_typed.tf_nodes
   }

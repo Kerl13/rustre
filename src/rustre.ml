@@ -68,7 +68,7 @@ let () =
     Format.printf "%a\n@." Ast_typed.pp_file typed;
 
     Format.printf "Clocking… @?";
-    let clocked = Clocking.clock_file typed in
+    let clocked = Clocking.clock_file typed main_node in
     Format.printf "ok\n=== Clocks =====\n";
     Format.printf "%a\n@." Ast_clocked.pp_clocks_file clocked;
 
@@ -120,4 +120,4 @@ let () =
     exit 1
   | Scheduling.SchedulingError message ->
     Format.eprintf "%s@." message;
-    exit 1   
+    exit 1
