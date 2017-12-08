@@ -21,7 +21,7 @@ module E = struct
         | Ast_typed.TyEnum(n, _) -> "Types." ^ n
       )
 
-  let rec print_expr: type a. 'b -> a oexpr -> unit = fun ppf e -> match e with
+  let rec print_expr: type a. ?fonct:bool -> 'c -> a oexpr -> unit = fun ?(fonct=false) ppf e -> match e with
     | Ast_object.EVar (Var i | Loc i) -> fprintf ppf "%s" i
     | Ast_object.EVar (State s) -> fprintf ppf "state.%s" s
     | Ast_object.EConst c ->
@@ -36,8 +36,8 @@ module E = struct
         | CDataCons s ->
           fprintf ppf "Types.%s" s
       end
-    | EBOp(a, b, c) -> fprintf ppf "%a %a %a" print_expr b Ast_typed.pp_bop a print_expr c
-    | EUOp(a, b) -> fprintf ppf "%a %a" print_expr b Ast_typed.pp_uop a
+    | EBOp(a, b, c) -> fprintf ppf "%a %a %a" (print_expr ~fonct) b Ast_typed.pp_bop a (print_expr ~fonct) c
+    | EUOp(a, b) -> fprintf ppf "%a %a" (print_expr ~fonct) b Ast_typed.pp_uop a
 
   let rec filter_map: ('a -> 'b option) -> 'a list -> 'b list = fun f l ->
     match l with
@@ -54,25 +54,31 @@ module E = struct
     | SCase(_, b) ->
       List.hd b |> snd |> analyze_defs (* XXX alea jacta est *)
 
-  let rec print_statement ppf (s: ostatement) = match s with
+  let rec print_statement ?(fonct=false) ppf (s: ostatement) = match s with
     | Ast_object.SAssign {n = (Var s | Loc s); expr } ->
-      fprintf ppf "let %s = %a in" s print_expr expr
+      fprintf ppf "let %s = %a in" s (print_expr ~fonct) expr
+    | Ast_object.SAssign {n = State s; expr } when fonct ->
+      fprintf ppf "let state_%s = %a in" s (print_expr ~fonct) expr
     | Ast_object.SAssign {n = State s; expr } ->
-      fprintf ppf "state.%s <- %a;" s print_expr expr
+      fprintf ppf "state.%s <- %a;" s (print_expr ~fonct) expr
     | Ast_object.SSeq (a,SSkip) ->
-      print_statement ppf a
+      print_statement ~fonct ppf a
     | Ast_object.SSeq (a,b) ->
-      fprintf ppf "%a@\n%a" print_statement a print_statement b
+      fprintf ppf "%a@\n%a" (print_statement ~fonct) a (print_statement ~fonct) b
     | Ast_object.SSkip ->
       fprintf ppf ""
     | Ast_object.SCall (args, node, inst, result) ->
-      fprintf ppf "let %a = Node%s.step state.%s %a in %a"
+      fprintf ppf "let (%a%a) = Node%s.step%a state.%s %a in %a"
         (pp_list ", " (fun p s ->
              match s with
              | Var s | Loc s -> fprintf p "%s" s
-             | State s -> fprintf p "state_%s" s)) result
-        inst node
-        (pp_list " " print_expr) (List.map (fun i -> EVar i) args)
+             | State s ->
+               assert false; fprintf p "state.%s" s)) result
+        (fun ppf s -> if fonct then fprintf ppf ", state_%s" s) node
+        inst
+        (fun ppf () -> if fonct then fprintf ppf "_fonct") ()
+        node
+        (pp_list " " (print_expr ~fonct)) (List.map (fun i -> EVar i) args)
         (pp_list_brk "" (fun p s ->
              match s with
              | State s -> fprintf p "state.%s := state_%s;" s s
@@ -88,10 +94,10 @@ module E = struct
 
       fprintf ppf "@[<2>let (@[<2>%a@]) = match %a with@\n%a@]@\nend in"
         (pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars
-        print_expr a
+        (print_expr ~fonct) a
         (pp_list_n "" (fun ppf (s, o) ->
              fprintf ppf "| %s -> @[<2>%a@ (%a)@]" s
-               print_statement o
+               (print_statement ~fonct) o
                (pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars))
         b
 
@@ -106,28 +112,71 @@ module E = struct
         (pp_list_brk "" (fun ppf (i, m) ->
              fprintf ppf "%s: Node%s.state;" i m)) mach.instances
 
-  let print_step ppf mach =
+  let print_step ?(fonct=false) ppf mach =
     let var_in, _, var_out, stat = mach.step in
-    fprintf ppf "@[<2>let step (state:state) %a: (%a) =@\n%a@\n(%a)@]"
+    let print_post ppf mach =
+      fprintf ppf "ensures { let (res, sta) = step_fonct (old state) %a in res = result /\\ state = sta }"
+        (pp_list_brk " " (fun ppf (var, _) ->
+             fprintf ppf "%s" var)) var_in
+    in
+
+    fprintf ppf "@[<2>let step (state:state) %a: (%a) @\n%a =@\n%a@\n(%a)@]"
       (pp_list_brk " " (fun ppf (var, sty) ->
            fprintf ppf "(%s: %a)" var  print_sty sty)) var_in
       (pp_list_brk ", " (fun ppf (_, sty) ->
            print_sty ppf sty)) var_out
-      print_statement stat
+      print_post mach
+      (print_statement ~fonct:false) stat
       (pp_list_brk ", " (fun ppf (var, _) ->
            fprintf ppf "%s" var)) var_out
 
-  let print_reset ppf mach =
-    fprintf ppf "@[<2>let reset (state:state): unit =@\n%a@\n()@]"
-      print_statement mach.reset
+  let print_step_fonct ppf mach =
+    let var_in, _, var_out, stat = mach.step in
+    fprintf ppf "@[<2>function step_fonct (state:state) %a: (%a, state) =@\n%a@\n(%a, %a)@]"
+      (pp_list_brk " " (fun ppf (var, sty) ->
+           fprintf ppf "(%s: %a)" var  print_sty sty)) var_in
+      (pp_list_brk ", " (fun ppf (_, sty) ->
+           print_sty ppf sty)) var_out
+      (print_statement ~fonct:true) stat
+      (pp_list_brk ", " (fun ppf (var, _) ->
+           fprintf ppf "%s" var)) var_out
+      (fun ppf mach ->
+         if mach.memory = [] && mach.instances = [] then
+           fprintf ppf "()"
+         else fprintf ppf "{ %a %a }"
+             (pp_list_brk "" (fun ppf (var, _) ->
+                  fprintf ppf "%s = state_%s;" var var)) mach.memory
+             (pp_list_brk "" (fun ppf (i, _) ->
+                  fprintf ppf "%s = state_%s; " i i)) mach.instances) mach
+
+  let print_reset_fonct ppf mach =
+    fprintf ppf "@[<2>function reset_state : state =@\n%a@\n%a@]"
+      (print_statement ~fonct:true) mach.reset
+      (fun ppf mach ->
+         if mach.memory = [] && mach.instances = [] then
+           fprintf ppf "()"
+         else fprintf ppf "{ %a %a }"
+             (pp_list_brk "" (fun ppf (var, _) ->
+                  fprintf ppf "%s = state_%s;" var var)) mach.memory
+             (pp_list_brk "" (fun ppf (i, _) ->
+                  fprintf ppf "%s = state_%s; " i i)) mach.instances) mach
+
+  let print_reset ?(fonct = true) ppf mach =
+    let print_post ppf () =
+      fprintf ppf "ensures { state = reset_state }" in
+    fprintf ppf "@[<2>let reset (state:state): unit @\n%a =@\n%a@\n()@]"
+      print_post ()
+      (print_statement ~fonct:false) mach.reset
 
   let print_machine ppf mach =
-    fprintf ppf "@[<h 2>module Node%s@\nuse import int.Int@\nuse Types@\n%a@\n@\n%a@\n@\n%a@\n@\n%a@]@\n@\nend"
+    fprintf ppf "@[<h 2>module Node%s@\nuse import int.Int@\nuse Types@\n%a@\n%a@\n%a@\n@\n%a@\n@\n%a@\n@\n%a@]@\n@\nend"
       mach.name
       (pp_list_n "" (fun ppf (_, m) -> fprintf ppf "use Node%s" m)) mach.instances
       print_state mach
-      print_step mach
-      print_reset mach
+      print_step_fonct mach
+      print_reset_fonct mach
+      (print_step ~fonct:true) mach
+      (print_reset ~fonct:true) mach
 
   let extract_to ppf (f,_) =
     fprintf ppf "%a\n@\n%a" print_typedefs f.objf_typedefs (pp_list_n "\n" print_machine) f.objf_machines
