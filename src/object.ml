@@ -7,13 +7,11 @@ let new_instance =
     incr counter;
     Format.sprintf "inst%d" !counter
 
-let obc_varlist vl =
-  let rec aux: type a. a Ast_typed.var_list -> var_list = function
-    | Ast_typed.VIdent(a, ty) -> [a, Sty (ty)]
+let rec obc_varlist : type a. a Ast_typed.var_list -> var_list
+  = function
     | Ast_typed.VEmpty -> []
-    | Ast_typed.VTuple(a, ty, b) ->
-      (a, Sty (ty)) :: aux b
-  in aux vl |> List.rev
+    | Ast_typed.VIdent(a, ty) -> [a, Sty (ty)]
+    | Ast_typed.VTuple(a, ty, b) -> (a, Sty (ty)) :: obc_varlist b
 
 let rec is_in: type a. a Ast_typed.var_list -> a Ast_typed.var_ident -> bool = fun vl v -> match vl with
   | Ast_typed.VIdent(v', _) -> v = v'

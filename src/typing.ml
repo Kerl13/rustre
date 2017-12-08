@@ -347,7 +347,11 @@ let do_typing_equation env nodes eq =
     | Ast_parsing.PIdent v ->
       let Var(id, ty) = Env.find v env in
       VarList (VIdent(id, ty))
-    | Ast_parsing.PTuple (Ast_parsing.PIdent t ::q) ->
+    | Ast_parsing.PTuple tuple ->
+      let (t, q) = match List.rev tuple with
+        | Ast_parsing.PIdent t :: q -> t, q
+        | _ -> raise (Type_error_at loc)
+      in
       let Var(id, ty) = Env.find t env in
       let v = VarList (VIdent(id, ty)) in
       List.fold_left (fun (VarList vl) pat_desc ->
@@ -356,7 +360,7 @@ let do_typing_equation env nodes eq =
             let Var(id, ty) = Env.find v env in
             VarList (VTuple(id, ty, vl))
           | _ -> raise (Type_error_at loc)) v q
-    | _ -> raise (Type_error_at loc) in
+  in
 
   let VarList var_list = pat_desc_to_var_list eq.Ast_parsing.eq_pat.Ast_parsing.pat_desc in
   let pattern = { pat_desc = var_list; pat_loc = eq.Ast_parsing.eq_pat.Ast_parsing.pat_loc } in
