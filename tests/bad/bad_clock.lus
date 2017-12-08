@@ -1,3 +1,5 @@
+/* main = check */
+
 node check (x:int) = (o:int)
 with var half:bool in
      half = true -> not (pre half);

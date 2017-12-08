@@ -1,10 +1,13 @@
+/* main = main */
+/* Do not remove the line above */
+
 /* From the first lecture */
 /* currently buggy: t1 and t2 should have the same clock (I think) */
 
 /* comment: adding x = 0; in sum without stating it's a local variable result in a "not found"... */
 
 node sum(i: int) = (s: int)
-with 
+with
      s = i -> pre s + i
 
 node main (x:bool) = (t1, t2:int)
@@ -12,4 +15,3 @@ with var t0, t1, t2, r1, r2:int; half:bool in
      half = true -> not (pre half);
      t1 = sum(1 when true(half));
      t2 = sum(1) when true(half)
-     

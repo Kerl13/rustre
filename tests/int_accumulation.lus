@@ -1,3 +1,6 @@
+/* main = switcher */
+/* Do not remove the line above */
+
 node accumulation(v: int) = (tot: int)
 with var foo: int in
   tot = (0 fby (tot + v)) + v

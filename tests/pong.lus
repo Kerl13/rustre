@@ -1,3 +1,6 @@
+/* main = pong */
+/* Do not remove the line above */
+
 type dir = Left + Right
 
 node lat_move(x : int; d : dir) = (x2 : int)
@@ -8,7 +11,7 @@ with
 node hor_move(y : int) = (y2, gradient : int)
 with var overflow : bool in
   y2 = y + gradient ;
-  overflow = ((y2 >= 400) or (y2 < 0)) ;
+  overflow = (y2 >= 400) or (y2 < 0) ;
   gradient = 8 fby (if overflow then (- gradient) else gradient)
 
 node pong(wind : int) = (x, y : int; paddle : int)
