@@ -13,6 +13,7 @@ theory Stream
   function sgt (stream int) (stream int): stream bool
   function sif (stream bool) (stream 'a) (stream 'a): stream 'a
   function sfby 'a (stream 'a): stream 'a
+  function seq (stream 'a) (stream 'a): stream bool
 
   axiom splus_ax: forall a, b, c: stream int.
     (forall n: nat. get a n + get b n = get c n) <-> c = splus a b
