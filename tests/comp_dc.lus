@@ -1,0 +1,11 @@
+type ab = A + B
+
+node equality (x, y : ab) = (are_equal : bool)
+with
+  are_equal = x = y
+
+node check(dummy : int) = (ok : bool)
+with var eq, neq : bool in
+  eq = equality(A, A) and equality(B, B) ;
+  neq = equality(A, B) or equality(B, A) ;
+  ok = eq and not neq
