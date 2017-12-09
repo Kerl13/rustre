@@ -104,13 +104,13 @@ module E = struct
        fprintf ppf "%a@\n%a" print_statement a print_statement b
     | Ast_object.SSkip ->
        fprintf ppf ""
-    | Ast_object.SCall (args, node, inst, result) ->
+    | Ast_object.SCall (args, node, _, result) ->
        (* todo : optimize if List.length result < 2 *)
        fprintf ppf "let %a = self.%s.step(%a);@\n"
          (pp_type ", " (fun p s ->
               match s with
               | Var s | Loc s -> fprintf p "%s" s
-              | State s -> failwith "extract_rust: weird case")) result
+              | State _ -> failwith "extract_rust: weird case")) result
          node
          (pp_list ", " print_expr) (List.map (fun i -> EVar i) args)
        (* fprintf ppf "{@[<4>@\nlet %a = self.%s.step(%a);@\n%a@]@\n}"
@@ -123,7 +123,7 @@ module E = struct
         *        match s with
         *        | Var s | Loc s -> fprintf p "%s = tmp_%s;" s s
         *        | State s -> fprintf p "self.%s = tmp_%s;" s s)) result *)
-    | Ast_object.SReset (m, i) ->
+    | Ast_object.SReset (_m, i) ->
        (* todo: no need for m ? *)
        fprintf ppf "self.%s.reset();" i
     | Ast_object.SCase (a, b) ->
@@ -167,7 +167,7 @@ module E = struct
 
 
   let print_step ppf mach =
-    let var_in, loc_vars, var_out, stat = mach.step in
+    let var_in, _, var_out, stat = mach.step in
     fprintf ppf "@[<4>pub fn step(&mut self, %a) -> %a {@\n%a@\n@\n%a@]@\n}@\n"
       (* input variables:types *)
       (pp_list ", " (fun ppf (var, sty) ->
@@ -219,7 +219,7 @@ module E = struct
   let print_parse_type ppf (typedefs, n, Sty ty) =
     match ty with
     | Ast_typed.TyEnum(ty_enum, _) ->
-       let enum_name, enum_dcons = List.find (fun (x, y) -> x = ty_enum) typedefs in
+       let enum_name, enum_dcons = List.find (fun (x, _) -> x = ty_enum) typedefs in
        fprintf ppf "@[<4>let arg%d = match splitted[%d] {@\n%a@\n%s@]@\n};"
          n n
          (pp_list_n "" (fun ppf x ->
@@ -239,7 +239,7 @@ module E = struct
          print_parse_type (typedefs, n, snd x)
          print_parse_types (typedefs, n+1, xs)
 
-    
+
   let print_parse_args ppf (typedefs, var_in) =
     fprintf ppf "use std::io;@\n@[<4>fn parse_args() -> %a {@\n%a@\n@[<4>loop {@\n%s@\n%a@\n%s@\n%s@\n%a@\nreturn %a;@]@\n}@]@\n}@\n"
       (* output types *)
@@ -280,7 +280,7 @@ module E = struct
       (* arg0, ..., argN *)
       (pp_list ", " (fun ppf x -> fprintf ppf "%s" x)) (List.mapi (fun i (_, _) -> "arg" ^ (string_of_int i)) vars_in)
 
-    
+
   let extract_to ppf (f, main_node) =
     let main_machine = List.find (fun m -> m.name = main_node) f.objf_machines in
     fprintf ppf "%a@\n@\n%a@\n@\n%a@\n" print_types f.objf_typedefs (pp_list_n "\n" (fun ppf x -> print_machine ppf f.objf_typedefs x)) f.objf_machines print_main (f.objf_typedefs, main_machine)

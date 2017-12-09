@@ -13,7 +13,7 @@ module E = struct
   let print_typedefs ppf typedefs =
     fprintf ppf "@[<h 2>module Types@\n%a@]@\nend" (pp_list_n "" print_typedef) typedefs
 
-  let rec print_sty ppf (Sty ty) =
+  let print_sty ppf (Sty ty) =
     fprintf ppf "%s" (match ty with
         | Ast_typed.TyBool -> "bool"
         | Ast_typed.TyNum Ast_typed.TyZ -> "int"

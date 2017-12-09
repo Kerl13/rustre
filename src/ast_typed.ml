@@ -140,7 +140,6 @@ and equation = Equ: 'a pattern * 'a expr -> equation
  **)
 
 let fprintf = Format.fprintf
-let pp_list = Pp_utils.pp_list
 
 let pp_const: type a. 'b -> a const -> unit = fun ppf -> function
   | CNil -> fprintf ppf "nil"
@@ -201,7 +200,7 @@ let pp_expr: type a. 'c -> a expr -> unit =
       let Tagged(_, _, f) = f in
       fprintf ppf "(%s(%a) every %a)" f pp_elist args pp ev
     | EWhen (e, c, x) -> fprintf ppf "(%a when %s(%s))" pp e c x
-    | EMerge (x, clauses) -> fprintf ppf "(merge %s %a)" x (pp_list " " pp_clause) clauses
+    | EMerge (x, clauses) -> fprintf ppf "(merge %s %a)" x (Pp_utils.pp_list " " pp_clause) clauses
   and pp_clause: type a. 'd -> ident * a expr -> unit = fun ppf (c, e) -> fprintf ppf "(%s -> %a)" c pp e
   in pp
 
@@ -224,8 +223,8 @@ let pp_node ppf (Node n) =
     pp_vl n.n_input
     pp_vl n.n_output
     pp_vl n_local
-    (pp_list ";\n" pp_equation) n.n_eqs
+    (Pp_utils.pp_list ";\n" pp_equation) n.n_eqs
 
 let pp_file fmt f =
-  fprintf fmt "%a\n\n" (pp_list "\n" Ast_parsing.pp_typedef) f.tf_typedefs ;
-  fprintf fmt "%a" (pp_list "\n\n" pp_node) f.tf_nodes
+  fprintf fmt "%a\n\n" (Pp_utils.pp_list "\n" Ast_parsing.pp_typedef) f.tf_typedefs ;
+  fprintf fmt "%a" (Pp_utils.pp_list "\n\n" pp_node) f.tf_nodes
