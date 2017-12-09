@@ -119,3 +119,20 @@ let pp_machine ppf m =
 let pp_file fmt file =
   fprintf fmt "%a@\n" (pp_list_n "\n" Ast_parsing.pp_typedef) file.objf_typedefs ;
   fprintf fmt "%a" (pp_list "" pp_machine) file.objf_machines
+
+let sty_to_ty: type a. a Ast_typed.ty -> Ast_parsing.ty = fun ty ->
+  match ty with
+  | Ast_typed.TyBool -> Ast_parsing.TyBool
+  | Ast_typed.TyNum Ast_typed.TyZ -> Ast_parsing.TyInt
+  | Ast_typed.TyNum Ast_typed.TyReal -> Ast_parsing.TyReal
+  | Ast_typed.TyEnum (a, b) -> Ast_parsing.TyEnum (a,b)
+
+type state_component = State_var of string * Ast_parsing.ty | Mach_var of string * string
+
+let extract_states file =
+  List.map (fun mach ->
+      let vars = List.map (fun (i, Sty sty) ->
+          State_var (i, sty_to_ty sty) ) mach.memory in
+      let machs = List.map (fun (i, mach) ->
+          Mach_var (i, mach)) mach.instances in
+      mach.name, vars @ machs) file.objf_machines

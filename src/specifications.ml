@@ -71,25 +71,63 @@ let find_calls eqs =
   |> List.concat
   |> List.sort_uniq compare
 
-let spec_node ppf node =
-  let var_pp   = (pp_list_brk " " (fun ppf (i, ty) ->
-      fprintf ppf "(%s:stream %a)" i pp_ty ty))
-  in
+let var_pp_par = (pp_list_brk " " (fun ppf (i, ty) ->
+    fprintf ppf "(%s:stream %a)" i pp_ty ty))
+let var_pp = (pp_list_brk ", " (fun ppf (i, ty) ->
+    fprintf ppf "%s:stream %a" i pp_ty ty))
+
+let var_pp_flat sep f = (pp_list_brk sep (fun ppf (i, _) ->
+    fprintf ppf "%a" f i))
+
+let rec spec_print_state pref f states ppf s =
+  let st = List.assoc s states in
+  fprintf ppf "@[<2>{ %a }@]" (pp_list_brk "" (fun ppf sc ->
+      match sc with
+      | Ast_object.State_var(i, _) -> fprintf ppf "Node%s.%s = %s;" s i (f (pref ^ i))
+      | Ast_object.Mach_var (i, target) -> fprintf ppf "%s = %a;" i (spec_print_state (pref ^ i) f states) target)) st
+
+let rec spec_print_state_flat pref states ppf s =
+  let st = List.assoc s states in
+  fprintf ppf "%a" (pp_list_brk ", " (fun ppf sc ->
+      match sc with
+      | Ast_object.State_var(i, ty) -> fprintf ppf "%s%s: stream %a" pref i pp_ty ty
+      | Ast_object.Mach_var (i, target) -> fprintf ppf "%a" (spec_print_state_flat (pref ^ i) states) target)) st
+
+
+let spec_proof_node ppf (states, node) =
+  fprintf ppf "@[<2>lemma valid:@\nforall (* in and out vars *) %a%a (* state *) %a.  @\n"
+    var_pp (node.n_input @ node.n_output)
+    (fun ppf () ->
+       if List.assoc node.n_name states <> [] then fprintf ppf ", ") ()
+    (spec_print_state_flat "s" states) node.n_name;
+  fprintf ppf "(* definition by recurrence *)@\n(%a = reset_state /\\@\n@[<2>forall n: nat.@ ((%a), %a) =@ @[<2>step_fonct %a %a@])@]@\n"
+    (spec_print_state "s" (fun s -> "get " ^ s ^ " O") states) node.n_name
+    (var_pp_flat ", " (fun ppf s -> fprintf ppf "(get %s n)" s)) node.n_output
+    (spec_print_state "s" (fun s -> "get " ^ s ^ " (S n)") states) node.n_name
+    (spec_print_state "s" (fun s -> "get " ^ s ^ " n") states) node.n_name
+    (var_pp_flat " " (fun ppf s -> fprintf ppf "(get %s n)" s)) node.n_input;
+  fprintf ppf "(* correction *)@\n-> spec %a %a@]"
+    (var_pp_flat " " (fun ppf -> fprintf ppf "%s")) node.n_input
+    (var_pp_flat " " (fun ppf -> fprintf ppf "%s")) node.n_output
+
+let spec_node states ppf node =
   let var_exists = (pp_list_brk " " (fun ppf (i, ty) ->
-      fprintf ppf "exists %s: stream %a." i pp_ty ty))
+      fprintf ppf "forall %s: stream %a." i pp_ty ty))
   in
   let pp_import ppf node =
-    fprintf ppf "use import int.Int@\nuse import stream.Stream@\n%a"
+    fprintf ppf "use import int.Int@\nuse import stream.Stream@\nuse import test.Node%s@\n%a"
+      node.n_name
       (pp_list_n "" (fun ppf l ->
-           fprintf ppf "use import Spec%s" l)) (find_calls node.n_eqs)
+           fprintf ppf "use Spec%s" l)) (find_calls node.n_eqs)
   in
-  fprintf ppf "@[<2>module Spec%s@\n%a@\n@\n@[<2>predicate spec %a %a =@\n%a@\n%a@]@]@\nend"
+  fprintf ppf "@[<2>module Spec%s@\n%a@\n@\n@[<2>predicate spec %a %a =@\n%a@\n%a@]@\n@\n%a@]@\nend"
     node.n_name
     pp_import node
-    var_pp node.n_input
-    var_pp node.n_output
+    var_pp_par node.n_input
+    var_pp_par node.n_output
     var_exists node.n_local
     (pp_list_n "   /\\" spec_eq) node.n_eqs
+    spec_proof_node (states, node)
 
-let spec_file ppf f =
-  fprintf ppf "%a" (pp_list_n "\n" spec_node) f.f_nodes
+let spec_file ppf (states, f) =
+  fprintf ppf "%a" (pp_list_n "\n" (spec_node states)) f.f_nodes
