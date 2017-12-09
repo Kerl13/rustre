@@ -2,13 +2,13 @@ open Ast_clocked
 type location = Ast_typed.location
 
 module type Clocking = sig
-  exception ClockingError of location * string
+  exception Error of location * string
   val clock_file: Ast_typed.file -> string -> Ast_clocked.file
   (** We must know which is the main node *)
 end
 
 module W = struct
-  exception ClockingError of location * string
+  exception Error of location * string
 
   (** W algorithm usual stuff ***********************************************)
   module V = struct
@@ -276,22 +276,22 @@ module W = struct
     with
     | ClockUnificationError (loc, c1, c2) ->
       let message = Format.asprintf "Incompatible clocks: [%a] and [%a]" pp_ck c1 pp_ck c2 in
-      raise (ClockingError (loc, message))
+      raise (Error (loc, message))
     | ArityException (loc, n, ct) ->
       let message = Format.asprintf
           "Composite clock [%a] is expected to have arity %d but has arity %d"
           (pp_list ", " pp_ck) ct n (List.length ct) in
-      raise (ClockingError (loc, message))
+      raise (Error (loc, message))
     | Env.Node_not_found (loc, name) ->
       let message = Format.sprintf "Unbound node %s" name in
-      raise (ClockingError (loc, message))
+      raise (Error (loc, message))
     | Env.Expr_not_found (loc, name) ->
       let message = Format.sprintf "Unbound variable %s" name in
-      raise (ClockingError (loc, message))
+      raise (Error (loc, message))
 end
 
 module Stupid = struct
-  exception ClockingError of Ast_typed.location * string
+  exception Error of Ast_typed.location * string
 
   type env = (string, ct option) Hashtbl.t
 

@@ -1,13 +1,13 @@
 open Ast_normalized
 
 module type Scheduling = sig
-  exception SchedulingError of string
+  exception Error of string
   val schedule : Ast_normalized.nfile -> string -> Ast_normalized.nfile
 end
 
 module Simple = struct
   (** Public exception *)
-  exception SchedulingError of string
+  exception Error of string
 
   (** Private exceptions *)
   exception Not_a_node of string
@@ -144,19 +144,19 @@ module Simple = struct
     with
     | Not_a_node name ->
       let message = Format.sprintf "Unbound node %s" name in
-      raise (SchedulingError message)
+      raise (Error message)
     | MultipleDefinitions (node_name, x) ->
       let message = Format.sprintf "Variable %s is defined multiple times in node %s" x node_name in
-      raise (SchedulingError message)
+      raise (Error message)
     | CausalityError (node_name, eqs) ->
       let message = Format.asprintf
         "Cyclic dependencies in node %s between the following equations:\n  %a"
         node_name (Pp_utils.pp_list "\n  " pp_eq) eqs
       in
-      raise (SchedulingError message)
+      raise (Error message)
 end
 
 module Stupid = struct
-  exception SchedulingError of string
+  exception Error of string
   let schedule file _name = file
 end
