@@ -212,7 +212,7 @@ module E = struct
       print_reset mach
 
   let print_ask_input ppf vars_in =
-    fprintf ppf "println!(\"Input: %a\");@\n"
+    fprintf ppf "if@ !silent@ {println!(\"Input: %a\")};@\n"
       (pp_list ", " (fun ppf (var, sty) ->
            fprintf ppf "%s:%a" var print_sty sty)) vars_in
 
@@ -241,7 +241,9 @@ module E = struct
 
 
   let print_parse_args ppf (typedefs, var_in) =
-    fprintf ppf "use std::io;@\n@[<4>fn parse_args() -> %a {@\n%a@\n@[<4>loop {@\n%s@\n%a@\n%s@\n%s@\n%a@\nreturn %a;@]@\n}@]@\n}@\n"
+    fprintf ppf "use std::io;@\n" ;
+    fprintf ppf "use std::env;@\n" ;
+    fprintf ppf "@[<4>fn parse_args(silent: bool) -> %a {@\n%a@\n@[<4>loop {@\n%s@\n%a@\n%s@\n%s@\n%a@\nreturn %a;@]@\n}@]@\n}@\n"
       (* output types *)
       (pp_type ", " (fun ppf (_, sty) ->
            print_sty ppf sty)) var_in
@@ -272,9 +274,12 @@ module E = struct
 
   let print_main ppf (typedefs, main_machine) =
     let (vars_in, _, _, _) = main_machine.step in
-    fprintf ppf "%a@\n@[<4>pub fn main() {@\nlet mut mach:node_%s::Machine = Default::default();@\nmach.reset();@\n@[<4>loop {@\nlet %a = parse_args();@\nprintln!(\"{:?}\", mach.step(%a));@]@\n}@]@\n}"
-      print_parse_args (typedefs, vars_in)
-      main_machine.name
+    fprintf ppf "%a@\n@[<4>pub fn main() {@\n" print_parse_args (typedefs, vars_in) ;
+    fprintf ppf "let mut mach:node_%s::Machine = Default::default();@\n" main_machine.name;
+    fprintf ppf "let args: Vec<_> = env::args().collect();@\n" ;
+    fprintf ppf "@[<4>let silent =@\n" ;
+    fprintf ppf "@[<4>if@ (args.len() > 1)@ &&@ args[1] == \"-silent\"@ {@\ntrue@]@\n}@ @[<2>else@ {@\nfalse@]@\n}@];@\n" ;
+    fprintf ppf "mach.reset();@\n@[<4>loop {@\nlet %a = parse_args(silent);@\nprintln!(\"{:?}\", mach.step(%a));@]@\n}@]@\n}"
       (* (arg0, ..., argN) *)
       (pp_type ", " (fun ppf x -> fprintf ppf "%s" x)) (List.mapi (fun i (_, _) -> "arg" ^ (string_of_int i)) vars_in)
       (* arg0, ..., argN *)
