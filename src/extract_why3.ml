@@ -46,9 +46,9 @@ module E = struct
       | Some s -> s :: filter_map f q
       | None -> filter_map f q
 
-  let rec analyze_defs = function
+  let rec analyze_defs ?(fonct=false) = function
     | SAssign { n; _} -> [n]
-    | SSeq(a, b) -> analyze_defs a @ analyze_defs b
+    | SSeq(a, b) -> analyze_defs ~fonct a @ analyze_defs ~fonct b
     | SReset(_) | SSkip -> []
     | SCall(_, _, _, res) -> res
     | SCase(_, b) ->
@@ -68,7 +68,7 @@ module E = struct
     | Ast_object.SSkip ->
       fprintf ppf ""
     | Ast_object.SCall (args, node, inst, result) ->
-      fprintf ppf "let (%a%a) = Node%s.step%a state.%s %a in %a"
+      fprintf ppf "let ((%a)%a) = Node%s.step%a state.%s %a in %a"
         (pp_list ", " (fun p s ->
              match s with
              | Var s | Loc s -> fprintf p "%s" s
@@ -132,7 +132,7 @@ module E = struct
 
   let print_step_fonct ppf mach =
     let var_in, _, var_out, stat = mach.step in
-    fprintf ppf "@[<2>function step_fonct (state:state) %a: (%a, state) =@\n%a@\n(%a, %a)@]"
+    fprintf ppf "@[<2>function step_fonct (state:state) %a: ((%a), state) =@\n%a@\n((%a), %a)@]"
       (pp_list_brk " " (fun ppf (var, sty) ->
            fprintf ppf "(%s: %a)" var  print_sty sty)) var_in
       (pp_list_brk ", " (fun ppf (_, sty) ->
