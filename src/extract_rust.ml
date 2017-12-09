@@ -260,7 +260,7 @@ module E = struct
       (pp_type ", " (fun ppf x -> fprintf ppf "%s" x)) (List.mapi (fun i (_, _) -> "arg" ^ (string_of_int i)) var_in)
 
   let print_typedef ppf (i, l) =
-    fprintf ppf "#[derive(Clone, Copy)]@\npub enum %a { %a }@\nimpl Default for %a { fn default() -> %a { %a::%a }}@\n"
+    fprintf ppf "#[derive(Clone, Copy, PartialEq, Eq)]@\npub enum %a { %a }@\nimpl Default for %a { fn default() -> %a { %a::%a }}@\n"
       print_enum i
       (pp_list ", " (fun ppf x -> print_datacons ppf x)) l
       print_enum i
