@@ -3,10 +3,11 @@
 
 type dir = Left + Right
 
-node lat_move(x : int) = (x2 : int)
-with var dir : dir ; r_overflow, l_overflow : bool in
-  r_overflow = x >= 800 ;
-  l_overflow = x <= 0 ;
+node lat_move(x : int) = (x2 : int; dir : dir)
+with var r_overflow, l_overflow : bool; dx : int in
+  dx = 5 ;
+  r_overflow = dir = Right and x >= 800 - dx ;
+  l_overflow = dir = Left and x <= dx ;
   dir = Right fby (
     if r_overflow then
       Left
@@ -16,8 +17,8 @@ with var dir : dir ; r_overflow, l_overflow : bool in
       else
         dir
   ) ;
-  x2 = merge dir (Left  -> x - 5 when Left(dir))
-                 (Right -> x + 5 when Right(dir))
+  x2 = merge dir (Left  -> x - dx when Left(dir))
+                 (Right -> x + dx when Right(dir))
 
 node hor_move(y : int) = (y2 : int)
 with var overflow : bool; gradient : int in
@@ -25,10 +26,33 @@ with var overflow : bool; gradient : int in
   overflow = (y2 >= 400) or (y2 < 0) ;
   gradient = 4 fby (if overflow then (- gradient) else gradient)
 
+node min(x, y : int) = (z : int)
+with var gt : bool in
+  gt = x > y ;
+  z = if gt then y else x
+
+node clamp(bound, v : int) = (w : int)
+with var pos : bool in
+  pos = v >= 0 ;
+  w = if pos
+      then min(v, bound)
+      else (-min(-v, bound))
+
+node paddle_move(ball_y, pos : int) = (next_pos : int)
+with var max_dy : int in
+  max_dy = 2 ;
+  next_pos = pos + clamp(max_dy, ball_y - pos)
+
+node target(x, y : int; dir : dir) = (target : int)
+with
+  target = y
+
 node pong(wind : int) = (x, y : int; paddle : int)
-with var xx, yy : int in
-  xx = lat_move(x) ;
+with var xx, yy, paddle2, target : int ; dir : dir in
+  (xx, dir) = lat_move(x) ;
   x = 100 fby xx ;
   yy = hor_move(y) ;
   y = 300 fby yy ;
-  paddle = 200
+  target = target(x, y, dir) ;
+  paddle2 = paddle_move(yy, paddle) ;
+  paddle = 300 fby paddle2
