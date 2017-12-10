@@ -10,8 +10,11 @@ module E = struct
   let print_typedef ppf (i, ids) =
     fprintf ppf "type %s = %a" i (pp_list " | " (fun p -> fprintf p "%s")) ids
 
+  let prelude ppf () =
+    fprintf ppf "function is_eq (a:'a) (b:'a): bool = (a = b)"
+
   let print_typedefs ppf typedefs =
-    fprintf ppf "@[<h 2>module Types@\n%a@]@\nend" (pp_list_n "" print_typedef) typedefs
+    fprintf ppf "@[<h 2>module Types@\n%a@\n%a@]@\nend" prelude () (pp_list_n "" print_typedef) typedefs
 
   let print_sty ppf (Sty ty) =
     fprintf ppf "%s" (match ty with
@@ -40,6 +43,7 @@ module E = struct
         | CDataCons s ->
           fprintf ppf "Types.%s" s
       end
+    | EBOp(Ast_typed.OpEq, b, c) when fonct -> fprintf ppf "Types.is_eq (%a) (%a)" (print_expr ~fonct) b (print_expr ~fonct) c
     | EBOp(a, b, c) -> fprintf ppf "%a %a %a" (print_expr ~fonct) b Ast_typed.pp_bop a (print_expr ~fonct) c
     | EUOp(a, b) -> fprintf ppf "%a %a" (print_expr ~fonct) b Ast_typed.pp_uop a
 
