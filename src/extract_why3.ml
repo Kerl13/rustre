@@ -24,6 +24,24 @@ module E = struct
         | Ast_typed.TyEnum(n, _) -> "Types." ^ n
       )
 
+  let print_bop: type a b. 'c -> (a, b) Ast_typed.binop -> unit =
+    let open Ast_typed in
+    fun ppf -> function
+      | OpAdd -> fprintf ppf "+"
+      | OpSub -> fprintf ppf "-"
+      | OpMul -> fprintf ppf "*"
+      | OpDiv -> assert false
+      | OpMod -> assert false
+      | OpLt -> fprintf ppf "<"
+      | OpLe -> fprintf ppf "<="
+      | OpGt -> fprintf ppf ">"
+      | OpGe -> fprintf ppf ">="
+      | OpEq -> fprintf ppf "="
+      | OpNeq -> fprintf ppf "<>"
+      | OpAnd -> fprintf ppf "&&"
+      | OpOr -> fprintf ppf "||"
+      | OpImpl -> assert false
+
   let rec print_expr: type a. ?fonct:bool -> 'c -> a oexpr -> unit = fun ?(fonct=false) ppf e -> match e with
     | Ast_object.EVar (Var i | Loc i) -> fprintf ppf "%s" i
     | Ast_object.EVar (State s) ->
@@ -41,11 +59,13 @@ module E = struct
         | CReal i ->
           fprintf ppf "%f" i
         | CDataCons s ->
-          fprintf ppf "Types.%s" s
+          fprintf ppf "%s" s
       end
-    | EBOp(Ast_typed.OpEq, b, c) when fonct -> fprintf ppf "Types.is_eq (%a) (%a)" (print_expr ~fonct) b (print_expr ~fonct) c
-    | EBOp(a, b, c) -> fprintf ppf "%a %a %a" (print_expr ~fonct) b Ast_typed.pp_bop a (print_expr ~fonct) c
-    | EUOp(a, b) -> fprintf ppf "%a %a" (print_expr ~fonct) b Ast_typed.pp_uop a
+    | EBOp(Ast_typed.OpEq, b, c) when fonct -> fprintf ppf "(is_eq (%a) (%a))" (print_expr ~fonct) b (print_expr ~fonct) c
+    | EBOp(Ast_typed.OpMod, b, c) -> fprintf ppf "(mod (%a) (%a))" (print_expr ~fonct) b (print_expr ~fonct) c
+    | EBOp(Ast_typed.OpDiv, b, c) -> fprintf ppf "(div (%a) (%a))" (print_expr ~fonct) b (print_expr ~fonct) c
+    | EBOp(a, b, c) -> fprintf ppf "(%a %a %a)" (print_expr ~fonct) b print_bop a (print_expr ~fonct) c
+    | EUOp(a, b) -> fprintf ppf "(%a %a)" Ast_typed.pp_uop a (print_expr ~fonct) b
 
   let rec filter_map: ('a -> 'b option) -> 'a list -> 'b list = fun f l ->
     match l with
@@ -87,7 +107,7 @@ module E = struct
              | Var s | Loc s -> fprintf p "%s" s
              | State s ->
                assert false; fprintf p "state.%s" s)) result
-        (fun ppf s -> if fonct then fprintf ppf ", state_%s" s) node
+        (fun ppf s -> if fonct then fprintf ppf ", _, state_%s" s) node
         inst
         (fun ppf () -> if fonct then fprintf ppf "_fonct") ()
         (print_expr ~fonct) (EVar (State node))
@@ -131,9 +151,9 @@ module E = struct
   let print_step ?(fonct=false) ppf (mach, var_loc) =
     let var_in, _, var_out, stat = mach.step in
     let print_post ppf mach =
-      fprintf ppf "ensures { let ((%a), sta) = step_fonct (old state) %a in@\n(%a) = result /\\@ state = sta }"
+      fprintf ppf "ensures { let ((%a), _, sta) = step_fonct (old state) %a in@\n(%a) = result /\\@ state = sta }"
         (pp_list_brk "," (fun ppf (var, _) ->
-             fprintf ppf "%s" var)) (var_out @ (List.map (fun (_, ty) -> "_", ty) var_loc))
+             fprintf ppf "%s" var)) var_out
         (pp_list_brk "" (fun ppf (var, _) ->
              fprintf ppf "%s" var)) var_in
         (pp_list_brk "," (fun ppf (var, _) ->
@@ -152,11 +172,13 @@ module E = struct
 
   let print_step_fonct ppf (mach, var_loc) =
     let var_in, _, var_out, stat = mach.step in
-    fprintf ppf "@[<2>function step_fonct (state:state) %a: ((%a), state) =@\n%a%a@\n((%a), %a)@]"
+    fprintf ppf "@[<2>function step_fonct (state:state) %a: ((%a), (%a), state) =@\n%a%a@\n((%a), (%a), %a)@]"
       (pp_list_brk " " (fun ppf (var, sty) ->
            fprintf ppf "(%s: %a)" var  print_sty sty)) var_in
       (pp_list_brk ", " (fun ppf (_, sty) ->
-           print_sty ppf sty)) (var_out @ var_loc)
+           print_sty ppf sty)) var_out
+      (pp_list_brk ", " (fun ppf (_, sty) ->
+           print_sty ppf sty)) var_loc
       (fun ppf mach ->
          if mach.memory = [] && mach.instances = [] then
            fprintf ppf ""
@@ -167,7 +189,9 @@ module E = struct
                   fprintf ppf "%s = state_%s; " i i)) mach.instances) mach
       (print_statement ~fonct:true) stat
       (pp_list_brk ", " (fun ppf (var, _) ->
-           fprintf ppf "%s" var)) (var_out @ var_loc)
+           fprintf ppf "%s" var)) var_out
+      (pp_list_brk ", " (fun ppf (var, _) ->
+           fprintf ppf "%s" var)) var_loc
       (fun ppf mach ->
          if mach.memory = [] && mach.instances = [] then
            fprintf ppf "()"
@@ -198,7 +222,7 @@ module E = struct
 
   let print_machine locs ppf mach =
     let var_loc = List.assoc mach.name locs in
-    fprintf ppf "@[<h 2>module Node%s@\nuse import int.Int@\nuse Types@\n%a@\n%a@\n%a@\n@\n%a@\n@\n%a@\n@\n%a@]@\n@\nend"
+    fprintf ppf "@[<h 2>module Node%s@\nuse import int.Int@\nuse import int.ComputerDivision@\nuse import Types@\n%a@\n%a@\n%a@\n@\n%a@\n@\n%a@\n@\n%a@]@\n@\nend"
       mach.name
       (pp_list_n "" (fun ppf (_, m) -> fprintf ppf "use Node%s" m)) mach.instances
       print_state mach
