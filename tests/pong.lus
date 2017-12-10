@@ -16,6 +16,24 @@ const PADDLE_SIZE = 70
 
 /* Simple utilities */
 
+node min(x, y : int) = (z : int)
+with var gt : bool in
+  gt = x > y ;
+  z = if gt then y else x
+
+node abs(x : int) = (ax : int)
+with var pos : bool in
+  pos = x >= 0 ;
+  ax = if pos then x else (-x)
+
+node clamp(bound, v : int) = (w : int)
+with var pos : bool in
+  pos = v >= 0 ;
+  w = if pos
+      then min(v, bound)
+      else (-min(-v, bound))
+
+/* Movements of the ball */
 
 node lat_move(x : int; aligned : bool) = (x2 : int; dir : dir; score : int)
 with var r_overflow, l_overflow, goal : bool; dx : int in
@@ -36,22 +54,8 @@ with var overflow : bool in
   overflow = (y2 >= HEIGHT) or (y2 < 0) ;
   dy = 4 fby (if overflow then (- dy) else dy)
 
-node min(x, y : int) = (z : int)
-with var gt : bool in
-  gt = x > y ;
-  z = if gt then y else x
 
-node abs(x : int) = (ax : int)
-with var pos : bool in
-  pos = x >= 0 ;
-  ax = if pos then x else (-x)
-
-node clamp(bound, v : int) = (w : int)
-with var pos : bool in
-  pos = v >= 0 ;
-  w = if pos
-      then min(v, bound)
-      else (-min(-v, bound))
+/* Movements of the paddle */
 
 node paddle_move(target, pos : int) = (next_pos : int)
 with var max_dy : int in
@@ -70,6 +74,9 @@ node aligned_with_paddle(y, paddle : int) = (yes : bool)
 with
   yes = (y <= paddle + PADDLE_SIZE) and
         (y >= paddle - PADDLE_SIZE)
+
+
+/* Main */
 
 node pong(wind : int) = (x, y : int; paddle : int; score : int)
 with var xx, yy, dy, paddle2, target : int ; dir : dir in
