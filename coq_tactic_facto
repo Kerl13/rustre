@@ -1,0 +1,79 @@
+intros x ok n1 n2 b2 sb sinst1a sinst1b sc sd se (h1,h2).
+
+
+
+pose (h2 O) as hO; clearbody hO.
+inversion h1.
+unfold spec1.
+
+
+exists n1.
+exists n2.
+exists b2.
+
+
+
+Ltac simpl_all u1 := repeat match goal with
+| [ H: context[u1] |- _ ] => unfold u1 in H; simpl in H
+end.
+
+Ltac s h2 := match goal with
+| [ |- _ /\ _] => split
+| [ |-  _ = sfby _ _] =>
+  apply splus_fby
+| [ |-  _ = seq ?A ?B] =>
+  apply seq_ax
+| [ |- forall n:nat, ?C] =>
+    intros nk;
+    pose (h2 nk) as nk2;
+    try match goal with
+    | [ |- context [S ?n]] => pose (h2 (S n)) as nk3
+    end
+| [ H : ?A = ?C, K : ?C = ?D |- ?A = ?D] => rewrite H; eauto
+| [ |- context[get (splus _ _) _]] => rewrite splus_ext
+| [ |- context[get (sconst _) _]] => rewrite sconst_rw
+| [ |- context[get (sfby _ _) (O)]] => rewrite sfby_rw_o
+| [ |- context[get (sfby _ _) (S _)]] => rewrite sfby_rw_s
+| [ |- context[get (sfby _ _) ?n]] =>
+  let n2 := fresh "n" in
+  destruct n as [ _ | n2 ];
+  let h2n := fresh "h2pn" in
+  try pose (h2 n2) as h2n; try inversion h2n
+| [ H: ?A <> ?B, H2: ?A = ?B -> ?C |- _ ] => clear H2
+| [ H: ?A = ?B, H2: ?A <> ?B -> ?C |- _ ] => clear H2
+| [ H : (?A = ?B -> ?C) /\ (?A <> ?B -> ?D) |- _ ] =>
+  let h := fresh H in
+  let h' := fresh H in
+  destruct H as (h & h');
+  let u := fresh "dec" in
+  pose (Z.eq_dec A B) as u;
+  let u1 := fresh u in
+  let u2 := fresh u in
+  destruct u as [u1 | u2];
+  (let h'' := fresh h in
+  pose (h u1) as h'';  clearbody h''; clear h) ||
+  (let h'' := fresh h in
+  pose (h' u2) as h''; clearbody h''; clear h)
+| [ |- ?a <-> ?b ] => split; intro
+end.
+
+Ltac unfold_eq := match goal with
+| [ H: ?A = ?E |- _] =>
+  match E with
+  | context[is_eq ?C ?D] =>
+    let y := fresh "y" in
+    pose (is_eq_def C D) as y;
+    clearbody y;
+    symmetry in H
+    end
+end.
+
+Ltac simpl_pairs := repeat match goal with
+| [ H: pair _ _ = pair _ _ |- _ ] => inversion H; clear H
+end.
+
+Ltac solve step_fonct1 h2 := simpl_all step_fonct1; repeat (repeat (s h2); simpl_pairs; try congruence; unfold_eq).
+
+unfold spec.
+
+solve step_fonct1 h2.

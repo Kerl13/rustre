@@ -63,7 +63,7 @@ let () =
     close_in c;
     let empty_formatter = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in
     let format = if verbose then Format.std_formatter else empty_formatter in
-    
+
     Format.fprintf format "=== Parsed file =====\n" ;
     Format.fprintf format "%a\n@." Ast_parsing.pp_file file ;
 
@@ -92,9 +92,21 @@ let () =
     Format.fprintf format "%a\n@." Ast_object.pp_file obc;
 
     Format.printf "Extracting…@\n";
+    let locs = List.map (fun n ->
+        n.Ast_parsing.n_name, n.Ast_parsing.n_local
+        |> List.map (fun (i, ty) ->
+            i, let Typing.TypedTy ty = Typing.ty_to_typed_ty ty in
+            Ast_object.Sty ty)
+      ) file.Ast_parsing.f_nodes in
     if output = "" then
-      Format.printf "%a@." Extractor.extract_to (obc, main_node)
-    else Extractor.extract_to (Format.formatter_of_out_channel (open_out output)) (obc, main_node);
+      Format.printf "%a@." Extractor.extract_to (obc, main_node, locs)
+    else Extractor.extract_to (Format.formatter_of_out_channel (open_out output)) (obc, main_node, locs);
+
+    (* let states = Ast_object.extract_states obc in
+
+    Format.printf "Spec:@\n%a@." Specifications.spec_file (states, file);
+       Format.fprintf (Format.formatter_of_out_channel (open_out "spec.mlw")) "%a@." Specifications.spec_file (states, file); *)
+
 
     exit 0
     with

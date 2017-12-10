@@ -16,7 +16,7 @@ theory Stream
   function seq (stream 'a) (stream 'a): stream bool
 
   axiom splus_ax: forall a, b, c: stream int.
-    (forall n: nat. get a n + get b n = get c n) <-> c = splus a b
+   (forall n: nat. get a n + get b n = get c n) <-> c = splus a b
 
   goal splus_com: forall a, b: stream int.
     splus a b = splus b a
@@ -34,6 +34,14 @@ theory Stream
                                  (*axiom ext: forall a, b: stream 'a. (forall n. get a n = get b n) -> a = b*)
   lemma splus_ext: forall a, b, n. get (splus a b) n = get a n + get b n
   lemma splus_assoc: forall a, b, c. splus a (splus b c) = splus (splus a b) c
+
+      axiom seq_ax: forall a, b: stream 'a, c: stream bool.
+        (forall n: nat.  ((get a n) = (get b n)) = get c n) <-> c = seq a b
+
+
+      lemma seq_rw: forall a, b:stream 'a, n. get (seq a b) n = ((get a n) = (get b n))
+      lemma sfby_rw_s: forall a:'a, b:stream 'a, n. get (sfby a b) (S n) = get b n
+      lemma sfby_rw_o: forall a:'a, b:stream 'a. get (sfby a b) O = a
 
       axiom sconst_ax: forall c:'a, a: stream 'a. (forall n. get a n = c) <-> a = sconst c
       axiom sconst_rw: forall c: 'a, n. get (sconst c) n = c
