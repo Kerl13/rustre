@@ -1,7 +1,7 @@
 node check (x: bool) = (a, b: int)
-with var n1, n2: int in
-  a = 0 fby (a+1);
-  b = 0 fby (b+1)
+with
+  a = 0 fby (8 fby (0 fby (a+1)));
+  b = 0 fby (42 fby (b+1))
 
 node check2 (x: bool) = (ok: bool)
 with var n1, n2: int; b: bool in

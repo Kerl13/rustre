@@ -5,11 +5,12 @@ let usage = Format.sprintf "usage: %s [options] file.lus main" Sys.argv.(0)
 
 type extractor = Rust | Why3
 
-let file, main_node, extractor, output, verbose, opt =
+let file, main_node, extractor, output, verbose, opt, specification =
   let extractor = ref Rust in
   let output = ref "" in
   let verbose = ref false in
   let opt = ref false in
+  let specification = ref false in
   let spec = [
     "-extract",
     Arg.Symbol (["why3"; "rust"],
@@ -17,7 +18,8 @@ let file, main_node, extractor, output, verbose, opt =
     "Extract to why3 or rust";
     "-o", Arg.Set_string output, "File to write the generated code.";
     "-v", Arg.Set verbose, "Verbose output";
-    "-opt", Arg.Set opt, "Optimize object code"
+    "-opt", Arg.Set opt, "Optimize object code";
+    "-spec", Arg.Set specification, "Prove compilation"
   ] in
   let file = ref None in
   let main = ref None in
@@ -44,7 +46,8 @@ let file, main_node, extractor, output, verbose, opt =
   !extractor,
   !output,
   !verbose,
-  !opt
+  !opt,
+  !specification
 
 module Extractor = (val (match extractor with
     | Rust -> (module Extract_rust.E)
@@ -97,32 +100,35 @@ let () =
     Format.fprintf format "%a\n@." Ast_object.pp_file obc;
 
     let obc = if opt then begin
-      Format.fprintf format "Optimizing object code… @?";
-      let obc = Object_optimize.run_all_opts obc in
-      Format.fprintf format "ok\n=== Object (optimized) =====\n";
-      Format.fprintf format "%a\n@." Ast_object.pp_file obc;
-      obc
-    end else obc in
+        Format.fprintf format "Optimizing object code… @?";
+        let obc = Object_optimize.run_all_opts obc in
+        Format.fprintf format "ok\n=== Object (optimized) =====\n";
+        Format.fprintf format "%a\n@." Ast_object.pp_file obc;
+        obc
+      end else obc in
 
     Format.printf "Extracting…@\n";
     let locs = List.map (fun n ->
         n.Ast_parsing.n_name, n.Ast_parsing.n_local
-        |> List.map (fun (i, ty) ->
-            i, let Typing.TypedTy ty = Typing.ty_to_typed_ty ty in
-            Ast_object.Sty ty)
+                              |> List.map (fun (i, ty) ->
+                                  i, let Typing.TypedTy ty = Typing.ty_to_typed_ty ty in
+                                  Ast_object.Sty ty)
       ) file.Ast_parsing.f_nodes in
     if output = "" then
       Format.printf "%a@." Extractor.extract_to (obc, main_node, locs)
     else Extractor.extract_to (Format.formatter_of_out_channel (open_out output)) (obc, main_node, locs);
 
-    (* let states = Ast_object.extract_states obc in
+    if specification then
+      begin
+        let states = Ast_object.extract_states obc in
 
-    Format.printf "Spec:@\n%a@." Specifications.spec_file (states, file);
-       Format.fprintf (Format.formatter_of_out_channel (open_out "spec.mlw")) "%a@." Specifications.spec_file (states, file); *)
+        Format.printf "Spec:@\n%a@." Specifications.spec_file (states, file);
+        Format.fprintf (Format.formatter_of_out_channel (open_out "spec.mlw")) "%a@." Specifications.spec_file (states, file);
+      end;
 
 
     exit 0
-    with
+  with
   | Lexer.Error s ->
     report_loc (lexeme_start_p lb, lexeme_end_p lb);
     Format.eprintf "lexical error: %s\n@." s;
