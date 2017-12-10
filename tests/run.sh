@@ -42,6 +42,7 @@ do
   then
     printf "."
   else
+    echo "$file should have failed" >&2
     fails=$((fails+1))
   fi
   total=$((total+1))
