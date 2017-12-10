@@ -1,0 +1,61 @@
+/* main = chrono */
+/* Do not remove the line above */
+
+/* Examples from the paper
+   "a conservative extension of synchronous data-flow with vstate machines",
+   colaço, pagano, and pouzet, emsoft 2005 */
+
+
+node two(x : bool) = (o : int) with
+var o2 : int;
+    o_1 : int;
+    ck, ns : bool
+in
+  o2 = o_1 when True(ck);
+  o = merge ck (True -> o2) (False -> 0 when False(ck));
+  ns = merge ck (True -> not x when True(ck)) (False -> x when False(ck));
+  o_1 = 0 fby o;
+  ck = False fby ns
+
+node chrono(stst, rst : bool) = (disp_1, disp_2 : int) with
+var run, r_2, nr_2, r_1, ns_2, ck, v_3, ck_2 : bool;
+    v : bool;
+    s, m, m_1, s_1, p_disp_2, p_disp_1 : int;
+    d, v_12 : int ;
+    r_1_when_run, r_1_when_not_run, d_lt_v_12, s_lt_s_1, s_lt_s_1_when_run : bool
+in
+  r_1_when_run = r_1 when True(run) ;
+  r_1_when_not_run = r_1 when False(run) ;
+  d_lt_v_12 = d < v_12 ;
+  s_lt_s_1 = s < s_1 ;
+  s_lt_s_1_when_run = s_lt_s_1 when True(run) ;
+  r_1 = False fby (rst and not run);
+  r_2 = False fby nr_2;
+  ck_2 = if r_1 then False else v_3;
+  d = if r_1_when_run then (0 when True(run)) else v_12 + (1 when True(run));
+  s = merge run (True -> if d_lt_v_12
+                 then (((s_1 + 1) mod 60) when True(run))
+                 else (s_1 when True(run)))
+                (False -> if r_1_when_not_run
+                 then (0 when False(run))
+                 else (s_1 when False(run)));
+  run = merge ck_2 (True -> not (stst when True(ck_2)))
+                   (False -> stst when False(ck_2));
+  m = merge run (True -> if s_lt_s_1_when_run
+                         then (((m_1 + 1) mod 60) when True(run))
+                         else (m_1 when True(run)))
+                (False -> if r_1_when_not_run
+                          then (0 when False(run))
+                          else (m_1 when False(run)));
+  v = (rst and run) when False(ck);
+  disp_1 = merge ck (True -> p_disp_1 when True(ck)) (False -> s when False(ck));
+  disp_2 = merge ck (True -> p_disp_2 when True(ck)) (False -> m when False(ck));
+  ns_2 = merge ck (True -> not rst when True(ck)) (False -> v);
+  nr_2 = merge ck (True -> rst when True(ck)) (False -> v);
+  p_disp_2 = 0 fby disp_2;
+  p_disp_1 = 0 fby disp_1;
+  m_1 = 0 fby m;
+  s_1 = 0 fby s;
+  ck = False fby ns_2;
+  v_3 = False fby run;
+  v_12 = 0 fby d

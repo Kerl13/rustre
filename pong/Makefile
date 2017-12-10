@@ -5,7 +5,7 @@ DISPLAY = pong_display.native
 
 .PHONY: all
 all: pong display
-	@echo "Execute \`./timer.sh | ./pong -silent | ./pong_display.native\` to run pong"
+	@echo "Execute \`./timer.sh 0.005 | ./pong -silent | ./pong_display.native\` to run pong"
 
 .PHONY: pong
 pong:
