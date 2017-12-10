@@ -1,9 +1,9 @@
 open Graphics
 
 
-let width = 800
-let height = 400
-let paddle_length = 70
+let width = 1200
+let height = 100
+let paddle_length = 30
 
 
 let draw_left_wall () =

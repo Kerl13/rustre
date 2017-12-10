@@ -4,14 +4,14 @@
 type dir = Left + Right
 
 /* Size of the arena */
-const WIDTH = 800
-const HEIGHT = 400
+const WIDTH = 1200
+const HEIGHT = 100
 
 /* Speed of the ball */
 const DX = 5
 
 /* Size of the AI's paddle */
-const PADDLE_SIZE = 70
+const PADDLE_SIZE = 30
 
 
 /* Simple utilities */
@@ -81,10 +81,10 @@ with
 node pong(wind : int) = (x, y : int; paddle : int; score : int)
 with var xx, yy, dy, paddle2, target : int ; dir : dir in
   (xx, dir, score) = lat_move(x, aligned_with_paddle(y, paddle)) ;
-  x = 100 fby xx ;
+  x = 10 fby xx ;
   (yy, dy) = vert_move(y) ;
-  y = 300 fby yy ;
+  y = 10 fby yy ;
   target = target(x, y, dir, dy) ;
   /* target = y ; */
   paddle2 = paddle_move(target, paddle) ;
-  paddle = 300 fby paddle2
+  paddle = 10 fby paddle2
