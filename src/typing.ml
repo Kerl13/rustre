@@ -12,6 +12,21 @@ module VarMap = Map.Make(struct
 
 module SSet = Set.Make(String)
 
+exception Error of location * string
+(** Generic type errot - the only error visible outside the module.
+    Should not be raised during typing but at the end of the process.
+*)
+
+exception Expected_num of location
+exception Node_undefined of string * location
+exception Empty_merge of location
+exception Redundant_merge of location * ident
+exception Non_exhaustive_merge of location
+exception Expected_type of typed_ty_wrapped * typed_ty_wrapped * location
+exception Type_error_at of location
+exception Shadowing_data_constructor of ident * ident * ident
+exception UnboundVar of location * ident
+
 (** Typing environment *)
 module Env = struct
   type t = {
@@ -28,7 +43,9 @@ module Env = struct
   let add x ve (env : t) = { env with bindings = VarMap.add x ve env.bindings }
 
   (** Returns [Γ(x)] *)
-  let find x (env : t) = VarMap.find x env.bindings
+  let find loc x env =
+    try VarMap.find x env.bindings
+    with Not_found -> raise (UnboundVar (loc, x))
 
   (** Empties [Γ] *)
   let reset_bindings (env : t) = { env with bindings = VarMap.empty }
@@ -60,15 +77,6 @@ let ty_to_typed_ty = function
   | Ast_parsing.TyInt -> TypedTy (TyNum TyZ)
   | Ast_parsing.TyReal -> TypedTy (TyNum TyReal)
   | Ast_parsing.TyEnum (name, dcs) -> TypedTy (TyEnum (name, dcs))
-
-exception Expected_num of location
-exception Node_undefined of string * location
-exception Empty_merge
-exception Redundant_merge of location * ident
-exception Non_exhaustive_merge of location
-exception Expected_type of typed_ty_wrapped * typed_ty_wrapped * location
-exception Type_error_at of location
-exception Shadowing_data_constructor of ident * ident * ident
 
 
 let do_typing_const: type a. Env.t -> a ty -> location -> Ast_parsing.const -> a const
@@ -130,6 +138,7 @@ let varlist_eq: type a b. a var_list -> b var_list -> bool = fun a b ->
 
 (* Infer simple types (no pair) *)
 let rec infer_type_opt (env : Env.t) (nodes : node list) (expr : Ast_parsing.expr) : typed_ty_wrapped option =
+  let expr_loc = expr.Ast_parsing.expr_loc in
     match Ast_parsing.(expr.expr_desc) with
      | Ast_parsing.EConst c -> (match c with
          | Ast_parsing.CNil -> None
@@ -142,7 +151,7 @@ let rec infer_type_opt (env : Env.t) (nodes : node list) (expr : Ast_parsing.exp
            Some (TypedTy (TyEnum (ty_name, dcs)))
        )
      | Ast_parsing.EIdent v ->
-       let Var (_, t) = Env.find v env in (*XXX: handle Not_found*)
+       let Var (_, t) = Env.find expr_loc v env in
        Some (TypedTy t)
      | Ast_parsing.ETuple _ -> raise (Type_error_at expr.Ast_parsing.expr_loc)
      | Ast_parsing.EFby (c,e) ->
@@ -164,9 +173,13 @@ let rec infer_type_opt (env : Env.t) (nodes : node list) (expr : Ast_parsing.exp
              | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
          | _ -> Some (TypedTy TyBool))
      | Ast_parsing.EApp (node_name,_,_) ->
-       let node = List.find (fun (Node desc) ->
-           let Tagged(_, _, i) = desc.n_name in
-           i = node_name) nodes in
+       let node =
+         try
+           List.find (fun (Node desc) ->
+             let Tagged(_, _, i) = desc.n_name in
+             i = node_name) nodes
+         with Not_found -> raise (Node_undefined (node_name, expr.Ast_parsing.expr_loc))
+       in
        let Node node_desc = node in
        let Tagged(_, out_args, _) = node_desc.n_name in
        (match out_args with
@@ -174,7 +187,7 @@ let rec infer_type_opt (env : Env.t) (nodes : node list) (expr : Ast_parsing.exp
         | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
      | Ast_parsing.EWhen (a,_,_) -> infer_type_opt env nodes a
      | Ast_parsing.EMerge (_,e) ->
-       if e = [] then raise Empty_merge
+       if e = [] then raise (Empty_merge expr_loc)
        else List.hd e |> snd |> infer_type_opt env nodes
 
 (* Infer simple types (no pair) *)
@@ -227,38 +240,39 @@ and binary_expr: type a b. Env.t -> node list -> a ty -> b ty -> (a, b) binop ->
 
 and do_typing_expr: type a. Env.t -> node list -> a var_list -> Ast_parsing.expr -> a expr
   = fun env nodes ty expr ->
+  let expr_loc = expr.Ast_parsing.expr_loc in
   let (descr, ty): (a expr_desc * a compl_ty) = match expr.Ast_parsing.expr_desc with
     | Ast_parsing.EConst a ->
       (match ty with
        | VIdent(_, ty) ->
-         let c = do_typing_const env ty expr.Ast_parsing.expr_loc a in
+         let c = do_typing_const env ty expr_loc a in
          let (c: a expr_desc) = EConst c in
          let (ty: a compl_ty) = TySing ty in
          c, ty
-       | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
+       | _ -> raise (Type_error_at expr_loc))
     | Ast_parsing.EIdent a ->
       (match ty with
        | VIdent(_, ty) ->
-         let Var(var_name, var_ty) = Env.find a env in (*XXX: handle Not_found*)
+         let Var(var_name, var_ty) = Env.find expr_loc a env in
          if TypedTy var_ty = TypedTy ty then
            let (ty: a compl_ty) = TySing ty in
            EIdent var_name, ty
-         else  raise (Type_error_at expr.Ast_parsing.expr_loc)
-       | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
+         else  raise (Type_error_at expr_loc)
+       | _ -> raise (Type_error_at expr_loc))
     | Ast_parsing.ETuple _ ->
-      raise (Type_error_at expr.Ast_parsing.expr_loc)
+      raise (Type_error_at expr_loc)
     | Ast_parsing.EFby (a,b) ->
       (match ty with
        | VIdent(_, ty2) ->
-         EFby (do_typing_const env ty2 expr.Ast_parsing.expr_loc a, do_typing_expr env nodes ty b), TySing ty2
-       | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
+         EFby (do_typing_const env ty2 expr_loc a, do_typing_expr env nodes ty b), TySing ty2
+       | _ -> raise (Type_error_at expr_loc))
     | Ast_parsing.EOp (op, exprs) -> (match op with
         | Ast_parsing.OpAdd | Ast_parsing.OpSub | Ast_parsing.OpMul
         | Ast_parsing.OpDiv | Ast_parsing.OpMod ->
           (match ty with
            | VIdent(_, TyNum t) ->
              binary_expr env nodes (TyNum t) (TyNum t) (op_to_ty_op op) exprs, TySing (TyNum t)
-           | _ -> raise (Expected_num expr.Ast_parsing.expr_loc))
+           | _ -> raise (Expected_num expr_loc))
         | Ast_parsing.OpLt
         | Ast_parsing.OpLe
         | Ast_parsing.OpGt
@@ -270,20 +284,20 @@ and do_typing_expr: type a. Env.t -> node list -> a var_list -> Ast_parsing.expr
              (match inf_type with
               | Ast_typed.TyNum _ ->
                 binary_expr env nodes inf_type TyBool (op_to_ty_op_cmp op) exprs, TySing TyBool
-              | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
-           | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
+              | _ -> raise (Type_error_at expr_loc))
+           | _ -> raise (Type_error_at expr_loc))
         | Ast_parsing.OpEq
         | Ast_parsing.OpNeq ->
           (match ty with
            | VIdent (_, TyBool) ->
-             let TypedTy inf_type = infer_type2 env expr.Ast_parsing.expr_loc nodes exprs in
+             let TypedTy inf_type = infer_type2 env expr_loc nodes exprs in
              binary_expr env nodes inf_type TyBool (op_to_ty_op_eq op) exprs, TySing TyBool
-           | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
+           | _ -> raise (Type_error_at expr_loc))
         | Ast_parsing.OpAnd | Ast_parsing.OpOr | Ast_parsing.OpImpl ->
             (match ty with
              | VIdent (_, TyBool) ->
                binary_expr env nodes TyBool TyBool (op_to_ty_op_bool op) exprs, TySing TyBool
-             | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc))
+             | _ -> raise (Type_error_at expr_loc))
         | Ast_parsing.OpNot ->
             (match ty with
              | VIdent (_, TyBool) ->
@@ -292,7 +306,7 @@ and do_typing_expr: type a. Env.t -> node list -> a var_list -> Ast_parsing.expr
                  | _ -> assert false
                in
                EUOp (OpNot, do_typing_expr env nodes ty e), TySing TyBool
-             | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc)))
+             | _ -> raise (Type_error_at expr_loc)))
     | Ast_parsing.EApp (node_name, args, every) ->
       begin
         try
@@ -301,13 +315,13 @@ and do_typing_expr: type a. Env.t -> node list -> a var_list -> Ast_parsing.expr
               i = node_name) nodes in
           let Node node_desc = node in
           let Tagged(in_args, out_args, _) = node_desc.n_name in
-          let in_expr = do_typing_tuple env expr.Ast_parsing.expr_loc nodes in_args args in
+          let in_expr = do_typing_tuple env expr_loc nodes in_args args in
           let every_expr = do_typing_expr env nodes (VIdent("", TyBool)) every in
           if varlist_eq out_args ty then
             EApp (Tagged(in_args, ty, node_name), in_expr, every_expr), varlist_to_ty ty
-          else raise (Type_error_at expr.Ast_parsing.expr_loc)
+          else raise (Type_error_at expr_loc)
         with
-        | Not_found -> raise (Node_undefined (node_name, Ast_parsing.(expr.expr_loc)))
+        | Not_found -> raise (Node_undefined (node_name, expr_loc))
       end
     | Ast_parsing.EWhen (e1,var,constructor) ->
       begin
@@ -315,49 +329,49 @@ and do_typing_expr: type a. Env.t -> node list -> a var_list -> Ast_parsing.expr
         | VIdent(_, _) ->
           let e = do_typing_expr env nodes ty e1 in
           EWhen(e, var, constructor), e.texpr_type
-        | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc)
+        | _ -> raise (Type_error_at expr_loc)
       end
     | Ast_parsing.EMerge (var, id_exprs) ->
       match ty with
       | VIdent(_, _) ->
-        let Var (_, ty_x) = Env.find var env in
+        let Var (_, ty_x) = Env.find expr_loc var env in
         let expected_dcs = begin match ty_x with
           | TyBool -> SSet.of_list ["True"; "False"]
           | TyEnum (_, dcs) -> SSet.of_list dcs
-          | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc)
+          | _ -> raise (Type_error_at expr_loc)
         end in
         let seen_dcs = SSet.empty in
         let seen_dcs, e = List.fold_left (fun (seen, cases) (id, e) ->
-            if SSet.mem id seen then raise (Redundant_merge (expr.Ast_parsing.expr_loc, id));
-            if not (SSet.mem id expected_dcs) then raise (Type_error_at expr.Ast_parsing.expr_loc);
+            if SSet.mem id seen then raise (Redundant_merge (expr_loc, id));
+            if not (SSet.mem id expected_dcs) then raise (Type_error_at expr_loc);
             (SSet.add id seen), (id, do_typing_expr env nodes ty e) :: cases
           ) (seen_dcs, []) id_exprs in
         let missing = SSet.diff expected_dcs seen_dcs in
         if not (SSet.is_empty missing) then
-          raise (Non_exhaustive_merge expr.Ast_parsing.expr_loc);
+          raise (Non_exhaustive_merge expr_loc);
         EMerge(var, e), (List.hd e |> snd).texpr_type
-      | _ -> raise (Type_error_at expr.Ast_parsing.expr_loc)
+      | _ -> raise (Type_error_at expr_loc)
   in
-  {texpr_desc = descr; texpr_type = ty; texpr_loc = Ast_parsing.(expr.expr_loc); }
+  {texpr_desc = descr; texpr_type = ty; texpr_loc = expr_loc }
 
 
 let do_typing_equation env nodes eq =
   let loc = eq.Ast_parsing.eq_pat.Ast_parsing.pat_loc in
   let pat_desc_to_var_list = function
     | Ast_parsing.PIdent v ->
-      let Var(id, ty) = Env.find v env in
+      let Var(id, ty) = Env.find loc v env in
       VarList (VIdent(id, ty))
     | Ast_parsing.PTuple tuple ->
       let (t, q) = match List.rev tuple with
         | Ast_parsing.PIdent t :: q -> t, q
         | _ -> raise (Type_error_at loc)
       in
-      let Var(id, ty) = Env.find t env in
+      let Var(id, ty) = Env.find loc t env in
       let v = VarList (VIdent(id, ty)) in
       List.fold_left (fun (VarList vl) pat_desc ->
           match pat_desc with
           | Ast_parsing.PIdent v ->
-            let Var(id, ty) = Env.find v env in
+            let Var(id, ty) = Env.find loc v env in
             VarList (VTuple(id, ty, vl))
           | _ -> raise (Type_error_at loc)) v q
   in
@@ -427,3 +441,37 @@ let do_typing f =
     |> List.fold_left (do_typing_node env) []
     |> List.rev
   in { tf_typedefs = typedefs ; tf_nodes = nodes }
+let do_typing f =
+  let sprintf = Format.sprintf in
+  let error loc msg = raise (Error (loc, msg)) in
+  try do_typing f
+  with
+  | Expected_num loc ->
+    let msg = "Value with a numeric type expected" in
+    error loc msg
+  | Node_undefined (n, loc) ->
+    let msg = sprintf "Undefined node %s" n in
+    error loc msg
+  | Empty_merge loc ->
+    let msg = "Merge without any clause" in
+    error loc msg
+  | Redundant_merge (loc, dc) ->
+    let msg = sprintf "Redudant merge clause: (%s -> …)" dc in
+    error loc msg
+  | Non_exhaustive_merge loc ->
+    let msg = "This merge is not exhaustive" in
+    error loc msg
+  | Expected_type(a, b, loc) ->
+    let TypedTy a, TypedTy b = a, b in
+    let msg = Format.asprintf "Got %a, expected %a" pp_ty a pp_ty b in
+    error loc msg
+  | Type_error_at loc ->
+    let msg = "Type error" in
+    error loc msg
+  | Shadowing_data_constructor (dc, ty1, ty2) ->
+    let msg = sprintf "Shadowning data constructor %s of type %s in the definition of %s" dc ty2 ty1 in
+    let pos = Lexing.dummy_pos in
+    error (pos, pos) msg
+  | UnboundVar (loc, x) ->
+    let msg = sprintf "Unbound var %s" x in
+    error loc msg

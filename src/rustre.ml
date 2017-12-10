@@ -110,7 +110,7 @@ let () =
 
     exit 0
     with
-  | Lexer.Lexical_error s ->
+  | Lexer.Error s ->
     report_loc (lexeme_start_p lb, lexeme_end_p lb);
     Format.eprintf "lexical error: %s\n@." s;
     exit 1
@@ -118,23 +118,14 @@ let () =
     report_loc (lexeme_start_p lb, lexeme_end_p lb);
     Format.eprintf "syntax error\n@.";
     exit 1
-  | Typing.Expected_type(a, b, loc) ->
-    let Typing.(TypedTy a, TypedTy b) = a, b in
-    Format.eprintf "got %a expected %a at %@." Ast_typed.pp_ty a Ast_typed.pp_ty b;
+  | Typing.Error (loc, message) ->
     report_loc loc;
+    Format.eprintf "%s@." message ;
     exit 1
-  | Typing.Type_error_at(loc) ->
-    report_loc loc;
-    Format.eprintf "Type error@.";
-    exit 1
-  | Typing.Expected_num(loc) ->
-    report_loc loc;
-    Format.eprintf "Expected num at @.";
-    exit 1
-  | Clocking.ClockingError (loc, message) ->
+  | Clocking.Error (loc, message) ->
     report_loc loc;
     Format.eprintf "%s@." message;
     exit 1
-  | Scheduling.SchedulingError message ->
+  | Scheduling.Error message ->
     Format.eprintf "%s@." message;
     exit 1
