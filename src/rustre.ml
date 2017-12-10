@@ -5,16 +5,20 @@ let usage = Format.sprintf "usage: %s [options] file.lus main" Sys.argv.(0)
 
 type extractor = Rust | Why3
 
-let file, main_node, extractor, output, verbose =
+let file, main_node, extractor, output, verbose, opt =
   let extractor = ref Rust in
   let output = ref "" in
   let verbose = ref false in
-  let spec = ["-extract",
-              Arg.Symbol (["why3"; "rust"], (fun s ->
-                  extractor := if s = "why3" then Why3 else Rust)),
-              "Extract to why3 or rust";
-              "-o", Arg.Set_string output, "File to write the generated code.";
-              "-v", Arg.Set verbose, "Verbose output"] in
+  let opt = ref false in
+  let spec = [
+    "-extract",
+    Arg.Symbol (["why3"; "rust"],
+                (fun s -> extractor := if s = "why3" then Why3 else Rust)),
+    "Extract to why3 or rust";
+    "-o", Arg.Set_string output, "File to write the generated code.";
+    "-v", Arg.Set verbose, "Verbose output";
+    "-opt", Arg.Set opt, "Optimize object code"
+  ] in
   let file = ref None in
   let main = ref None in
 
@@ -39,7 +43,8 @@ let file, main_node, extractor, output, verbose =
   (match !main with Some n -> n | None -> Arg.usage spec usage; exit 1),
   !extractor,
   !output,
-  !verbose
+  !verbose,
+  !opt
 
 module Extractor = (val (match extractor with
     | Rust -> (module Extract_rust.E)
@@ -90,6 +95,14 @@ let () =
     let obc = Object.from_normalized scheduled in
     Format.fprintf format "ok\n=== Object =====\n";
     Format.fprintf format "%a\n@." Ast_object.pp_file obc;
+
+    let obc = if opt then begin
+      Format.fprintf format "Optimizing object code… @?";
+      let obc = Object_optimize.run_all_opts obc in
+      Format.fprintf format "ok\n=== Object (optimized) =====\n";
+      Format.fprintf format "%a\n@." Ast_object.pp_file obc;
+      obc
+    end else obc in
 
     Format.printf "Extracting…@\n";
     let locs = List.map (fun n ->
