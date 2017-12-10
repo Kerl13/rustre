@@ -10,6 +10,7 @@ let file, main_node, extractor, output, verbose, opt, specification =
   let output = ref "" in
   let verbose = ref false in
   let opt = ref false in
+  let specification = ref false in
   let spec = [
     "-extract",
     Arg.Symbol (["why3"; "rust"],
