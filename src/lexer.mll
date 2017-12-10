@@ -10,6 +10,7 @@
       [
         "and", AND;
         "bool", BOOL;
+        "const", CONST;
         "else", ELSE;
         "every", EVERY;
         "false", CONST_BOOL(false);

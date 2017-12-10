@@ -3,30 +3,18 @@
 
 type dir = Left + Right
 
-node lat_move(x : int; aligned : bool) = (x2 : int; dir : dir; score : int)
-with var r_overflow, l_overflow, goal : bool; dx : int in
-  dx = 5 ;
-  r_overflow = dir = Right and x >= 800 - dx ;
-  l_overflow = dir = Left and x <= dx ;
-  dir = Right fby (
-    if r_overflow then
-      Left
-    else
-      if l_overflow then
-        Right
-      else
-        dir
-  ) ;
-  score = 0 fby (if goal then score + 1 else score) ;
-  goal = r_overflow and not aligned ;
-  x2 = merge dir (Left  -> x - dx when Left(dir))
-                 (Right -> x + dx when Right(dir))
+/* Size of the arena */
+const WIDTH = 1200
+const HEIGHT = 100
 
-node vert_move(y : int) = (y2 : int; dy : int)
-with var overflow : bool in
-  y2 = y + dy ;
-  overflow = (y2 >= 400) or (y2 < 0) ;
-  dy = 4 fby (if overflow then (- dy) else dy)
+/* Speed of the ball */
+const DX = 5
+
+/* Size of the AI's paddle */
+const PADDLE_SIZE = 30
+
+
+/* Simple utilities */
 
 node min(x, y : int) = (z : int)
 with var gt : bool in
@@ -45,6 +33,30 @@ with var pos : bool in
       then min(v, bound)
       else (-min(-v, bound))
 
+/* Movements of the ball */
+
+node lat_move(x : int; aligned : bool) = (x2 : int; dir : dir; score : int)
+with var r_overflow, l_overflow, goal : bool; dx : int in
+  r_overflow = dir = Right and x >= WIDTH - DX ;
+  l_overflow = dir = Left and x < DX ;
+  dir = Right fby ( if r_overflow then
+                      Left
+                    else
+                      if l_overflow then Right else dir ) ;
+  score = 0 fby (if goal then score + 1 else score) ;
+  goal = r_overflow and not aligned ;
+  x2 = merge dir (Left  -> x - DX when Left(dir))
+                 (Right -> x + DX when Right(dir))
+
+node vert_move(y : int) = (y2, dy : int)
+with var overflow : bool in
+  y2 = y + dy ;
+  overflow = (y2 >= HEIGHT) or (y2 < 0) ;
+  dy = 4 fby (if overflow then (- dy) else dy)
+
+
+/* Movements of the paddle */
+
 node paddle_move(target, pos : int) = (next_pos : int)
 with var max_dy : int in
   max_dy = 2 ;
@@ -52,26 +64,27 @@ with var max_dy : int in
 
 node target(x, y : int ; dir : dir ; dy : int) = (target : int)
 with var virtual_y, length : int ; in_bounds : bool ; dx : int in
-  dx = 5 ;
-  length = merge dir (Right -> 800 - x when Right(dir))
-                     (Left  -> 800 + x when Left(dir)) ;
-  virtual_y = (y + (length * dy) / dx) mod (400 * 2) ;
-  in_bounds = virtual_y < 400 and virtual_y >= -400 ;
-  target = if in_bounds then abs(virtual_y) else (800 - abs(virtual_y))
+  length = merge dir (Right -> WIDTH - x when Right(dir))
+                     (Left  -> WIDTH + x when Left(dir)) ;
+  virtual_y = (y + (length * dy) / DX) mod (HEIGHT * 2) ;
+  in_bounds = virtual_y < HEIGHT and virtual_y >= -HEIGHT ;
+  target = if in_bounds then abs(virtual_y) else (2*HEIGHT - abs(virtual_y))
 
 node aligned_with_paddle(y, paddle : int) = (yes : bool)
-with var paddle_length : int in
-  paddle_length = 70 ;
-  yes = (y <= paddle + paddle_length) and
-        (y >= paddle - paddle_length)
+with
+  yes = (y <= paddle + PADDLE_SIZE) and
+        (y >= paddle - PADDLE_SIZE)
+
+
+/* Main */
 
 node pong(wind : int) = (x, y : int; paddle : int; score : int)
 with var xx, yy, dy, paddle2, target : int ; dir : dir in
   (xx, dir, score) = lat_move(x, aligned_with_paddle(y, paddle)) ;
-  x = 100 fby xx ;
+  x = 10 fby xx ;
   (yy, dy) = vert_move(y) ;
-  y = 300 fby yy ;
+  y = 10 fby yy ;
   target = target(x, y, dir, dy) ;
   /* target = y ; */
   paddle2 = paddle_move(target, paddle) ;
-  paddle = 300 fby paddle2
+  paddle = 10 fby paddle2

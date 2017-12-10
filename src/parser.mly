@@ -6,6 +6,9 @@
   let pat_descs patterns = List.map (fun p -> p.pat_desc) patterns
   let zero = dummy_loc (EConst (CInt 0)) Lexing.dummy_pos
 
+  (** Global constants *)
+  let consts = Hashtbl.create 17
+
   (* Type definitions *)
   let data_constructors = Hashtbl.create 17
 
@@ -80,6 +83,7 @@
 %token IF THEN ELSE
 %token WHEN EVERY MERGE
 
+%token CONST
 %token NODE VAR WITH IN
 
 %token COMMA COLON SEMICOL
@@ -136,13 +140,18 @@ typ:
 
 
 file:
-  typedefs = list(typedef) nodes = list(node) EOF
+  typedefs = list(typedef) list(global_const) nodes = list(node) EOF
   {{ f_typedefs = typedefs; f_nodes = nodes }}
 
 
 typedef:
   TYPE t = ident EQUAL dcs = separated_nonempty_list(PLUS, dcident)
   { Hashtbl.add data_constructors t dcs ; (t, dcs) }
+
+
+global_const:
+  CONST name = DCIDENT EQUAL c = const
+  { Hashtbl.add consts name c }
 
 
 node:
@@ -235,4 +244,6 @@ const:
 | b = CONST_BOOL  { CBool b }
 | n = CONST_INT   { CInt n }
 | f = CONST_REAL  { CReal f }
-| dc = dcident    { CDataCons dc }
+| dc = dcident    { if Hashtbl.mem consts dc
+                    then Hashtbl.find consts dc
+                    else CDataCons dc }

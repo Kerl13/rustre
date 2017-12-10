@@ -9,7 +9,7 @@ all: pong display
 
 .PHONY: pong
 pong:
-	$(RUSTRE) -extract rust -o pong.rs $(PONG_SRC) pong
+	$(RUSTRE) -opt -extract rust -o pong.rs $(PONG_SRC) pong
 	rustc pong.rs
 
 .PHONY: display
