@@ -36,15 +36,15 @@ with var pos : bool in
 /* Movements of the ball */
 
 node lat_move(x : int; aligned : bool) = (x2 : int; dir : dir; score : int)
-with var r_overflow, l_overflow, goal : bool; dx : int in
+with var r_overflow, l_overflow, goal_ : bool in
   r_overflow = dir = Right and x >= WIDTH - DX ;
   l_overflow = dir = Left and x < DX ;
   dir = Right fby ( if r_overflow then
                       Left
                     else
                       if l_overflow then Right else dir ) ;
-  score = 0 fby (if goal then score + 1 else score) ;
-  goal = r_overflow and not aligned ;
+  score = 0 fby (if goal_ then score + 1 else score) ;
+  goal_ = r_overflow and not aligned ;
   x2 = merge dir (Left  -> x - DX when Left(dir))
                  (Right -> x + DX when Right(dir))
 
@@ -63,7 +63,7 @@ with var max_dy : int in
   next_pos = pos + clamp(max_dy, target - pos)
 
 node target(x, y : int ; dir : dir ; dy : int) = (target : int)
-with var virtual_y, length : int ; in_bounds : bool ; dx : int in
+with var virtual_y, length : int ; in_bounds : bool in
   length = merge dir (Right -> WIDTH - x when Right(dir))
                      (Left  -> WIDTH + x when Left(dir)) ;
   virtual_y = (y + (length * dy) / DX) mod (HEIGHT * 2) ;
