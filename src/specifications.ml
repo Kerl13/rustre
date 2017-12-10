@@ -25,7 +25,7 @@ let rec spec_expr ppf expr =
   | Ast_parsing.EConst c -> fprintf ppf "(sconst %a)" spec_const c
   | Ast_parsing.EIdent s -> fprintf ppf "%s" s
   | Ast_parsing.ETuple l -> fprintf ppf "(%a)" (pp_list ", " spec_expr) l
-  | Ast_parsing.EFby (c, e) -> fprintf ppf "sfby %a %a" spec_const c spec_expr e
+  | Ast_parsing.EFby (c, e) -> fprintf ppf "(sfby %a %a)" spec_const c spec_expr e
   | Ast_parsing.EOp (op, l) -> fprintf ppf "(%a %a)" spec_op op (pp_list " " spec_expr) l
   | Ast_parsing.EApp (a,b,_) -> assert false
   | Ast_parsing.EWhen (_,_,_) -> assert false
@@ -96,13 +96,13 @@ let rec spec_print_state_flat pref states ppf s =
 
 let spec_proof_node ppf (states, node) =
   fprintf ppf "@[<2>lemma valid:@\nforall (* in and out vars *) %a%a (* state *) %a.  @\n"
-    var_pp (node.n_input @ node.n_output)
+    var_pp (node.n_input @ node.n_output @ node.n_local)
     (fun ppf () ->
        if List.assoc node.n_name states <> [] then fprintf ppf ", ") ()
     (spec_print_state_flat "s" states) node.n_name;
   fprintf ppf "(* definition by recurrence *)@\n(%a = reset_state /\\@\n@[<2>forall n: nat.@ ((%a), %a) =@ @[<2>step_fonct %a %a@])@]@\n"
     (spec_print_state "s" (fun s -> "get " ^ s ^ " O") states) node.n_name
-    (var_pp_flat ", " (fun ppf s -> fprintf ppf "(get %s n)" s)) node.n_output
+    (var_pp_flat ", " (fun ppf s -> fprintf ppf "(get %s n)" s)) (node.n_output @ node.n_local)
     (spec_print_state "s" (fun s -> "get " ^ s ^ " (S n)") states) node.n_name
     (spec_print_state "s" (fun s -> "get " ^ s ^ " n") states) node.n_name
     (var_pp_flat " " (fun ppf s -> fprintf ppf "(get %s n)" s)) node.n_input;
@@ -112,7 +112,7 @@ let spec_proof_node ppf (states, node) =
 
 let spec_node states ppf node =
   let var_exists = (pp_list_brk " " (fun ppf (i, ty) ->
-      fprintf ppf "forall %s: stream %a." i pp_ty ty))
+      fprintf ppf "exists %s: stream %a." i pp_ty ty))
   in
   let pp_import ppf node =
     fprintf ppf "use import int.Int@\nuse import stream.Stream@\nuse import test.Node%s@\n%a"

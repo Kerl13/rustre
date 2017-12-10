@@ -286,7 +286,7 @@ module E = struct
       (pp_list ", " (fun ppf x -> fprintf ppf "%s" x)) (List.mapi (fun i (_, _) -> "arg" ^ (string_of_int i)) vars_in)
 
 
-  let extract_to ppf (f, main_node) =
+  let extract_to ppf (f, main_node, _) =
     let main_machine = List.find (fun m -> m.name = main_node) f.objf_machines in
     fprintf ppf "%a@\n@\n%a@\n@\n%a@\n" print_types f.objf_typedefs (pp_list_n "\n" (fun ppf x -> print_machine ppf f.objf_typedefs x)) f.objf_machines print_main (f.objf_typedefs, main_machine)
 end
