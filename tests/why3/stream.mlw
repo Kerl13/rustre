@@ -15,178 +15,20 @@ theory Stream
   function sfby 'a (stream 'a): stream 'a
   function seq (stream 'a) (stream 'a): stream bool
 
-  axiom splus_ax: forall a, b, c: stream int.
-   (forall n: nat. get a n + get b n = get c n) <-> c = splus a b
+  axiom sext: forall a, b: stream 'a.
+    (forall n: nat. get a n = get b n) -> a = b
 
-  goal splus_com: forall a, b: stream int.
-    splus a b = splus b a
+  axiom splus_rw: forall a, b, n. get (splus a b) n = get a n + get b n
 
+  axiom seq_rw_true: forall a, b:stream 'a, n. ((get a n) = (get b n)) -> get (seq a b) n = true
+  axiom seq_rw_false: forall a, b:stream 'a, n. ((get a n) <> (get b n)) -> get (seq a b) n = false
 
-    axiom spre_ax: forall a, b:stream 'a.
-    (forall n. get b (S n) = get a n) <-> b = spre a
-      axiom splus_fby: forall c, a, b:stream 'a.
-        (get b O = c /\ forall n. get b (S n) = get a n) <-> b = sfby c a
+  axiom sfby_rw_s: forall a:'a, b:stream 'a, n. get (sfby a b) (S n) = get b n
+  axiom sfby_rw_o: forall a:'a, b:stream 'a. get (sfby a b) O = a
 
+  axiom sconst_rw: forall c: 'a, n. get (sconst c) n = c
+  axiom sminus_rw: forall a, b, n. get (sminus a b) n = get a n - get b n
 
-  (*    axiom splus_fby: forall c, a:stream 'a.
-        (get (sfby c a) O = c /\ forall n. get (sfby c a) (S n) = get a n)*)
-
-                                 (*axiom ext: forall a, b: stream 'a. (forall n. get a n = get b n) -> a = b*)
-  lemma splus_ext: forall a, b, n. get (splus a b) n = get a n + get b n
-  lemma splus_assoc: forall a, b, c. splus a (splus b c) = splus (splus a b) c
-
-      axiom seq_ax: forall a, b: stream 'a, c: stream bool.
-        (forall n: nat.  ((get a n) = (get b n)) = get c n) <-> c = seq a b
-
-
-      lemma seq_rw: forall a, b:stream 'a, n. get (seq a b) n = ((get a n) = (get b n))
-      lemma sfby_rw_s: forall a:'a, b:stream 'a, n. get (sfby a b) (S n) = get b n
-      lemma sfby_rw_o: forall a:'a, b:stream 'a. get (sfby a b) O = a
-
-      axiom sconst_ax: forall c:'a, a: stream 'a. (forall n. get a n = c) <-> a = sconst c
-      axiom sconst_rw: forall c: 'a, n. get (sconst c) n = c
-      axiom sminus_rw: forall a, b, n. get (sminus a b) n = get a n - get b n
-
-  predicate step_state (x: stream bool) (ok: stream bool) =
-    exists n1, n2: stream int.
-      n1 = sif x (splus (spre n1) (sconst 1)) (spre n1) /\
-      n2 = sfby 0 (splus n2 (sconst (-1))) /\
-      ok = sgt n1 n2
+  axiom swhen
 
 end
-
-(*
-module Proof1
-  use import Stream
-  use import int.Int
-  use import bool.Bool
-
-  predicate step_state1 (a: stream int) (b: stream int) (c: stream int) =
-    c = splus a b
-  function a: stream int
-  function b: stream int
-  function c: stream int
-
-  function step_func1 (a: int) (b: int): int =
-    a + b
-
-  axiom step_state_a_b_c: forall n: nat. get c n = step_func1 (get a n) (get b n  )
-
-  goal valid: step_state1 a b c
-end
-
-module Proof2
-  use import Stream
-  use import int.Int
-  use import bool.Bool
-  function a: stream int
-  function b: stream int
-  function c: stream int
-
-  predicate step_state1 (a: stream int) (c: stream int) =
-  c = splus a (sfby 0 a)
-
-  function step_func1 (a: int) (var1: int) : (int, int) =
-    let c = var1 in
-    let var1 = a in
-    (a+c, var1)
-
-  function step_reset (): int =
-    0
-
-  axiom reset_b: get b O = step_reset ()
-  axiom step_state_a_b_c:
-  forall n: nat. (get c n, get b (S n)) = step_func1 (get a n) (get b n)
-
-              lemma valid2: b = sfby 0 a
-lemma valid3: c = splus a b
-              goal valid: step_state1 a c
-
-end
-
-module Proof3
-    use import Stream
-    use import int.Int
-    use import bool.Bool
-    function a: stream int
-    function b: stream int
-    function c: stream int
-    function d: stream int
-    function e: stream int
-
-    predicate step_state1 (a: stream int) (c: stream int) =
-      c = splus a (sfby 0 (splus a (sconst 4)))
-
-    function step_func1 (a: int) (var1: int) : (int, int, int, int) =
-      let c = var1 in
-      let var2 = a + 4 in
-      let var1 = var2 + 3 in
-      (a+var1, var1, var1, var2)
-
-
-    function step_reset (a:unit): int =
-      4
-
-    axiom reset_b: get b O = step_reset ()
-    axiom step_state_a_b_c:
-      forall n: nat. (get c n, get b (S n), get d n, get e n) = step_func1 (get a n) (get b n)
-
-                (*lemma valid2: b = sfby 0 (splus a (sconst 4))*)
-(*lemma valid3: c = splus a b*)
-    lemma valid3: e = splus a (sconst 4)
-    lemma valid8: d = splus d (sconst 3)
-    lemma valid4: forall n. get b (S n) = get d n
-    lemma valid2: b = sfby 0 d
-    lemma valid7: forall n. get e n = get d n + 3
-    lemma valid6: forall n. get c n = get a n + get b n
-    lemma valid5: c = splus a b
-    goal valid: step_state1 a c
-
-end
-
-module Check
-  use import int.Int
-
-  type state = { mutable var1:int; mutable var2:int; mutable n2:int; }
-
-
-  function step_func (s: state) (x:bool) : (bool, state) =
-  let n2 = s.n2 in
-  let var2 = s.var2 in
-  let var1 = s.var1 in
-  let n1 =
-  match x with
-  | True -> var1 + 1
-  | False -> var2
-  end in
-  let svar1 = n1 in
-  let svar2 = n1 in
-  let sn2 = n2 - 1 in
-
-  let ok = n1 > n2 in
-  (ok, { var1 = svar1; var2 = svar2; n2 = sn2; })
-
-
-  let step (s: state) (x:bool) : bool
-  ensures { (result, s) = step_func (old s) x }
-  =
-    let n2 = s.n2 in
-    let var2 = s.var2 in
-    let var1 = s.var1 in
-    let n1 =
-    match x with
-    | True -> var1 + 1
-    | False -> var2
-    end in
-    s.var1 <- n1;
-    s.var2 <- n1;
-    s.n2 <- n2 - 1;
-
-    let ok = n1 > n2 in
-    ok
-
-  let iter(a:unit) : bool
-    ensures { result = true } =
-    step({var1 = 0; var2 = 0; n2 = 0;}) false
-end
-         *)
