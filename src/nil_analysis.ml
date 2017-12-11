@@ -4,7 +4,7 @@ open Ast_object
 let rec analyze_defs ?(fonct=false) = function
   | SAssign { n; _} -> [n]
   | SSeq(a, b) -> analyze_defs ~fonct a @ analyze_defs ~fonct b
-  | SReset(a, b) -> if fonct then [State ("state_" ^ b)] else []
+  | SReset(_, b) -> if fonct then [State ("state_" ^ b)] else []
   | SSkip -> []
   | SCall(_, _, i, res) ->
     if fonct then
