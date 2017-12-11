@@ -22,12 +22,7 @@ type nl = Ast_typed.node_local
 
 let obc_const: type a. a Ast_typed.ty -> a Ast_typed.const -> a oconst = fun ty c ->
   match c with
-  | Ast_typed.CNil -> begin match ty with
-      | Ast_typed.TyBool -> CBool true
-      | Ast_typed.TyNum (Ast_typed.TyZ) -> CInt 42
-      | Ast_typed.TyNum (Ast_typed.TyReal) -> CReal 0.
-      | Ast_typed.TyEnum (_, dcs) -> CDataCons (List.hd dcs)
-    end
+  | Ast_typed.CNil -> CNil ty
   | Ast_typed.CBool a -> CBool a
   | Ast_typed.CInt a -> CInt a
   | Ast_typed.CReal a -> CReal a
