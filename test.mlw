@@ -1,117 +1,46 @@
 module Types
   function is_eq (a:'a) (b:'a): bool = (a = b)
-  
+
 end
 
 module Nodecheck
   use import int.Int
   use import int.ComputerDivision
   use import Types
-  
-  type state = { mutable var2: int; mutable var1: int; mutable a: int;
-                 mutable var3: int; mutable b: int; }
-  function step_fonct (state:state) (x: bool): ((int, 
-    int), (), state) =
-    let { var2 = state_var2; var1 = state_var1; a = state_a;
-    var3 = state_var3;
-    b = state_b;  } = state in
-    let b = state_b in
-    let var3 = state_var3 in
+
+  type state = { mutable a: bool; }
+  function step_fonct (state:state) (x: bool): ((bool,
+    bool), (), state) =
+    let { a = state_a;  } = state in
     let a = state_a in
-    let var1 = state_var1 in
-    let var2 = state_var2 in
-    
-    let state_b = var3 in
-    let state_var3 = (b + 1) in
-    let state_a = var1 in
-    let state_var1 = var2 in
-    let state_var2 = (a + 1) in
-    ((a,  b), (), { var2 = state_var2; var1 = state_var1; a = state_a;
-    var3 = state_var3; b = state_b;  })
-  
+
+    let b = x in
+
+    let state_a = x in
+    ((a,  b), (), { a = state_a;  })
+
   function reset_state : state =
-    let state_b = 0 in
-    let state_var3 = 42 in
-    let state_a = 0 in
-    let state_var1 = 8 in
-    let state_var2 = 0 in
-    { var2 = state_var2; var1 = state_var1; a = state_a; var3 = state_var3;
-    b = state_b;  }
-  
-  let step (state:state) (x: bool): (int,  int) 
+    let state_a = true in
+    { a = state_a;  }
+
+  let step (state:state) (x: bool): (bool,  bool)
     ensures { let ((a, b), _, sta) = step_fonct (old state) x in
     (a, b) = result /\
     state = sta } =
-    let b = state.b in
-    let var3 = state.var3 in
     let a = state.a in
-    let var1 = state.var1 in
-    let var2 = state.var2 in
-    
-    state.b <- var3;
-    state.var3 <- (b + 1);
-    state.a <- var1;
-    state.var1 <- var2;
-    state.var2 <- (a + 1);
+
+    let b = x in
+
+    state.a <- x;
     (a,  b)
-  
-  let reset (state:state): unit 
+
+  let reset (state:state): unit
     ensures { state = reset_state } =
-    state.b <- 0;
-    state.var3 <- 42;
-    state.a <- 0;
-    state.var1 <- 8;
-    state.var2 <- 0;
+    state.a <- true;
     ()
 
-end
-
-module Nodecheck2
-  use import int.Int
-  use import int.ComputerDivision
-  use import Types
-  use Nodecheck
-  type state = { mutable b: bool; inst1: Nodecheck.state;}
-  function step_fonct (state:state) (x: bool): ((bool), (int,  int, 
-    bool), state) =
-    let { b = state_b; inst1 = state_inst1;  } = state in
-    let b = state_b in
-    
-    let (state_inst1) = match false with
-      | True -> let state_inst1 = Nodecheck.reset_state in (state_inst1)
-      | False ->  (state_inst1)
-    end in
-    let ((n1, n2), _, state_inst1) = Nodecheck.step_fonct state_inst1 b in 
-    let ok = (is_eq ((n1 + 1)) (n2)) in
-    
-    let state_b = false in
-    ((ok), (n1,  n2,  b), { b = state_b; inst1 = state_inst1;  })
-  
-  function reset_state : state =
-    let state_inst1 = Nodecheck.reset_state in
-    let state_b = true in
-    { b = state_b; inst1 = state_inst1;  }
-  
-  let step (state:state) (x: bool): (bool) 
-    ensures { let ((ok), _, sta) = step_fonct (old state) x in
-    (ok) = result /\
-    state = sta } =
-    let b = state.b in
-    
-    let () = match false with
-      | True -> Nodecheck.reset state.inst1; ()
-      | False ->  ()
-    end in
-    let ((n1, n2)) = Nodecheck.step state.inst1 b in 
-    let ok = ((n1 + 1) = n2) in
-    
-    state.b <- false;
-    (ok)
-  
-  let reset (state:state): unit 
-    ensures { state = reset_state } =
-    Nodecheck.reset state.inst1;
-    state.b <- true;
-    ()
+  lemma nil_ok: forall x: bool, init: bool.
+    let reset_state_nil = { reset_state with a = init } in
+    step_fonct reset_state x = step_fonct reset_state_nil x
 
 end

@@ -208,8 +208,8 @@ module E = struct
       (print_statement ~fonct:false) mach.reset
 
   let print_check_nil ppf mach =
-    let _, _, step = mach.step in
-    assert (ostatement_get_nils mach.reset)
+    let _, _, _, step = mach.step in
+    assert (ostatement_get_nils step = [])
 
   let print_machine locs ppf mach =
     let var_loc = List.assoc mach.name locs in
