@@ -183,25 +183,46 @@ let rec pp_compl_ty: type a. 'b -> a compl_ty -> unit = fun ppf l ->
   | TyPair (a,b) ->
     fprintf ppf "%a, %a" pp_ty a pp_compl_ty b
 
-let pp_expr: type a. 'c -> a expr -> unit =
-  let rec pp: type a. 'd -> a expr -> unit = fun ppf e -> fprintf ppf "%a:%a" pp_desc e.texpr_desc pp_compl_ty e.texpr_type
+let pp_expr: type a. bool -> 'c -> a expr -> unit =
+  let rec pp: type a.  bool -> 'd -> a expr -> unit
+    = fun need_pars ppf e ->
+      fprintf ppf "%a:%a" (pp_desc need_pars) e.texpr_desc pp_compl_ty e.texpr_type
+
   and pp_elist: type a. 'd -> a expr_list -> unit = fun ppf l ->
     match l with
     | ELNil -> ()
-    | ELSing a -> pp ppf a
-    | ELCons (a,b) -> fprintf ppf "%a, %a" pp a pp_elist b
-  and pp_desc: type b. 'c -> b expr_desc -> unit = fun ppf -> function
+    | ELSing a -> pp false ppf a
+    | ELCons (a,b) -> fprintf ppf "%a, %a" (pp false) a pp_elist b
+
+  and pp_desc: type b. bool -> 'c -> b expr_desc -> unit
+    = fun need_pars ppf -> function
     | EConst c -> fprintf ppf "%a" pp_const c
     | EIdent i -> fprintf ppf "%s" i
-    | EFby (v, e) -> fprintf ppf "(%a fby %a)" pp_const v pp e
-    | EBOp (op, e1, e2) -> fprintf ppf "(%a %a %a)" pp e1 pp_bop op pp e2
-    | EUOp (op, e) -> fprintf ppf "(%a %a)" pp_uop op pp e
+    | EFby (v, e) ->
+      if need_pars then fprintf ppf "(" ;
+      fprintf ppf "@[<2>%a@ fby@ %a@]" pp_const v (pp true) e ;
+      if need_pars then fprintf ppf ")"
+    | EBOp (op, e1, e2) ->
+      if need_pars then fprintf ppf "(" ;
+      fprintf ppf "%a %a %a" (pp true) e1 pp_bop op (pp true) e2 ;
+      if need_pars then fprintf ppf ")"
+    | EUOp (op, e) ->
+      if need_pars then fprintf ppf "(" ;
+      fprintf ppf "%a %a" pp_uop op (pp true) e ;
+      if need_pars then fprintf ppf ")"
     | EApp (f, args, ev) ->
       let Tagged(_, _, f) = f in
-      fprintf ppf "(%s(%a) every %a)" f pp_elist args pp ev
-    | EWhen (e, c, x) -> fprintf ppf "(%a when %s(%s))" pp e c x
+      if need_pars then fprintf ppf "(" ;
+      fprintf ppf "@[%s(%a)@ every %a@]" f pp_elist args (pp true) ev ;
+      if need_pars then fprintf ppf ")"
+    | EWhen (e, c, x) ->
+      if need_pars then fprintf ppf "(" ;
+      fprintf ppf "%a when %s(%s)" (pp true) e c x ;
+      if need_pars then fprintf ppf ")"
     | EMerge (x, clauses) -> fprintf ppf "(@[<2>merge %s@\n%a@])" x (Pp_utils.pp_list_n "" pp_clause) clauses
-  and pp_clause: type a. 'd -> ident * a expr -> unit = fun ppf (c, e) -> fprintf ppf "(%s -> %a)" c pp e
+
+  and pp_clause: type a. 'd -> ident * a expr -> unit
+    = fun ppf (c, e) -> fprintf ppf "(@[<2>%s ->@ %a@])" c (pp false) e
   in pp
 
 let rec pp_vl: type a. 'b -> a var_list -> unit = fun ppf -> function
@@ -212,7 +233,7 @@ let rec pp_vl: type a. 'b -> a var_list -> unit = fun ppf -> function
 let pp_pat ppf p = pp_vl ppf p.pat_desc
 
 let pp_equation ppf (Equ(pat, expr)) =
-  fprintf ppf "%a = %a" pp_pat pat pp_expr expr
+  fprintf ppf "@[<2>%a =@ %a@]" pp_pat pat (pp_expr false) expr
 
 let var_list_empty : type a. a var_list -> bool = function
   | VEmpty -> true
