@@ -1,4 +1,5 @@
 /* main = check */
+/* error = ill clocked program */
 
 node check (x:int) = (o:int)
 with var half:bool in

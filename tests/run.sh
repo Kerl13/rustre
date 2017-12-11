@@ -20,6 +20,14 @@ function compile {
   fi
 }
 
+function parse_error {
+  set -f
+  snd=$(sed '2q;d' $1)
+  [[ $snd =~ ^"/* error = "(.*)" */"$ ]]
+  set +f
+  echo ${BASH_REMATCH[1]}
+}
+
 echo "Running positive tests"
 for file in *.lus
 do
@@ -42,7 +50,9 @@ do
   then
     printf "."
   else
-    echo "$file should have failed" >&2
+    echo >&2
+    echo "$file should not compile. Comment at the top of te file says:" >&2
+    parse_error $file >&2
     fails=$((fails+1))
   fi
   total=$((total+1))

@@ -10,7 +10,7 @@ compile:
 	mv $(BIN).$(TARGET) $(BIN)
 
 .PHONY: test
-test:
+test: compile
 	make -C tests
 
 .PHONY: debug

@@ -1,18 +1,19 @@
 open Ast_normalized
 
 module type Scheduling = sig
-  exception Error of string
+  exception Error of Ast_typed.location * string
   val schedule : Ast_normalized.nfile -> string -> Ast_normalized.nfile
 end
 
 module Simple = struct
   (** Public exception *)
-  exception Error of string
+  exception Error of Ast_typed.location * string
 
   (** Private exceptions *)
   exception Not_a_node of string
-  exception MultipleDefinitions of string * string
-  exception CausalityError of string * nequation list
+  exception MultipleDefinitions of string * string * Ast_typed.location
+  exception CausalityError of string * nequation list * Ast_typed.location
+  exception NoDefinition of string * string * Ast_typed.location
 
   (** Equations with a unique identifier *)
   module EqWithId = struct
@@ -79,9 +80,14 @@ module Simple = struct
       List.fold_left (fun vars (_, e) -> vars_emerge vars e) (x :: vars) cases
     | NExpr e -> vars_expr vars e
 
+  let eq_loc = function
+    | EquSimple (_, e) -> e.nexpr_merge_loc
+    | EquFby (_, _, e) -> e.nexpr_loc
+    | EquApp (_, _, _, e) -> e.nexpr_loc
+
   let number_and_resolve_deps node_name (i, eqs, defmap) eq =
     let add x defmap =
-      if Smap.mem x defmap then raise (MultipleDefinitions (node_name, x));
+      if Smap.mem x defmap then raise (MultipleDefinitions (node_name, x, eq_loc eq));
       Smap.add x (i, eq) defmap
     in
     let defmap, vars = match eq with
@@ -105,13 +111,13 @@ module Simple = struct
       node_name, number_and_build_defmap node_name node.n_eqs
     in
     let add_edge_opt ieq g x =
-      try
-        (* XXX: check that the only vars that trigger this exception
-           are inputs. *)
-        let ieq2 = Smap.find x defmap in
-        Graph.add_edge g ieq ieq2
-      with
-      | Not_found -> g
+      try Graph.add_edge g ieq (Smap.find x defmap)
+      with Not_found ->
+        (* If the var that triggers this exception is an input, that's normal.
+           Otherwise, it means that one stream is undefined *)
+        if Ast_typed_utils.var_list_exists ((=) x) node.n_input
+        then g
+        else raise (NoDefinition (x, node_name, node.n_loc))
     in
     let g = List.fold_left
         (fun g (i, eq, vars) ->
@@ -122,7 +128,9 @@ module Simple = struct
     in
     let eqs =
       try Graph.topo_sort g
-      with Graph.Cycle g -> raise (CausalityError (node_name, Graph.keys g)) in
+      with Graph.Cycle g ->
+        raise (CausalityError (node_name, Graph.keys g, node.n_loc))
+    in
     NNode { node with n_eqs = eqs } :: scheduled
 
   let rec cut_at acc name = function
@@ -144,19 +152,23 @@ module Simple = struct
     with
     | Not_a_node name ->
       let message = Format.sprintf "Unbound node %s" name in
-      raise (Error message)
-    | MultipleDefinitions (node_name, x) ->
+      let pos = Lexing.dummy_pos in
+      raise (Error ((pos, pos), message))
+    | MultipleDefinitions (node_name, x, loc) ->
       let message = Format.sprintf "Variable %s is defined multiple times in node %s" x node_name in
-      raise (Error message)
-    | CausalityError (node_name, eqs) ->
+      raise (Error (loc, message))
+    | CausalityError (node_name, eqs, loc) ->
       let message = Format.asprintf
         "Cyclic dependencies in node %s between the following equations:\n  %a"
         node_name (Pp_utils.pp_list "\n  " pp_eq) eqs
       in
-      raise (Error message)
+      raise (Error (loc, message))
+    | NoDefinition (x, node, loc) ->
+      let message = Format.sprintf "Variable %s is never defined in node %s" x node in
+      raise (Error (loc, message))
 end
 
 module Stupid = struct
-  exception Error of string
+  exception Error of Ast_typed.location * string
   let schedule file _name = file
 end

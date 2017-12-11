@@ -1,5 +1,7 @@
 node check (x: bool; v: int; f: real) = (ok: bool)
 with var n1, n2: int; b: bool; b2, b3, b4, b5, b6, b7: bool in
+  n1 = v + v;
+  n2 = 2*v + 1;
   b = 1 = f;
   b2 = 1.5 = f;
   b3 = 1 = 2;

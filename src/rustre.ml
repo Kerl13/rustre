@@ -161,6 +161,7 @@ let () =
     report_loc loc;
     Format.eprintf "%s@." message;
     exit 1
-  | Scheduling.Error message ->
+  | Scheduling.Error (loc, message) ->
+    report_loc loc;
     Format.eprintf "%s@." message;
     exit 1
