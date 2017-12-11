@@ -1,5 +1,6 @@
 (* todo: clean (functions with tuples...) *)
 open Ast_object
+open Nil_analysis
 
 let fprintf = Format.fprintf
 
@@ -74,53 +75,26 @@ module E = struct
     | EBOp (a, b, c) -> fprintf ppf "(%a) %a (%a)" print_expr b pp_bop a print_expr c
     | EUOp (a, b) -> fprintf ppf "%a (%a)" pp_uop a print_expr b
 
-  let rec filter_map: ('a -> 'b option) -> 'a list -> 'b list = fun f l ->
-    match l with
-    | [] -> []
-    | t::q -> match f t with
-      | Some s -> s :: filter_map f q
-      | None -> filter_map f q
-
-  let rec analyze_defs = function
-    | SAssign { n; _} -> [n]
-    | SSeq(a, b) -> analyze_defs a @ analyze_defs b
-    | SReset(_) | SSkip -> []
-    | SCall(_, _, _, res) -> res
-    | SCase(_, b) ->
-      List.hd b |> snd |> analyze_defs (* XXX alea jacta est *)
-
   let rec print_statement ppf (s:ostatement) = match s with
     | Ast_object.SAssign { n = (Var s | Loc s); expr } ->
        fprintf ppf "let %s = %a;" s print_expr expr
     | Ast_object.SAssign { n = State s; expr } ->
        fprintf ppf "self.%s = %a;" s print_expr expr
-    | Ast_object.SSeq (a, SSkip) ->
+    | Ast_object.SSeq (SSkip, a) | Ast_object.SSeq (a, SSkip) ->
        print_statement ppf a
     | Ast_object.SSeq (a, b) ->
        fprintf ppf "%a@\n%a" print_statement a print_statement b
     | Ast_object.SSkip ->
        fprintf ppf ""
     | Ast_object.SCall (args, node, _, result) ->
-       (* todo : optimize if List.length result < 2 *)
-       fprintf ppf "let %a = self.%s.step(%a);@\n"
+       fprintf ppf "let %a = self.%s.step(%a);"
          (pp_type ", " (fun p s ->
               match s with
               | Var s | Loc s -> fprintf p "%s" s
               | State _ -> failwith "extract_rust: weird case")) result
          node
          (pp_list ", " print_expr) (List.map (fun i -> EVar i) args)
-       (* fprintf ppf "{@[<4>@\nlet %a = self.%s.step(%a);@\n%a@]@\n}"
-        *   (pp_type ", " (fun p s ->
-        *        match s with
-        *        | Var s | Loc s | State s -> fprintf p "tmp_%s" s)) result
-        *   node
-        *   (pp_list ", " print_expr) (List.map (fun i -> EVar i) args)
-        *   (pp_list_n "" (fun p s ->
-        *        match s with
-        *        | Var s | Loc s -> fprintf p "%s = tmp_%s;" s s
-        *        | State s -> fprintf p "self.%s = tmp_%s;" s s)) result *)
     | Ast_object.SReset (_m, i) ->
-       (* todo: no need for m ? *)
        fprintf ppf "self.%s.reset();" i
     | Ast_object.SCase (a, b) ->
        (* todo: pourquoi on ne prend pas les state ? *)
@@ -148,29 +122,15 @@ module E = struct
                   print_datacons s
                   print_statement o
                   (pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars)) b
-       (* if ((List.length b = 2) && ((fst (List.hd b) = "True") || (fst (List.hd b) = "False"))) then
-        *   (\* we can reasonably assume that we're dealing with booleans *\)
-        *   fprintf ppf "@[<4>match %a {@\n%a@]}"
-        *     print_expr a
-        *     (pp_list_n "" (fun ppf (s, o) ->
-        *          fprintf ppf "@[<4>%s => {%a@]}," (String.lowercase_ascii s) print_statement o)) b
-        * else
-        *   fprintf ppf "match %a {@[<4>%a@]}"
-        *     print_expr a
-        *     (pp_list_n "" (fun ppf (s, o) ->
-        *          fprintf ppf "%s => {@[<4>%a@]}," s print_statement o)) b *)
-
 
 
   let print_step ppf mach =
     let var_in, _, var_out, stat = mach.step in
-    fprintf ppf "@[<4>pub fn step(&mut self, %a) -> %a {@\n%a@\n@\n%a@]@\n}@\n"
+    fprintf ppf "@[<4>pub fn step(&mut self, %a) -> %a {@\n%a@\n%a@]@\n}@\n"
       (* input variables:types *)
       (pp_list ", " (fun ppf (var, sty) -> fprintf ppf "%s:%a" var print_sty sty)) var_in
       (* output types *)
       (pp_type ", " (fun ppf (_, sty) -> print_sty ppf sty)) var_out
-      (* variable declarations *)
-      (* (pp_list_n "" (fun ppf (var, sty) -> fprintf ppf "let mut %s:%a;" var print_sty sty)) (loc_vars@var_out) *)
       (* statements *)
       print_statement stat
       (* output variables *)

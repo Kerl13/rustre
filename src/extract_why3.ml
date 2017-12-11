@@ -67,13 +67,6 @@ module E = struct
     | EBOp(a, b, c) -> fprintf ppf "(%a %a %a)" (print_expr ~fonct) b print_bop a (print_expr ~fonct) c
     | EUOp(a, b) -> fprintf ppf "(%a %a)" Ast_typed.pp_uop a (print_expr ~fonct) b
 
-  let rec filter_map: ('a -> 'b option) -> 'a list -> 'b list = fun f l ->
-    match l with
-    | [] -> []
-    | t::q -> match f t with
-      | Some s -> s :: filter_map f q
-      | None -> filter_map f q
-
   let rec print_statement ?(fonct=false) ppf (s: ostatement) = match s with
     | Ast_object.SAssign {n = (Var s | Loc s); expr } ->
       fprintf ppf "let %s = %a in" s (print_expr ~fonct) expr
