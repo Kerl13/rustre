@@ -2,7 +2,7 @@ open Graphics
 
 
 let width = 1200
-let height = 100
+let height = 400
 let paddle_length = 30
 
 
