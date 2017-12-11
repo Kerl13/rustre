@@ -208,12 +208,29 @@ module E = struct
       (print_statement ~fonct:false) mach.reset
 
   let print_check_nil ppf mach =
-    let _, _, _, step = mach.step in
-    assert (ostatement_get_nils step = [])
+    let var_in, _, _, step = mach.step in
+    let var_in = List.map fst var_in in
+
+    assert (ostatement_get_nils step = []);
+    let nils = ostatement_get_nils mach.reset in
+    let nils = List.map (function
+        | State i -> i, "state_" ^ i
+        | _ -> assert false) nils in
+    let var_nils = List.map snd nils in
+    fprintf ppf "@[<2>lemma nil_analysis: forall %a.@\nlet reset_state_nil = %a in@\nstep_fonct reset_state %a = step_fonct reset_state_nil %a@]"
+      (pp_list_brk ", " (fun ppf s -> fprintf ppf "%s" s)) (var_in @ var_nils)
+      (fun ppf () ->
+         if nils = [] then fprintf ppf "reset_state"
+         else fprintf ppf "{ reset_state with %a }"
+             (pp_list_brk "" (fun ppf (i, s) -> fprintf ppf "%s = %s;" i s)) nils) ()
+      (pp_list_brk "" (fun ppf s -> fprintf ppf "%s" s)) var_in
+      (pp_list_brk "" (fun ppf s -> fprintf ppf "%s" s)) var_in
+
+
 
   let print_machine locs ppf mach =
     let var_loc = List.assoc mach.name locs in
-    fprintf ppf "@[<h 2>module Node%s@\nuse import int.Int@\nuse import int.ComputerDivision@\nuse import Types@\n%a@\n%a@\n%a@\n@\n%a@\n@\n%a@\n@\n%a@]@\n@\nend"
+    fprintf ppf "@[<h 2>module Node%s@\nuse import int.Int@\nuse import int.ComputerDivision@\nuse import Types@\n%a@\n%a@\n%a@\n@\n%a@\n@\n%a@\n@\n%a@\n%a@]@\n@\nend"
       mach.name
       (pp_list_n "" (fun ppf (_, m) -> fprintf ppf "use Node%s" m)) mach.instances
       print_state mach
@@ -221,6 +238,7 @@ module E = struct
       print_reset_fonct mach
       (print_step ~fonct:true) (mach, var_loc)
       (print_reset ~fonct:true) mach
+      print_check_nil mach
 
   let extract_to ppf (f,_, locs) =
     fprintf ppf "%a\n@\n%a" print_typedefs f.objf_typedefs (pp_list_n "\n" (print_machine locs)) f.objf_machines
