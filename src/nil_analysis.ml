@@ -38,3 +38,36 @@ let rec ostatement_get_nils: ostatement -> ident list = function
       analyze_defs ~fonct:true (SCase (a, b))
     else
       List.map snd b |> List.map ostatement_get_nils |> List.concat |> List.sort_uniq compare
+
+let do_analysis filename node_names =
+  List.iter (fun n ->
+      let ch = Unix.open_process_in (Format.sprintf "why3 prove %s -T Node%s -G nil_analysis -P Alt-Ergo" filename n)
+      in
+        let ok = ref true in
+      begin
+        try
+          while true do
+            let s = input_line ch in
+            try
+            let i = String.index s ':' in
+            if String.contains_from s i 'U' then
+              ok := false
+            else if not (String.contains_from s i 'V') then
+              raise Not_found
+            with
+            | Not_found -> Format.printf "Invalid why3 output: @\n";
+              print_endline s;
+          done;
+        with
+        | End_of_file -> ()
+      end;
+     let stat = Unix.close_process_in ch in
+
+     match stat with
+     | Unix.WEXITED(0) ->
+       if !ok then
+         Format.printf "Nil OK@\n"
+       else
+         Format.printf "Nil NOT OK@\n"
+     | _ -> Format.printf "Nil checking failed@\n"
+    ) node_names;
