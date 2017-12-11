@@ -5,12 +5,13 @@ let usage = Format.sprintf "usage: %s [options] file.lus main" Sys.argv.(0)
 
 type extractor = Rust | Why3
 
-let file, main_node, extractor, output, verbose, opt, specification =
+let file, main_node, extractor, output, verbose, opt, specification, nils =
   let extractor = ref Rust in
   let output = ref "" in
   let verbose = ref false in
   let opt = ref false in
   let specification = ref false in
+  let nils = ref false in
   let spec = [
     "-extract",
     Arg.Symbol (["why3"; "rust"],
@@ -19,7 +20,8 @@ let file, main_node, extractor, output, verbose, opt, specification =
     "-o", Arg.Set_string output, "File to write the generated code.";
     "-v", Arg.Set verbose, "Verbose output";
     "-opt", Arg.Set opt, "Optimize object code";
-    "-spec", Arg.Set specification, "Prove compilation"
+    "-spec", Arg.Set specification, "Prove compilation";
+    "-nils", Arg.Set nils, "Prove that nils are not used"
   ] in
   let file = ref None in
   let main = ref None in
@@ -47,7 +49,8 @@ let file, main_node, extractor, output, verbose, opt, specification =
   !output,
   !verbose,
   !opt,
-  !specification
+  !specification,
+  !nils
 
 module Extractor = (val (match extractor with
     | Rust -> (module Extract_rust.E)
@@ -116,7 +119,20 @@ let () =
       ) file.Ast_parsing.f_nodes in
     if output = "" then
       Format.printf "%a@." Extractor.extract_to (obc, main_node, locs)
-    else Extractor.extract_to (Format.formatter_of_out_channel (open_out output)) (obc, main_node, locs);
+    else
+      begin
+        let out_ch = open_out output in
+        Extractor.extract_to (Format.formatter_of_out_channel out_ch) (obc, main_node, locs);
+        close_out out_ch
+      end;
+
+    if nils then
+      begin
+        if output = "" || extractor <> Why3 then
+          (Format.printf "Error: must extract to Why3 and write to a file to check nils (options -extract why3 -o <file>.mlw)"; exit 1);
+        Nil_analysis.do_analysis output (List.map (fun n -> n.Ast_parsing.n_name) file.Ast_parsing.f_nodes)
+      end;
+
 
     if specification then
       begin

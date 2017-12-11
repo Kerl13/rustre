@@ -29,6 +29,4 @@ theory Stream
   axiom sconst_rw: forall c: 'a, n. get (sconst c) n = c
   axiom sminus_rw: forall a, b, n. get (sminus a b) n = get a n - get b n
 
-  axiom swhen
-
 end
