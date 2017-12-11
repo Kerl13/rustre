@@ -1,0 +1,9 @@
+node identity2(x, y : int) = (xx, yy : int)
+with
+  yy = y ;
+  xx = x
+
+node check(dummy : int) = (ok : bool)
+with var xx, yy : int in
+  (xx, yy) = identity2(0, 42) ;
+  ok = (xx = 0) and (yy = 42)
