@@ -21,6 +21,7 @@ type _ oconst =
   | CInt  : int -> int num_ty oconst
   | CReal : float -> float num_ty oconst
   | CDataCons : Ast_typed.ident -> enum oconst
+  | CNil: 'a Ast_typed.ty -> 'a oconst
 
 type wconst = Const: 'a oconst -> wconst
 
@@ -69,6 +70,7 @@ let pp_oconst: type a. 'b -> a oconst -> unit = fun ppf -> function
   | CReal f -> fprintf ppf "%f" f
   | CBool b -> fprintf ppf "%B" b
   | CDataCons dc -> fprintf ppf "%s" dc
+  | CNil _ -> fprintf ppf "nil"
 
 let rec pp_expr: type a. 'c -> a oexpr -> unit = fun ppf -> function
   | EConst c -> fprintf ppf "%a" pp_oconst c

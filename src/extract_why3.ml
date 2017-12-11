@@ -50,16 +50,15 @@ module E = struct
       else
         fprintf ppf "state.%s" s
     | Ast_object.EConst c ->
-      begin
-        match c with
-        | CBool a ->
-          fprintf ppf "%b" a
-        | CInt i ->
-          fprintf ppf "%d" i
-        | CReal i ->
-          fprintf ppf "%f" i
-        | CDataCons s ->
-          fprintf ppf "%s" s
+      begin match c with
+        | CBool a -> fprintf ppf "%B" a
+        | CInt i -> fprintf ppf "%d" i
+        | CReal i -> fprintf ppf "%f" i
+        | CDataCons s -> fprintf ppf "%s" s
+        | CNil Ast_typed.TyBool -> fprintf ppf "%B" true
+        | CNil Ast_typed.TyNum Ast_typed.TyZ -> fprintf ppf "%d" 42
+        | CNil Ast_typed.TyNum Ast_typed.TyReal -> fprintf ppf "%f" 0.
+        | CNil Ast_typed.TyEnum (_, dcs) -> fprintf ppf "%s" (List.hd dcs)
       end
     | EBOp(Ast_typed.OpEq, b, c) when fonct -> fprintf ppf "(is_eq (%a) (%a))" (print_expr ~fonct) b (print_expr ~fonct) c
     | EBOp(Ast_typed.OpMod, b, c) -> fprintf ppf "(mod (%a) (%a))" (print_expr ~fonct) b (print_expr ~fonct) c
