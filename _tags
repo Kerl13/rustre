@@ -1,4 +1,5 @@
 true: warn(A-4)
 true: use_menhir
 true: bin_annot
+true: package(unix)
 <src>: include

@@ -27,7 +27,7 @@ let rec spec_expr ppf expr =
   | Ast_parsing.ETuple l -> fprintf ppf "(%a)" (pp_list ", " spec_expr) l
   | Ast_parsing.EFby (c, e) -> fprintf ppf "(sfby %a %a)" spec_const c spec_expr e
   | Ast_parsing.EOp (op, l) -> fprintf ppf "(%a %a)" spec_op op (pp_list " " spec_expr) l
-  | Ast_parsing.EApp (a,b,_) -> assert false
+  | Ast_parsing.EApp (_,_,_) -> assert false
   | Ast_parsing.EWhen (_,_,_) -> assert false
   | Ast_parsing.EMerge (_,_) -> assert false
 
@@ -38,7 +38,7 @@ let rec spec_pat_desc ppf pat =
   | PTuple l ->
     fprintf ppf "(%a)" (pp_list ", " spec_pat_desc) l
 
-let rec spec_pat_desc_flat ppf pat =
+let spec_pat_desc_flat ppf pat =
   match pat with
   | PIdent pi ->
     fprintf ppf "%s" pi

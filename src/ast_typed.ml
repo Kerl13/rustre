@@ -200,7 +200,7 @@ let pp_expr: type a. 'c -> a expr -> unit =
       let Tagged(_, _, f) = f in
       fprintf ppf "(%s(%a) every %a)" f pp_elist args pp ev
     | EWhen (e, c, x) -> fprintf ppf "(%a when %s(%s))" pp e c x
-    | EMerge (x, clauses) -> fprintf ppf "(merge %s %a)" x (Pp_utils.pp_list " " pp_clause) clauses
+    | EMerge (x, clauses) -> fprintf ppf "(@[<2>merge %s@\n%a@])" x (Pp_utils.pp_list_n "" pp_clause) clauses
   and pp_clause: type a. 'd -> ident * a expr -> unit = fun ppf (c, e) -> fprintf ppf "(%s -> %a)" c pp e
   in pp
 
@@ -214,17 +214,20 @@ let pp_pat ppf p = pp_vl ppf p.pat_desc
 let pp_equation ppf (Equ(pat, expr)) =
   fprintf ppf "%a = %a" pp_pat pat pp_expr expr
 
+let var_list_empty : type a. a var_list -> bool = function
+  | VEmpty -> true
+  | _ -> false
+
 let pp_node ppf (Node n) =
-  let pp_equation ppf eq = fprintf ppf "  %a" pp_equation eq in
   let Tagged(_, _, name) = n.n_name in
   let NodeLocal n_local = n.n_local in
-  fprintf ppf "node %s(%a) = (%a)\nwith var %a in\n%a"
-    name
-    pp_vl n.n_input
-    pp_vl n.n_output
-    pp_vl n_local
-    (Pp_utils.pp_list ";\n" pp_equation) n.n_eqs
+  fprintf ppf "@[node %s(%a) = (%a)@\n" name pp_vl n.n_input pp_vl n.n_output ;
+  if var_list_empty n_local
+  then fprintf ppf "@[<2>with@\n"
+  else fprintf ppf "@[<2>with var %a in@\n" pp_vl n_local ;
+  fprintf ppf "%a@]@]@\n@\n" (Pp_utils.pp_list_n " ;" pp_equation) n.n_eqs
+
 
 let pp_file fmt f =
-  fprintf fmt "%a\n\n" (Pp_utils.pp_list "\n" Ast_parsing.pp_typedef) f.tf_typedefs ;
-  fprintf fmt "%a" (Pp_utils.pp_list "\n\n" pp_node) f.tf_nodes
+  fprintf fmt "%a@\n@\n" (Pp_utils.pp_list_n "\n" Ast_parsing.pp_typedef) f.tf_typedefs ;
+  fprintf fmt "%a" (Pp_utils.pp_list "" pp_node) f.tf_nodes
