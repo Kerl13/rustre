@@ -21,6 +21,7 @@ type _ oconst =
   | CInt  : int -> int num_ty oconst
   | CReal : float -> float num_ty oconst
   | CDataCons : Ast_typed.ident -> enum oconst
+  | CNil: 'a Ast_typed.ty -> 'a oconst
 
 type wconst = Const: 'a oconst -> wconst
 

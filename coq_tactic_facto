@@ -69,3 +69,8 @@ Ltac simpl_pairs := repeat match goal with
 end.
 
 Ltac solve step_fonct1 h2 := simpl_all step_fonct1; repeat (repeat (s h2); simpl_pairs; try congruence; unfold_eq).
+
+
+inversion h1.
+
+solve step_fonct h2.

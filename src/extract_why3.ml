@@ -1,4 +1,5 @@
 open Ast_object
+open Nil_analysis
 
 module E = struct
   open Pp_utils
@@ -73,19 +74,6 @@ module E = struct
     | t::q -> match f t with
       | Some s -> s :: filter_map f q
       | None -> filter_map f q
-
-  let rec analyze_defs ?(fonct=false) = function
-    | SAssign { n; _} -> [n]
-    | SSeq(a, b) -> analyze_defs ~fonct a @ analyze_defs ~fonct b
-    | SReset(a, b) -> if fonct then [State ("state_" ^ b)] else []
-    | SSkip -> []
-    | SCall(_, _, i, res) ->
-      if fonct then
-        res
-      else
-        (State ("state_" ^ i)) :: res
-    | SCase(_, b) ->
-      List.map snd b |> List.map (analyze_defs ~fonct) |> List.concat |> List.sort_uniq compare (* XXX alea jacta est *)
 
   let rec print_statement ?(fonct=false) ppf (s: ostatement) = match s with
     | Ast_object.SAssign {n = (Var s | Loc s); expr } ->
@@ -219,6 +207,10 @@ module E = struct
     fprintf ppf "@[<2>let reset (state:state): unit @\n%a =@\n%a@\n()@]"
       print_post ()
       (print_statement ~fonct:false) mach.reset
+
+  let print_check_nil ppf mach =
+    let _, _, step = mach.step in
+    assert (ostatement_get_nils mach.reset)
 
   let print_machine locs ppf mach =
     let var_loc = List.assoc mach.name locs in
