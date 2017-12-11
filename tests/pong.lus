@@ -5,7 +5,7 @@ type dir = Left + Right
 
 /* Size of the arena */
 const WIDTH = 1200
-const HEIGHT = 100
+const HEIGHT = 400
 
 /* Speed of the ball */
 const DX = 5
@@ -32,6 +32,7 @@ with var pos : bool in
   w = if pos
       then min(v, bound)
       else (-min(-v, bound))
+/* ok = w <= abs v and w <= bound */
 
 /* Movements of the ball */
 
@@ -39,7 +40,7 @@ node lat_move(x : int; aligned : bool) = (x2 : int; dir : dir; score : int)
 with var r_overflow, l_overflow, goal_ : bool in
   r_overflow = dir = Right and x >= WIDTH - DX ;
   l_overflow = dir = Left and x < DX ;
-  dir = Right fby ( if r_overflow then
+  dir = Left fby ( if r_overflow then
                       Left
                     else
                       if l_overflow then Right else dir ) ;
@@ -47,13 +48,14 @@ with var r_overflow, l_overflow, goal_ : bool in
   goal_ = r_overflow and not aligned ;
   x2 = merge dir (Left  -> x - DX when Left(dir))
                  (Right -> x + DX when Right(dir))
+/* ok = 0 <= x2 and x2 <= WIDTH and (true fby pre score <= score) */
 
 node vert_move(y : int) = (y2, dy : int)
 with var overflow : bool in
   y2 = y + dy ;
   overflow = (y2 >= HEIGHT) or (y2 < 0) ;
   dy = 4 fby (if overflow then (- dy) else dy)
-
+/* ok = true fby dy = abs pre dy */
 
 /* Movements of the paddle */
 
@@ -69,6 +71,7 @@ with var virtual_y, length : int ; in_bounds : bool in
   virtual_y = (y + (length * dy) / DX) mod (HEIGHT * 2) ;
   in_bounds = virtual_y < HEIGHT and virtual_y >= -HEIGHT ;
   target = if in_bounds then abs(virtual_y) else (2*HEIGHT - abs(virtual_y))
+/* ok = 0 <= target and target < HEIGHT */
 
 node aligned_with_paddle(y, paddle : int) = (yes : bool)
 with

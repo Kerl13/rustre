@@ -1,5 +1,11 @@
 open Ast_object
 
+let rec filter_map: ('a -> 'b option) -> 'a list -> 'b list = fun f l ->
+  match l with
+  | [] -> []
+  | t::q -> match f t with
+            | Some s -> s :: filter_map f q
+            | None -> filter_map f q
 
 let rec analyze_defs ?(fonct=false) = function
   | SAssign { n; _} -> [n]
