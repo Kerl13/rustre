@@ -43,8 +43,8 @@ with var pos : bool ; ok : bool in
 
 node lat_move(x : int; aligned : bool) = (x2 : int; dir : dir; score : int)
 with var r_overflow, l_overflow, goal_, ok : bool ; dx : int in
-  r_overflow = dir = Right and x >= WIDTH - DX ;
-  l_overflow = dir = Left and x < DX ;
+  r_overflow = dir = Right and x + DX >= WIDTH ;
+  l_overflow = dir = Left and (x - DX) < 0 ;
   dir = Right fby ( if r_overflow then
                       Left
                     else
@@ -59,7 +59,7 @@ with var r_overflow, l_overflow, goal_, ok : bool ; dx : int in
          -(x + dx)
        else
          x + dx ;
-  ok = 0 <= x2 and x2 < WIDTH
+  ok = (0 <= x and x < WIDTH) => (0 <= x2 and x2 < WIDTH)
 
 node vert_move(y : int) = (y2, dy : int)
 with var overflow_top, overflow_bot, overflow : bool ; ok : bool in
@@ -73,7 +73,7 @@ with var overflow_top, overflow_bot, overflow : bool ; ok : bool in
        else
          y + dy ;
   dy = INITIAL_DY fby (if overflow then (- dy) else dy) ;
-  ok = y2 >= 0 and y2 < HEIGHT
+  ok = (0 <= y and y < HEIGHT) => (0 <= y2 and y2 < HEIGHT)
 
 
 /* Movements of the paddle */
