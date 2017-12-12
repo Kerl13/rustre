@@ -4,6 +4,7 @@ open Graphics
 let width = 1200
 let height = 400
 let paddle_length = 30
+let ball_radius = 8
 
 
 let draw_left_wall () =
@@ -34,7 +35,7 @@ let draw_arena score =
 let draw_ball, erase_ball =
   let draw c x y =
     set_color c ;
-    fill_circle (25 + x) (25 + y) 5 ;
+    fill_circle (25 + x) (25 + y) ball_radius;
     set_color foreground in
   draw red, draw white
 
