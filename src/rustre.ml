@@ -5,13 +5,14 @@ let usage = Format.sprintf "usage: %s [options] file.lus main" Sys.argv.(0)
 
 type extractor = Rust | Why3
 
-let file, main_node, extractor, output, verbose, opt, specification, nils =
+let file, main_node, extractor, output, verbose, opt, specification, nils, ext =
   let extractor = ref Rust in
   let output = ref "" in
   let verbose = ref false in
   let opt = ref false in
   let specification = ref false in
   let nils = ref false in
+  let ext = ref false in
   let spec = [
     "-extract",
     Arg.Symbol (["why3"; "rust"],
@@ -21,7 +22,8 @@ let file, main_node, extractor, output, verbose, opt, specification, nils =
     "-v", Arg.Set verbose, "Verbose output";
     "-opt", Arg.Set opt, "Optimize object code";
     "-spec", Arg.Set specification, "Prove compilation";
-    "-nils", Arg.Set nils, "Prove that nils are not used"
+    "-nils", Arg.Set nils, "Prove that nils are not used";
+    "-ext", Arg.Set ext, "Use automata extension"
   ] in
   let file = ref None in
   let main = ref None in
@@ -50,7 +52,8 @@ let file, main_node, extractor, output, verbose, opt, specification, nils =
   !verbose,
   !opt,
   !specification,
-  !nils
+  !nils,
+  !ext
 
 module Extractor = (val (match extractor with
     | Rust -> (module Extract_rust.E)
@@ -70,13 +73,33 @@ let () =
   let c = open_in file in
   let lb = Lexing.from_channel c in
   try
-    let file = Parser.file Lexer.token lb in
-    close_in c;
     let empty_formatter = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in
     let format = if verbose then Format.std_formatter else empty_formatter in
 
-    Format.fprintf format "=== Parsed file =====\n" ;
-    Format.fprintf format "%a\n@." Ast_parsing.pp_file file ;
+    let file = if ext then begin
+      let file = Parser_ext.file Lexer_ext.token lb in
+      close_in c;
+
+      Format.fprintf format "=== Parsed file =====\n" ;
+      Format.fprintf format "%a\n@." Ast_ext.pp_file file ;
+
+      (* Insert source-to-source transformations *)
+
+      let trans = Ext_to_base.tr_file file in
+      Format.fprintf format "=== Translated file =====\n" ;
+      Format.fprintf format "%a\n@." Ast_parsing.pp_file trans ;
+      trans
+    end
+
+    else begin
+      let file = Parser.file Lexer.token lb in
+      close_in c;
+
+      Format.fprintf format "=== Parsed file =====\n" ;
+      Format.fprintf format "%a\n@." Ast_parsing.pp_file file ;
+      file
+    end in
+
 
     Format.fprintf format "Typing… @?";
     let typed = Typing.do_typing file in

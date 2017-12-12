@@ -1,5 +1,5 @@
 %{
-  open Ast_parsing
+  open Ast_ext
 
 
   let dummy_loc e pos = { expr_desc = e ; expr_loc = (pos, pos) }
@@ -39,6 +39,9 @@
   (* pre e  ~>  nil fby e *)
   let pre e = EFby (CNil, e)
 
+  let mk_local ids init = match init with
+    | None -> List.map (fun id -> (id, None)) ids
+    | Some l -> List.map2 (fun id ini -> (id, Some ini) ) ids l 
 
   (** Define _TfbyF when it is required *)
 
@@ -48,7 +51,7 @@
     let e = EFby (CBool true, mk_false_at pos) in
     let e = dummy_loc e pos in
     let pat = { pat_desc = PIdent "_TfbyF" ; pat_loc = (pos, pos) } in
-    { eq_pat = pat ; eq_expr = e }
+    { eq_desc = EEq (pat, e) ; eq_loc = (pos, pos)}
 
   (* add [_TfbyF = true fby false] to the node's equations if required *)
   let add_tfbyf node =
@@ -57,12 +60,13 @@
       | _ -> s
     in
     let present =
-      let find_in_node found eq = visit find found eq.eq_expr in
+      let find_in_node found eq = visit_eq find found eq in
       List.fold_left find_in_node false node.n_eqs
     in
     if present then
       let node = { node with n_eqs = tfbyf :: node.n_eqs } in
-      { node with n_local = ("_TfbyF", TyBool) :: node.n_local }
+      let pos = Lexing.dummy_pos in
+      { node with n_local = {v_name = "_TfbyF" ; v_type = TyBool ; v_shared = false ; v_init = None ; v_loc = (pos, pos)} :: node.n_local }
     else
       node
 %}
@@ -89,25 +93,31 @@
 %token COMMA COLON SEMICOL
 %token LPAR RPAR
 %token EOF
+%token PIPE
+
+%token AUTOMATON STATE DO DONE END
+%token UNTIL UNLESS CONTINUE
+%token RESET MATCH
+%token SHARED LAST
 
 
 %left ELSE
 %right ARROW
+%right EVERY
 %left IMPL
 %left OR
 %left AND
 %left EQUAL NEQ LT LE GT GE
 %right WHEN
-%left PLUS MINUS
+%right PLUS MINUS
 %left STAR SLASH MOD
-%right EVERY
 %right NOT
 %right FBY
 %right PRE
 
 
 %start file
-%type <Ast_parsing.file> file
+%type <Ast_ext.file> file
 
 %%
 
@@ -157,7 +167,7 @@ global_const:
 node:
   NODE name = ident LPAR in_params = param_list RPAR
   EQUAL LPAR out_params = param_list RPAR
-  WITH local_params = loption(delimited(VAR, param_list, IN))
+  WITH local_params = loption(delimited(VAR, local_list, IN))
   eqs = separated_nonempty_list(SEMICOL, equation)
   {
     let node = {
@@ -173,19 +183,35 @@ node:
 
 
 param_list:
-  ps = separated_nonempty_list(SEMICOL, param)
+  ps = separated_list(SEMICOL, param)
   { List.flatten ps }
-
 
 param:
   ids = nclist(ident) COLON t = typ
   { List.map (fun id -> (id, t)) ids }
 
+local_list:
+  ps = separated_nonempty_list(SEMICOL, local)
+  { List.flatten ps }
+
+local:
+  sh = boption(SHARED) ids = nclist(ident) COLON t = typ 
+  i = option(preceded(EQUAL,nclist(const)))
+  { let li = mk_local ids i in
+   List.map (fun (id, ini) -> 
+   {v_name = id ; v_type = t ; v_shared = sh ;
+    v_init = ini ; v_loc = ($startpos, $endpos)} ) li
+  }
 
 equation:
-  p = pattern EQUAL e = located(expr)
-  {{ eq_pat = p ; eq_expr = e }}
-
+| p = pattern EQUAL e = located(expr)
+  {{ eq_desc = EEq (p, e) ; eq_loc = ($startpos, $endpos) }}
+| MATCH e = located(expr) WITH PIPE? hl = separated_nonempty_list(PIPE, match_handler) END
+  {{ eq_desc = EMatch (e, hl); eq_loc = ($startpos, $endpos) }}
+| RESET eqs = separated_nonempty_list(SEMICOL, equation) EVERY e = located(expr)
+  {{ eq_desc = EReset (eqs, e) ; eq_loc = ($startpos, $endpos) }}
+| AUTOMATON states = nonempty_list(state_handler) END
+  {{ eq_desc = EAutomaton states; eq_loc = ($startpos, $endpos) }}
 
 pattern:
 | x = ident
@@ -193,11 +219,37 @@ pattern:
 | LPAR pats = nclist(pattern) RPAR
     {{ pat_desc = PTuple (pat_descs pats) ; pat_loc = ($startpos, $endpos) }}
 
+match_handler:
+  c = dcident DO eqs = separated_nonempty_list(SEMICOL, equation) DONE
+  {{ m_name = c ; m_eqs = eqs }}
+
+state_handler: 
+  STATE s = dcident
+  loc_decl = loption(delimited(VAR, local_list, IN))
+  DO eqs = separated_list(SEMICOL, equation)
+  ut = list(until_escape)
+  ul = list(unless_escape)
+  {{ s_name = s ; s_local = loc_decl ; s_eqs = eqs ; s_until = ut ; s_unless = ul }}
+
+until_escape:
+  UNTIL e = escape
+  {e}
+
+unless_escape:
+  UNLESS e = escape
+  {e}
+
+escape:
+| e = located(expr) THEN s = dcident
+  {{e_cond = e ; e_reset = true ; e_next = s}}
+| e = located(expr) CONTINUE s = dcident
+  {{e_cond = e ; e_reset = false ; e_next = s}}
 
 expr:
 | LPAR e = expr RPAR                           { e }
 | c = const                                    { EConst c }
 | x = ident                                    { EIdent x }
+| LAST x = ident                               { ELast x }
 | LPAR es = nclist2(located(expr)) RPAR        { ETuple es }
 | v = const FBY e = located(expr)              { EFby (v, e) }
 
