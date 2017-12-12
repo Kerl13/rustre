@@ -45,20 +45,16 @@ node lat_move(x : int; aligned : bool) = (x2 : int; dir : dir; score : int)
 with var r_overflow, l_overflow, goal_, ok : bool ; dx : int in
   r_overflow = dir = Right and x + DX >= WIDTH ;
   l_overflow = dir = Left and (x - DX) < 0 ;
-  dir = Right fby ( if r_overflow then
-                      Left
-                    else
-                      if l_overflow then Right else dir ) ;
+  dir = Right fby ( if r_overflow then      Left
+                    else if l_overflow then Right
+                    else                    dir ) ;
   score = 0 fby (if goal_ then score + 1 else score) ;
   goal_ = r_overflow and not aligned ;
   dx = merge dir (Left  -> - DX when Left(dir))
                  (Right ->   DX when Right(dir)) ;
-  x2 = if r_overflow then
-         (((2 * WIDTH) - x) - dx) - 1
-       else if l_overflow then
-         -(x + dx)
-       else
-         x + dx ;
+  x2 = if r_overflow then       2 * WIDTH - x - dx - 1
+       else if l_overflow then  -(x + dx)
+       else                     x + dx ;
   ok = (0 <= x and x < WIDTH) => (0 <= x2 and x2 < WIDTH)
 
 node vert_move(y : int) = (y2, dy : int)
@@ -66,12 +62,9 @@ with var overflow_top, overflow_bot, overflow : bool ; ok : bool in
   overflow_top = y + dy >= HEIGHT and dy >= 0;
   overflow_bot = y + dy < 0 and dy < 0;
   overflow = overflow_bot or overflow_top ;
-  y2 = if overflow_top then
-         ((2 * HEIGHT - y) - dy) - 1
-       else if overflow_bot then
-         -(dy + y)
-       else
-         y + dy ;
+  y2 = if overflow_top then       2 * HEIGHT - y - dy - 1
+       else if overflow_bot then  -(dy + y)
+       else                       y + dy ;
   dy = INITIAL_DY fby (if overflow then (- dy) else dy) ;
   ok = (0 <= y and y < HEIGHT) => (0 <= y2 and y2 < HEIGHT)
 
