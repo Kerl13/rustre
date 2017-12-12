@@ -5,7 +5,7 @@ type dir = Left + Right
 
 /* Size of the arena */
 const WIDTH = 1200
-const HEIGHT = 5
+const HEIGHT = 400
 
 /* Speed of the ball */
 const DX = 2
@@ -54,9 +54,9 @@ with var r_overflow, l_overflow, goal_, ok : bool ; dx : int in
   dx = merge dir (Left  -> - DX when Left(dir))
                  (Right ->   DX when Right(dir)) ;
   x2 = if r_overflow then
-         2 * WIDTH - x - dx
+         (((2 * WIDTH) - x) - dx) - 1
        else if l_overflow then
-         -x -dx
+         -(x + dx)
        else
          x + dx ;
   ok = 0 <= x2 and x2 < WIDTH
@@ -67,9 +67,9 @@ with var overflow_top, overflow_bot, overflow : bool ; ok : bool in
   overflow_bot = y + dy < 0 and dy < 0;
   overflow = overflow_bot or overflow_top ;
   y2 = if overflow_top then
-         2 * HEIGHT - y - dy
+         ((2 * HEIGHT - y) - dy) - 1
        else if overflow_bot then
-         -dy -y
+         -(dy + y)
        else
          y + dy ;
   dy = INITIAL_DY fby (if overflow then (- dy) else dy) ;
@@ -86,9 +86,11 @@ node target(x, y : int ; dir : dir ; dy : int) = (target : int)
 with var virtual_y, length : int ; in_bounds : bool ; ok : bool in
   length = merge dir (Right -> WIDTH - x when Right(dir))
                      (Left  -> WIDTH + x when Left(dir)) ;
-  virtual_y = (y + (length * dy) / DX) mod (HEIGHT * 2) ;
-  in_bounds = virtual_y < HEIGHT and virtual_y >= -HEIGHT ;
-  target = if in_bounds then abs(virtual_y) else (2*HEIGHT - abs(virtual_y)) ;
+  virtual_y = (y + (length * dy) / DX) mod ((HEIGHT * 2) - 1) ;
+  in_bounds = virtual_y < HEIGHT and virtual_y >= 1-HEIGHT ;
+  target = if in_bounds
+           then abs(virtual_y)
+           else (((2*HEIGHT)-1) - abs(virtual_y)) ;
   ok = 0 <= target and target < HEIGHT
 
 node aligned_with_paddle(y, paddle : int) = (yes : bool)
@@ -104,7 +106,7 @@ with var xx, y2, dy, paddle2, target : int ; dir : dir ; ok : bool in
   (xx, dir, score) = lat_move(x, aligned_with_paddle(y, paddle)) ;
   x = 100 fby xx ;
   (y2, dy) = vert_move(y) ;
-  y = 2 fby y2 ;
+  y = 10 fby y2 ;
   target = target(x, y, dir, dy) ;
   /* target = y ; */
   paddle2 = paddle_move(target, paddle) ;
