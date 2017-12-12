@@ -228,11 +228,11 @@ module E = struct
       (pp_list_brk ", " (fun ppf (s, _) -> if s = "ok" then fprintf ppf "ok1"
                           else fprintf ppf "_")) var_loc
       (pp_list_brk ", " (fun ppf s -> fprintf ppf "%s__1" s)) var_in;
-    fprintf ppf "let (_, (%a), _) = step_fonct s %a in@\n"
+    fprintf ppf "let (_, (%a), _) = step_fonct s2 %a in@\n"
       (pp_list_brk ", " (fun ppf (s, _) -> if s = "ok" then fprintf ppf "ok2"
                           else fprintf ppf "_")) var_loc
       (pp_list_brk ", " (fun ppf s -> fprintf ppf "%s__2" s)) var_in;
-    fprintf ppf "ok1 = true => ok2 = true";
+    fprintf ppf "ok1 = true -> ok2 = true";
     fprintf ppf "@]"
 
 
