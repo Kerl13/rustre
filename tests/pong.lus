@@ -56,8 +56,8 @@ with var r_overflow, l_overflow, goal_ : bool ; ok : bool in
 
 node vert_move(y : int) = (y2, dy : int)
 with var overflow_top, overflow_bot, overflow : bool ; ok : bool in
-  overflow_top = y + dy >= HEIGHT ;
-  overflow_bot = y + dy < 0 ;
+  overflow_top = y + dy >= HEIGHT and dy >= 0;
+  overflow_bot = y + dy < 0 and dy < 0;
   overflow = overflow_bot or overflow_top ;
   y2 = if overflow_top then
          2 * HEIGHT - y - dy
