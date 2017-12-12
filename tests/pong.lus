@@ -41,7 +41,7 @@ with var pos : bool ; ok : bool in
 /* Movements of the ball */
 
 node lat_move(x : int; aligned : bool) = (x2 : int; dir : dir; score : int)
-with var r_overflow, l_overflow, goal_ : bool ; ok : bool in
+with var r_overflow, l_overflow, goal_, ok : bool ; dx : int in
   r_overflow = dir = Right and x >= WIDTH - DX ;
   l_overflow = dir = Left and x < DX ;
   dir = Left fby ( if r_overflow then
@@ -50,8 +50,14 @@ with var r_overflow, l_overflow, goal_ : bool ; ok : bool in
                       if l_overflow then Right else dir ) ;
   score = 0 fby (if goal_ then score + 1 else score) ;
   goal_ = r_overflow and not aligned ;
-  x2 = merge dir (Left  -> x - DX when Left(dir))
-                 (Right -> x + DX when Right(dir)) ;
+  dx = merge dir (Left  -> - DX when Left(dir))
+                 (Right ->   DX when Right(dir)) ;
+  x2 = if r_overflow then
+         2 * WIDTH - x - dx
+       else if l_overflow then
+         -x -dx
+       else
+         x + dx ;
   ok = 0 <= x2 and x2 < WIDTH
 
 node vert_move(y : int) = (y2, dy : int)
