@@ -45,7 +45,7 @@ in
   reset_or_init = vreset or vinit;
   cpt = if reset_or_init then n else pre_cpt
 
-node risingedgeretrigger (rer_input : bool; numberofcycle : int) = (rer_output : bool)
+node check (rer_input : bool; numberofcycle : int) = (rer_output : bool)
 with var clk, c, pre_rer_input, count : bool;
          v, pv : int;
          r : int

@@ -66,8 +66,8 @@ let do_analysis filename node_names =
      match stat with
      | Unix.WEXITED(0) ->
        if !ok then
-         Format.printf "Nil OK@\n"
+         Format.printf "%s: Nil OK@\n" n
        else
-         Format.printf "Nil NOT OK@\n"
+         Format.printf "%s: Nil NOT OK@\n" n
      | _ -> Format.printf "Nil checking failed@\n"
     ) node_names;
