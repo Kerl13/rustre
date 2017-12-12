@@ -219,19 +219,46 @@ module E = struct
       (pp_list_brk "" (fun ppf s -> fprintf ppf "%s" s)) var_in
       (pp_list_brk "" (fun ppf s -> fprintf ppf "%s" s)) var_in
 
+  let print_prop ppf (mach, var_loc) =
+    let var_in, _, _, step = mach.step in
+    let var_in = List.map fst var_in in
+    fprintf ppf "@[<2>lemma prop_ind: forall %a, s:state.@\n"
+      (pp_list_brk ", " (fun ppf s -> fprintf ppf "%s__1, %s__2" s s)) var_in;
+    fprintf ppf "let (_, (%a), s2) = step_fonct s %a in@\n"
+      (pp_list_brk ", " (fun ppf (s, _) -> if s = "ok" then fprintf ppf "ok1"
+                          else fprintf ppf "_")) var_loc
+      (pp_list_brk ", " (fun ppf s -> fprintf ppf "%s__1" s)) var_in;
+    fprintf ppf "let (_, (%a), _) = step_fonct s %a in@\n"
+      (pp_list_brk ", " (fun ppf (s, _) -> if s = "ok" then fprintf ppf "ok2"
+                          else fprintf ppf "_")) var_loc
+      (pp_list_brk ", " (fun ppf s -> fprintf ppf "%s__2" s)) var_in;
+    fprintf ppf "ok1 = true => ok2 = true";
+    fprintf ppf "@]"
 
 
   let print_machine locs ppf mach =
     let var_loc = List.assoc mach.name locs in
-    fprintf ppf "@[<h 2>module Node%s@\nuse import int.Int@\nuse import int.ComputerDivision@\nuse import Types@\n%a@\n%a@\n%a@\n@\n%a@\n@\n%a@\n@\n%a@\n%a@]@\n@\nend"
-      mach.name
-      (pp_list_n "" (fun ppf (_, m) -> fprintf ppf "use Node%s" m)) mach.instances
-      print_state mach
-      print_step_fonct (mach, var_loc)
-      print_reset_fonct mach
-      (print_step ~fonct:true) (mach, var_loc)
-      (print_reset ~fonct:true) mach
-      print_check_nil mach
+    let has_ok = List.exists (fun (s, _) -> s = "ok" ) var_loc in
+    fprintf ppf "@[<h 2>module Node%s@\nuse import int.Int@\nuse import int.ComputerDivision@\nuse import Types@\n"
+      mach.name;
+    fprintf ppf "%a@\n"
+      (pp_list_n "" (fun ppf (_, m) -> fprintf ppf "use Node%s" m)) mach.instances;
+    fprintf ppf "%a@\n"
+      print_state mach;
+    fprintf ppf "%a@\n"
+      print_step_fonct (mach, var_loc);
+    fprintf ppf "@\n%a@\n"
+      print_reset_fonct mach;
+    fprintf ppf "@\n%a"
+      (print_step ~fonct:true) (mach, var_loc);
+    fprintf ppf "@\n@\n%a"
+      (print_reset ~fonct:true) mach;
+    fprintf ppf "@\n%a"
+      print_check_nil mach;
+    if has_ok then
+      fprintf ppf "@\n%a"
+        print_prop (mach, var_loc);
+    fprintf ppf "@]@\n@\nend"
 
   let extract_to ppf (f,_, locs) =
     fprintf ppf "%a\n@\n%a" print_typedefs f.objf_typedefs (pp_list_n "\n" (print_machine locs)) f.objf_machines

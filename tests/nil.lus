@@ -1,0 +1,4 @@
+node check (x: bool) = (a, b: bool)
+with
+  a = true -> pre(x);
+  b = x
