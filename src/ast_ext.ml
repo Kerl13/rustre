@@ -1,9 +1,3 @@
-(*type ident = Ast_parsing.ident
-type location = Ast_parsing.location
-
-  *)
-
-
 (**
  * Extended AST with automata, reset and match constructs
  **)
