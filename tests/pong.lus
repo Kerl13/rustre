@@ -94,6 +94,11 @@ with
 
 /* Main */
 
+node dist_to_goal(x : int; dir : dir) = (d : int)
+with
+  d = merge dir (Right -> WIDTH - x)
+                (Left  -> WIDTH + x)
+
 node pong(wind : int) = (x, y : int; paddle : int; score : int)
 with var xx, y2, dy, paddle2, target : int ; dir : dir ; ok : bool in
   (xx, dir, score) = lat_move(x, aligned_with_paddle(y, paddle)) ;
@@ -106,5 +111,4 @@ with var xx, y2, dy, paddle2, target : int ; dir : dir ; ok : bool in
   paddle = 10 fby paddle2 ;
   ok =
     (score = 0) and
-    ((x >= WIDTH - DX) => (abs(paddle - target) <= PADDLE_SIZE/2)) and
-    True
+    (PADDLE_SPEED * dist_to_goal(x, dir) >= abs(paddle - target) * DX)
