@@ -5,14 +5,15 @@ type dir = Left + Right
 
 /* Size of the arena */
 const WIDTH = 1200
-const HEIGHT = 400
+const HEIGHT = 5
 
 /* Speed of the ball */
-const DX = 5
+const DX = 2
 const INITIAL_DY = 3
 
-/* Size of the AI's paddle */
+/* The paddle's spec */
 const PADDLE_SIZE = 30
+const PADDLE_SPEED = 3
 
 
 /* Simple utilities */
@@ -44,7 +45,7 @@ node lat_move(x : int; aligned : bool) = (x2 : int; dir : dir; score : int)
 with var r_overflow, l_overflow, goal_, ok : bool ; dx : int in
   r_overflow = dir = Right and x >= WIDTH - DX ;
   l_overflow = dir = Left and x < DX ;
-  dir = Left fby ( if r_overflow then
+  dir = Right fby ( if r_overflow then
                       Left
                     else
                       if l_overflow then Right else dir ) ;
@@ -78,9 +79,8 @@ with var overflow_top, overflow_bot, overflow : bool ; ok : bool in
 /* Movements of the paddle */
 
 node paddle_move(target, pos : int) = (next_pos : int)
-with var max_dy : int in
-  max_dy = 2 ;
-  next_pos = pos + clamp(max_dy, target - pos)
+with
+  next_pos = pos + clamp(PADDLE_SPEED, target - pos)
 
 node target(x, y : int ; dir : dir ; dy : int) = (target : int)
 with var virtual_y, length : int ; in_bounds : bool ; ok : bool in
@@ -100,11 +100,11 @@ with
 /* Main */
 
 node pong(wind : int) = (x, y : int; paddle : int; score : int)
-with var xx, yy, dy, paddle2, target : int ; dir : dir ; ok : bool in
+with var xx, y2, dy, paddle2, target : int ; dir : dir ; ok : bool in
   (xx, dir, score) = lat_move(x, aligned_with_paddle(y, paddle)) ;
   x = 100 fby xx ;
-  (yy, dy) = vert_move(y) ;
-  y = 10 fby yy ;
+  (y2, dy) = vert_move(y) ;
+  y = 2 fby y2 ;
   target = target(x, y, dir, dy) ;
   /* target = y ; */
   paddle2 = paddle_move(target, paddle) ;
