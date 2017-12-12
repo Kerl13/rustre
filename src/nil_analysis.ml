@@ -1,10 +1,16 @@
 open Ast_object
 
+let rec filter_map: ('a -> 'b option) -> 'a list -> 'b list = fun f l ->
+  match l with
+  | [] -> []
+  | t::q -> match f t with
+            | Some s -> s :: filter_map f q
+            | None -> filter_map f q
 
 let rec analyze_defs ?(fonct=false) = function
   | SAssign { n; _} -> [n]
   | SSeq(a, b) -> analyze_defs ~fonct a @ analyze_defs ~fonct b
-  | SReset(a, b) -> if fonct then [State ("state_" ^ b)] else []
+  | SReset(_, b) -> if fonct then [State ("state_" ^ b)] else []
   | SSkip -> []
   | SCall(_, _, i, res) ->
     if fonct then

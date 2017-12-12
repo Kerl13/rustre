@@ -275,12 +275,14 @@ module W = struct
       clock_file file main
     with
     | ClockUnificationError (loc, c1, c2) ->
+      let pp_ck = pp_ck (symbol_map ()) in
       let message = Format.asprintf "Incompatible clocks: [%a] and [%a]" pp_ck c1 pp_ck c2 in
       raise (Error (loc, message))
     | ArityException (loc, n, ct) ->
+      let pp_ck = pp_ck (symbol_map ()) in
       let message = Format.asprintf
           "Composite clock [%a] is expected to have arity %d but has arity %d"
-          (pp_list ", " pp_ck) ct n (List.length ct) in
+          (Pp_utils.pp_list ", " pp_ck) ct n (List.length ct) in
       raise (Error (loc, message))
     | Env.Node_not_found (loc, name) ->
       let message = Format.sprintf "Unbound node %s" name in

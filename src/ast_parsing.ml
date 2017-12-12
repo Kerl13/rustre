@@ -127,21 +127,37 @@ let pp_op ppf = function
   | OpNot -> fprintf ppf "not"
 
 let pp_expr =
-  let pp_list = Pp_utils.pp_list in
-  let rec pp ppf e = pp_desc ppf e.expr_desc
-  and pp_desc ppf = function
+  let rec pp need_pars ppf e = pp_desc need_pars ppf e.expr_desc
+  and pp_desc need_pars ppf = function
     | EConst c -> fprintf ppf "%a" pp_const c
     | EIdent i -> fprintf ppf "%s" i
-    | ETuple es -> fprintf ppf "%a" (pp_list ", " pp) es
-    | EFby (v, e) -> fprintf ppf "(%a fby %a)" pp_const v pp e
-    | EOp (op, [e1; e2]) -> fprintf ppf "(%a %a %a)" pp e1 pp_op op pp e2
-    | EOp (OpNot, [e]) -> fprintf ppf "(%a %a)" pp_op OpNot pp e
-    | EOp (OpSub, [e]) -> fprintf ppf "(%a %a)" pp_op OpSub pp e
-    | EOp _ -> assert false
-    | EApp (f, args, ev) -> fprintf ppf "(%s(%a) every %a)" f (pp_list ", " pp) args pp ev
-    | EWhen (e, c, x) -> fprintf ppf "(%a when %s(%s))" pp e c x
-    | EMerge (x, clauses) -> fprintf ppf "(merge %s %a)" x (pp_list " " pp_clause) clauses
-  and pp_clause ppf (c, e) = fprintf ppf "(%s -> %a)" c pp e
+    | ETuple es -> fprintf ppf "(%a)" (Pp_utils.pp_list ", " (pp false)) es
+    | EFby (v, e) ->
+      if need_pars then fprintf ppf "(" ;
+      fprintf ppf "@[<2>%a@ fby@ %a@]" pp_const v (pp true) e ;
+      if need_pars then fprintf ppf ")"
+    | EOp (op, [e1; e2]) ->
+      if need_pars then fprintf ppf "(" ;
+      fprintf ppf "%a %a %a" (pp true) e1 pp_op op (pp true) e2 ;
+      if need_pars then fprintf ppf ")"
+    | EOp (OpNot as op, [e])
+    | EOp (OpSub as op, [e]) ->
+      if need_pars then fprintf ppf "(" ;
+      fprintf ppf "%a %a" pp_op op (pp true) e ;
+      if need_pars then fprintf ppf ")"
+    | EOp _ -> failwith "Ill formed operation. Should be rejected by the parser"
+    | EApp (f, args, ev) ->
+      if need_pars then fprintf ppf "(" ;
+      fprintf ppf "@[%s(%a)@ every %a@]" f (Pp_utils.pp_list ", " (pp false)) args (pp true) ev ;
+      if need_pars then fprintf ppf ")"
+    | EWhen (e, c, x) ->
+      if need_pars then fprintf ppf "(" ;
+      fprintf ppf "%a when %s(%s)" (pp true) e c x ;
+      if need_pars then fprintf ppf ")"
+    | EMerge (x, clauses) ->
+      fprintf ppf "@[<2>merge %s@\n%a@]" x (Pp_utils.pp_list_n "" pp_clause) clauses ;
+      if need_pars then fprintf ppf ")"
+  and pp_clause ppf (c, e) = fprintf ppf "(@[<2>%s ->@ %a@])" c (pp false) e
   in pp
 
 let rec pp_pat ppf = function
@@ -156,25 +172,20 @@ let pp_ty ppf = function
   | TyEnum (name, _) -> fprintf ppf "%s" name
 
 let pp_equation ppf eq =
-  fprintf ppf "%a = %a" pp_pat eq.eq_pat pp_expr eq.eq_expr
+  fprintf ppf "@[<2>%a =@ %a@]" pp_pat eq.eq_pat (pp_expr false) eq.eq_expr
 
 let pp_node ppf n =
   let pp_arg ppf (id, ty) = fprintf ppf "%s: %a" id pp_ty ty in
-  let pp_equation ppf eq = fprintf ppf "  %a" pp_equation eq in
-  let pp_list = Pp_utils.pp_list in
-  fprintf ppf "node %s(%a) = (%a)\nwith var %a in\n%a"
-    n.n_name
-    (pp_list "; " pp_arg) n.n_input
-    (pp_list "; " pp_arg) n.n_output
-    (pp_list "; " pp_arg) n.n_local
-    (pp_list ";\n" pp_equation) n.n_eqs
+  let pp_args = Pp_utils.pp_list "; " pp_arg in
+  fprintf ppf "@[node %s(%a) = (%a)@\n" n.n_name pp_args n.n_input pp_args n.n_output ;
+  if n.n_local = []
+  then fprintf ppf "@[<2>with@\n"
+  else fprintf ppf "@[<2>with var %a in@\n" pp_args n.n_local ;
+  fprintf ppf "%a@]@]@\n@\n" (Pp_utils.pp_list_n " ;" pp_equation) n.n_eqs
 
 let pp_typedef fmt (ty_name, enum) =
   fprintf fmt "type %s = %a" ty_name (Pp_utils.pp_list " + " Format.pp_print_string) enum
 
-
 let pp_file ppf f =
-  let pp_list = Pp_utils.pp_list in
-  fprintf ppf "%a" (pp_list "\n" pp_typedef) f.f_typedefs;
-  fprintf ppf "\n\n";
-  fprintf ppf "%a" (pp_list "\n\n" pp_node) f.f_nodes
+  fprintf ppf "%a@\n@\n" (Pp_utils.pp_list_n "\n" pp_typedef) f.f_typedefs;
+  fprintf ppf "%a" (Pp_utils.pp_list "" pp_node) f.f_nodes

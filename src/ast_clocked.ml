@@ -67,24 +67,54 @@ and ('a, 'b) node_desc = {
 and equation = Equ: 'a pattern * 'a cexpr -> equation
 
 
+(** Pretty printing *)
+
+let symbol_list () =
+  let i = ref (-1) in
+  fun () ->
+    incr i ;
+    let letter = match !i mod 4 with
+      | 0 -> "α"
+      | 1 -> "β"
+      | 2 -> "γ"
+      | 3 -> "δ"
+      | _ -> assert false
+    in
+    if !i < 4 then letter
+    else letter ^ (string_of_int (!i / 4))
+
+let symbol_map () =
+  let symbols = Hashtbl.create 17 in
+  let next_symbol = symbol_list () in
+  function var ->
+    if Hashtbl.mem symbols var.id then
+      Hashtbl.find symbols var.id
+    else begin
+      let s = next_symbol () in
+      Hashtbl.add symbols var.id s ;
+      s
+    end
+
 let fprintf = Format.fprintf
-let pp_list = Pp_utils.pp_list
 
-let rec pp_ck fmt = function
+let rec pp_ck syms fmt = function
   | CBase -> fprintf fmt "base"
-  | COn (ck, dc, x) -> fprintf fmt "%a on %s(%s)" pp_ck ck dc x
-  | CVar v -> fprintf fmt "%s%d" "α" v.id
+  | COn (ck, dc, x) -> fprintf fmt "%a on %s(%s)" (pp_ck syms) ck dc x
+  | CVar v -> fprintf fmt "%s" (syms v)
 
-let rec pp_vl : type a. ck Smap.t -> Format.formatter -> a var_list -> unit
-  = fun env fmt -> function
+let rec pp_vl : type a. ck Smap.t -> (cvar -> string) -> Format.formatter -> a var_list -> unit
+  = fun env syms fmt vl ->
+    let pp_ck = pp_ck syms in
+    match vl with
     | VIdent (i, _) -> fprintf fmt "    %s : [%a]" i pp_ck (Smap.find i env)
     | VEmpty -> ()
-    | VTuple(i, _, b) -> fprintf fmt "    %s : [%a]\n%a" i pp_ck (Smap.find i env) (pp_vl env) b
+    | VTuple(i, _, b) -> fprintf fmt "    %s : [%a]\n%a" i pp_ck (Smap.find i env) (pp_vl env syms) b
 
 let pp_clocks_node fmt (Node n : node) =
   let Ast_typed.Tagged(_, _, name) = n.n_name in
   let Ast_typed.NodeLocal n_local = n.n_local in
-  let pp_vl fmt vl = pp_vl n.n_clocks fmt vl in
+  let symbol_map = symbol_map () in
+  let pp_vl fmt vl = pp_vl n.n_clocks symbol_map fmt vl in
   fprintf fmt "node %s\n" name;
   fprintf fmt "  inputs:\n";
   fprintf fmt "%a" pp_vl n.n_input;
@@ -94,4 +124,4 @@ let pp_clocks_node fmt (Node n : node) =
   fprintf fmt "%a" pp_vl n.n_output
 
 let pp_clocks_file fmt file =
-  fprintf fmt "%a" (pp_list "\n\n" pp_clocks_node) file.cf_nodes
+  fprintf fmt "%a" (Pp_utils.pp_list "\n\n" pp_clocks_node) file.cf_nodes
