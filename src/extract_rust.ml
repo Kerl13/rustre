@@ -72,6 +72,7 @@ module E = struct
         | Ast_typed.TyNum Ast_typed.TyReal -> fprintf ppf "%f" 0.
         | Ast_typed.TyEnum (_, dcs) -> print_datacons ppf (List.hd dcs)
       end
+    | EBOp (Ast_typed.OpImpl, b, c) -> fprintf ppf "(!(%a)) | (%a)" print_expr b print_expr c
     | EBOp (a, b, c) -> fprintf ppf "(%a) %a (%a)" print_expr b pp_bop a print_expr c
     | EUOp (a, b) -> fprintf ppf "%a (%a)" pp_uop a print_expr b
 
