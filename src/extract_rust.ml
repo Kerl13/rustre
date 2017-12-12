@@ -11,7 +11,10 @@ module E = struct
 
   (* In type t = A + B, enum is t, A is datacons *)
   let print_enum ppf n = fprintf ppf "Ty%s" n
-  let print_datacons ppf l = fprintf ppf "Dc%s" l
+  let print_datacons ppf = function
+    | "False" -> fprintf ppf "false"
+    | "True" -> fprintf ppf "true"
+    | dc -> fprintf ppf "Dc%s" dc
 
   let print_sty ppf (Sty ty) =
     match ty with
@@ -105,24 +108,16 @@ module E = struct
                          | State _ -> None
                          | Var s | Loc s -> Some s) in
        let vars = if List.length vars = 0 then ["()"] else vars in
-       if ((List.length b = 2) && ((fst (List.hd b) = "True") || (fst (List.hd b) = "False"))) then
-         fprintf ppf "@[<2>let %a = match %a {@\n%a@]};"
-           (pp_list_brk ", " (fun ppf -> fprintf ppf "%s")) vars
-           print_expr a
-           (pp_list_n "" (fun ppf (s, o) ->
-                fprintf ppf "%s => {@[<4>%a@ (%a)@]}"
-                  (String.lowercase_ascii s)
-                  print_statement o
-                  (pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars)) b
-       else
-         fprintf ppf "@[<2>let %a = match %a {@\n%a@]};"
-           (pp_list_brk ", " (fun ppf -> fprintf ppf "%s")) vars
-           print_expr a
-           (pp_list_n "" (fun ppf (s, o) ->
-                fprintf ppf "%a => {@[<4>%a@ (%a)@]}"
-                  print_datacons s
-                  print_statement o
-                  (pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars)) b
+       if List.length vars < 2
+       then fprintf ppf "@[<2>let %a = " (pp_list_brk ", " Format.pp_print_string) vars
+       else fprintf ppf "@[<2>let (%a) = " (pp_list_brk ", " Format.pp_print_string) vars ;
+       fprintf ppf "match %a {@\n%a@]};"
+         print_expr a
+         (pp_list_n "" (fun ppf (s, o) ->
+              fprintf ppf "%a => {@[<4>%a@ (%a)@]}"
+                print_datacons s
+                print_statement o
+                (pp_list_brk "," (fun ppf -> fprintf ppf "%s")) vars)) b
 
 
   let print_step ppf mach =
