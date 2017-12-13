@@ -102,15 +102,24 @@ with
                 (Left  -> WIDTH + x when Left(dir))
 
 node pong(wind : int) = (x, y : int; paddle : int; score : int)
-with var xx, y2, dy, paddle2, target : int ; dir : dir ; ok : bool in
+with var xx, y2, dy, paddle2, target : int ;
+         dir : dir ;
+         /* Terms of the proof: */
+         length, delta_y : int ;
+         ok : bool
+in
   (xx, dir, score) = lat_move(x, aligned_with_paddle(y, paddle)) ;
   x = 100 fby xx ;
   (y2, dy) = vert_move(y) ;
   y = 10 fby y2 ;
   target = target(x, y, dir, dy) ;
-  /* target = y ; */
   paddle2 = paddle_move(target, paddle) ;
   paddle = 10 fby paddle2 ;
+  /* Terms of the proof: */
+  length = dist_to_goal(x, dir) ;
+  delta_y = (length * abs(dy)) / DX ;
   ok =
-    (score = 0) and
     (PADDLE_SPEED * dist_to_goal(x, dir) >= abs(paddle - target) * DX)
+    and (y >= target - delta_y and y <= target + delta_y)
+    and (x mod DX = 0)
+    /* and (score = 0) certainly difficult */
