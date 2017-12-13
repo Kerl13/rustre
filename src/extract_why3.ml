@@ -265,7 +265,7 @@ module E = struct
         (pp_list_brk "" (fun ppf (i, _) ->
              fprintf ppf "%s = state_%s; " i i)) mach.instances;*)
     fprintf ppf "%a@\n"
-      (print_statement ~prop:true ~loc:(fun s' -> List.exists (fun (s,_) -> Format.printf "%s %s@." s s'; s = s') (var_in @ var_out)) ~fonct:true) stat;
+      (print_statement ~prop:true ~loc:(fun s' -> List.exists (fun (s,_) -> s = s') (var_in @ var_out)) ~fonct:true) stat;
     (*(pp_list_brk ", " (fun ppf (var, _) ->
            fprintf ppf "%s" var)) var_loc*)
     begin
