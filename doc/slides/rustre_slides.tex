@@ -1,0 +1,152 @@
+\documentclass[11pt,usenames,dvipsnames]{beamer}
+
+\usetheme[numbering=counter,progressbar=foot]{metropolis}
+\usecolortheme[snowy]{owl}
+\setbeamercolor{progress bar}{fg=OwlBlue}
+\setbeamertemplate{itemize item}{\color{OwlBlue!80}$\blacktriangleright$}
+\setbeamertemplate{itemize subitem}{\color{OwlBlue!70}\textbullet}
+\setbeamertemplate{enumerate items}[square]
+\setbeamercolor{itemize items}{bg=OwlBlue}
+
+\definecolor{dolphin_db}{HTML}{4747ba}
+\definecolor{dolphin_lb}{HTML}{aeaee1}
+\definecolor{dolphin_b}{HTML}{8585d1}
+\setbeamercolor{frametitle}{bg=OwlBlue!75}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{tikz}
+\usepackage{appendixnumberbeamer}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage{xcolor}
+\colorlet{new}{OwlCyan}
+\usetikzlibrary{arrows,shapes,positioning,fit}
+\usepackage{array}
+\usepackage{layouts}
+\usepackage[scaled=0.80]{beramono}  % our monospace font
+\usepackage{pifont}
+\newcommand{\cmark}{\ding{51}}%
+\newcommand{\xmark}{\ding{55}}%
+
+\usepackage[backend=biber,style=alphabetic,citestyle=authortitle,abbreviate=true]{biblatex}
+%%\addbibresource{rustre.bib}
+
+\DeclareCiteCommand{\footpartcite}[\mkbibfootnote]
+  {\usebibmacro{prenote}}
+  {\usebibmacro{citeindex}%
+   \printnames{labelname}%
+   \setunit{\labelnamepunct}%
+   \printfield[citetitle]{title}%
+   \newunit%
+   \printfield{booktitle}%
+ }
+  {\addsemicolon\space}
+  {\usebibmacro{postnote}}
+
+\DeclareMultiCiteCommand{\footpartcites}[\mkbibfootnote]{\footpartcite}{\addsemicolon\space}
+
+\author{}
+\institute[]{}
+\title{Rustre}
+\date{}
+
+\newcommand{\inline}[1]{{\ttfamily #1}}
+\newcommand{\minline}[1]{\text{\ttfamily #1}}
+\newcommand\comment[1]{\hfill \colorbox{blue!70}{#1}}
+
+\usepackage{listings}
+
+
+\lstdefinelanguage{minils}%
+{morekeywords={and,const,else,every,fby,if,in,merge,mod,node,not,or,pre,then,true,type,var,when,with,True,False},%
+  morekeywords=[3]{bool,int,real},%
+  otherkeywords={=,=>,<=,<,>,->},%
+  sensitive,%
+  morecomment=[l]//,%
+  morecomment=[n]{/*}{*/},%
+  morestring=[b]",%
+  morestring=[b]',%
+  morestring=[b]""",%
+}[keywords,comments,strings]%
+
+  
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\lstset{ %
+  %backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
+  basicstyle=\ttfamily\footnotesize,        % the size of the fonts that are used for the code
+  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+  breaklines=true,                 % sets automatic line breaking
+%  captionpos=b,                    % sets the caption-position to bottom
+  commentstyle=\color{mygreen},    % comment style
+  deletekeywords={...},            % if you want to delete keywords from the given language
+  escapechar=!,
+  escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
+  extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+  keywordstyle=\color{blue},       % keyword style
+  otherkeywords={*,...},           % if you want to add more keywords to the set
+  numbers=none,                    % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=8pt,                   % how far the line-numbers are from the code
+  numberstyle=\tiny\color{mygray}, % the style that is used for the line-numbers
+  %rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+  showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+  showstringspaces=false,          % underline spaces within strings only
+  showtabs=false,                  % show tabs within strings adding particular underscores
+%  stepnumber=5,  % the step between two line-numbers. If it's 1, each line will be numbered
+  firstnumber=1,numberfirstline=true,
+  stringstyle=\color{mymauve},     % string literal style
+  tabsize=2,	                   % sets default tabsize to 2 spaces
+  %title=\lstname,                   % show the filename of files included with \lstinputlisting; also try caption instead of title
+%  frame=Ltb,
+  language=minils,
+  keywordsprefix=\#,
+  alsoletter=\#,
+%  breaklines=true
+%  literate={\#}{{/}}
+}
+
+\newcommand\blfootnote[1]{%
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}%
+  \addtocounter{footnote}{-1}%
+  \endgroup
+}
+
+
+\begin{document}
+
+\maketitle
+
+
+\section{Introduction}
+\subsection{Lalalala}
+
+\begin{frame}[fragile]{\null}
+  \blfootnote{Ne pas oublier le [fragile] en cas d'utilisation de lstlisting.}
+  \lstinputlisting[firstline=6]{../../tests/poly_clock.lus}
+\end{frame}
+
+\section{Conclusion}
+\subsection{Conclusion}
+\begin{frame}{\null}
+  \begin{itemize}
+  \item todo
+  \end{itemize}
+\end{frame}
+
+\appendix
+\subsection{Besoin d'une annexe ?}
+\begin{frame}{\null}
+\end{frame}
+
+
+\end{document}
