@@ -45,9 +45,9 @@ module W = struct
 
   let rec unify (at : location) c1 c2 = match head c1, head c2 with
     | CBase, CBase -> ()
-    | COn (c1, dc1, x1), COn (c2, dc2, x2) ->
+    | COn (c1', dc1, x1), COn (c2', dc2, x2) ->
         if x1 = x2 && dc1 = dc2 (* FIXME: maybe a bit too restrictive *)
-        then unify at c1 c2
+        then unify at c1' c2'
         else unification_error at c1 c2
     | CVar v1, CVar v2 when V.equal v1 v2 -> ()
     | CVar v, c2 ->

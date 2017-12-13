@@ -1,0 +1,12 @@
+/* main = check */
+/* error = missing when */
+
+node n(x : int ; b : bool) = (y : int)
+with var b : bool in
+  y = merge b (True -> x)
+              (False -> x)
+
+node check(dummy : int) = (ok : bool)
+with var x : int in
+  x = 0 fby n(x, False) ;
+  ok = True
