@@ -1,4 +1,11 @@
-node incr (tic: bool) = (out:bool) with var ok: bool; cpt : int in
-  cpt = (0 -> pre cpt) + if tic then 1 else 0;
-  ok = true -> (pre cpt) <= cpt;
+node incr (tic: bool) = (out:bool) with var ok: bool; old_cpt, cpt : int in
+  old_cpt = pre cpt;
+  cpt = (0 -> old_cpt) + if tic then 1 else 0;
+  ok = true -> (old_cpt) <= cpt;
   out = ok
+
+node incr2 (tic: bool) = (out:bool) with var ok: bool; old_cpt, cpt : int in
+    old_cpt = pre cpt;
+    cpt = (0 -> old_cpt) + if tic then 1 else 0;
+    ok = true -> 0 = cpt;
+    out = ok
