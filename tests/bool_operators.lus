@@ -1,0 +1,30 @@
+/* Check precedences */
+node check_impl(a, b, c: bool) = (ok : bool)
+with var t1, t2 : bool in
+  t1 = a => b => c ;
+  t2 = a => (b => c) ;
+  ok = t1 = t2
+
+/* Check precedences and commutativity */
+node check_andor(a, b, c, d, e, f : bool) = (ok : bool)
+with var t1, t2, t3 : bool in
+  t1 = a and b or c and d or e and f ;
+  t2 = ((a and b) or (c and d)) or (e and f) ;
+  t3 = (a and b) or ((c and d) or (e and f)) ;
+  ok = (t1 = t2) and (t2 = t3)
+
+/* Check distributivity */
+node check_distrib(a, b, c : bool) = (ok : bool)
+with var t1, t2, t3, t4 : bool in
+  t1 = a and (b or c) ;
+  t2 = (a and b) or (a and c) ;
+  t3 = a or (b and c) ;
+  t4 = (a or b) and (a or c) ;
+  ok = (t1 = t2) and (t3 = t4)
+
+/* Check all */
+node check(a, b, c, d, e, f : bool) = (ok : bool)
+with
+  ok = check_impl(a, b, c) and
+       check_andor(a, b, c, d, e, f) and
+       check_distrib(a, b, c)

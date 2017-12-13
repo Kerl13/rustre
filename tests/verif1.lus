@@ -1,3 +1,5 @@
+/* main = incr */
+
 node incr (tic: bool) = (out:bool)
 with var ok: bool; cpt : int in
   cpt = (0 -> pre cpt) + if tic then 1 else 0;
