@@ -83,7 +83,7 @@ with var virtual_y, length : int ; in_bounds : bool ; ok : bool in
   in_bounds = virtual_y < HEIGHT and virtual_y >= 1-HEIGHT ;
   target = if in_bounds
            then abs(virtual_y)
-           else (((2*HEIGHT)-1) - abs(virtual_y)) ;
+           else ((2*HEIGHT -1) - abs(virtual_y)) ;
   ok = 0 <= target and target < HEIGHT
 
 node aligned_with_paddle(y, paddle : int) = (yes : bool)
@@ -96,8 +96,8 @@ with
 
 node dist_to_goal(x : int; dir : dir) = (d : int)
 with
-  d = merge dir (Right -> WIDTH - x)
-                (Left  -> WIDTH + x)
+  d = merge dir (Right -> WIDTH - x when Right(dir))
+                (Left  -> WIDTH + x when Left(dir))
 
 node pong(wind : int) = (x, y : int; paddle : int; score : int)
 with var xx, y2, dy, paddle2, target : int ; dir : dir ; ok : bool in
