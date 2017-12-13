@@ -63,7 +63,7 @@ module E = struct
       end
     | EBOp(Ast_typed.OpEq, b, c) when fonct -> fprintf ppf "(is_eq (%a) (%a))" (print_expr ~prop ~fonct) b (print_expr ~prop ~fonct) c
     | EBOp(Ast_typed.OpImpl, b, c) when prop -> fprintf ppf "((%a) -> (%a))" (print_expr ~prop ~fonct) b (print_expr ~prop ~fonct) c
-    | EBOp(Ast_typed.OpImpl, b, c) -> fprintf ppf "(not (%a)) || (%a))" (print_expr ~prop ~fonct) b (print_expr ~prop ~fonct) c
+    | EBOp(Ast_typed.OpImpl, b, c) -> fprintf ppf "((not (%a)) || (%a))" (print_expr ~prop ~fonct) b (print_expr ~prop ~fonct) c
     | EBOp(Ast_typed.OpMod, b, c) -> fprintf ppf "(mod (%a) (%a))" (print_expr ~prop ~fonct) b (print_expr ~prop ~fonct) c
     | EBOp(Ast_typed.OpDiv, b, c) -> fprintf ppf "(div (%a) (%a))" (print_expr ~prop ~fonct) b (print_expr ~prop ~fonct) c
     | EBOp(a, b, c) -> fprintf ppf "(%a %a %a)" (print_expr ~prop ~fonct) b print_bop a (print_expr ~prop ~fonct) c
@@ -189,7 +189,7 @@ module E = struct
   let print_step_fonct ppf (mach, _) =
     let var_in, _, var_out, stat = mach.step in
     let var_out_names = List.map fst var_out in
-    let result_vars = get_result_var stat |> List.filter (fun a -> List.mem a var_out_names) in
+    let result_vars = get_result_var stat |> List.filter (fun a -> not @@ List.mem a var_out_names) in
     fprintf ppf "@[<2>predicate step_fonct %a %a (state:state) (state2:state) =@\n"
       (pp_list_brk " " (fun ppf (var, sty) ->
            fprintf ppf "(%s: %a)" var  print_sty sty)) var_in
@@ -216,7 +216,7 @@ module E = struct
   let print_step_fonct_plus ppf (mach, _) =
     let var_in, _, var_out, stat = mach.step in
     let var_out_names = List.map fst var_out in
-    let result_vars = get_result_var stat |> List.filter (fun a -> List.mem a var_out_names) in
+    let result_vars = get_result_var stat |> List.filter (fun a -> not (List.mem a var_out_names)) in
     fprintf ppf "@[<2>predicate step_fonct_ok %a %a (state:state) (state2:state) =@\n"
       (pp_list_brk " " (fun ppf (var, sty) ->
            fprintf ppf "(%s: %a)" var  print_sty sty)) var_in
