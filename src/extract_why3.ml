@@ -213,68 +213,45 @@ module E = struct
                 try
                   print_ok_expr ppf o; assert false with
                 | Ok_found ->
-                fprintf ppf "@]@\n";)) l; raise Ok_found)
+                  fprintf ppf "@]@\n";)) l; raise Ok_found)
     | _ -> ()
 
-  let print_step_fonct ppf (mach, _) =
-    let var_in, _, var_out, stat = mach.step in
-    let var_out_names = List.map fst var_out in
-    let result_vars = get_result_var stat |> List.filter (fun a -> not @@ List.mem a var_out_names) in
-    fprintf ppf "@[<2>predicate step_fonct %a %a (state:state) (state2:state) =@\n"
+  let print_step_fonct_base f s ppf mach =
+    let var_in, var_loc, var_out, stat = mach.step in
+    let result_vars = get_result_var stat in
+    let var_loc = List.filter (fun (s, _) -> List.mem s result_vars) var_loc in
+    fprintf ppf "@[<2>predicate step_fonct%s_full %a (state:state) (state2:state) =@\n" s
       (pp_list_brk " " (fun ppf (var, sty) ->
-           fprintf ppf "(%s: %a)" var  print_sty sty)) var_in
+           fprintf ppf "(%s: %a)" var  print_sty sty)) (var_in @ var_out @ var_loc);
+    fprintf ppf "%a@\n"
+      (print_statement ~prop:true ~loc:(fun s' -> List.exists (fun (s,_) -> s = s') (var_in @ var_out)) ~fonct:true) stat;
+    f ();
+    fprintf ppf "@]@\n";
+    fprintf ppf "@[<2>predicate step_fonct%s %a (state:state) (state2:state) =@\n" s
       (pp_list_brk " " (fun ppf (var, sty) ->
-           fprintf ppf "(%s:%a)" var print_sty sty)) var_out;
+           fprintf ppf "(%s: %a)" var  print_sty sty)) (var_in @ var_out @ var_loc);
     if result_vars <> [] then
       fprintf ppf "exists %a.@\n"
         (pp_list_brk ", " (fun ppf var ->
              fprintf ppf "%s" var)) result_vars;
+    fprintf ppf "step_fonct%s_full %a state state2" s
+      (pp_list_brk "" (fun ppf (var, _) ->
+           fprintf ppf "%s" var)) (var_in @ var_out @ var_loc);
+    fprintf ppf "@]@\n"
 
-    (*if mach.memory = [] && mach.instances = [] then
-      fprintf ppf ""
-      else fprintf ppf "let { %a %a } = state in@\n"
-        (pp_list_brk "" (fun ppf (var, _) ->
-             fprintf ppf "%s = state_%s;" var var)) mach.memory
-        (pp_list_brk "" (fun ppf (i, _) ->
-             fprintf ppf "%s = state_%s; " i i)) mach.instances;*)
-    fprintf ppf "%a@\n"
-      (print_statement ~prop:true ~loc:(fun s' -> List.exists (fun (s,_) -> s = s') (var_in @ var_out)) ~fonct:true) stat;
-    (*(pp_list_brk ", " (fun ppf (var, _) ->
-           fprintf ppf "%s" var)) var_loc*)
-    fprintf ppf " true@]@\n"
+  let print_step_fonct ppf mach =
+    print_step_fonct_base (fun () -> fprintf ppf "true") "" ppf mach
 
-  let print_step_fonct_plus ppf (mach, _) =
-    let var_in, _, var_out, stat = mach.step in
-    let var_out_names = List.map fst var_out in
-    let result_vars = get_result_var stat |> List.filter (fun a -> not (List.mem a var_out_names)) in
-    fprintf ppf "@[<2>predicate step_fonct_ok %a %a (state:state) (state2:state) =@\n"
-      (pp_list_brk " " (fun ppf (var, sty) ->
-           fprintf ppf "(%s: %a)" var  print_sty sty)) var_in
-      (pp_list_brk " " (fun ppf (var, sty) ->
-           fprintf ppf "(%s:%a)" var print_sty sty)) var_out;
-    if result_vars <> [] then
-      fprintf ppf "exists %a.@\n"
-        (pp_list_brk ", " (fun ppf var ->
-             fprintf ppf "%s" var)) result_vars;
+  let print_step_fonct_plus ppf mach =
+    let _, _, _, stat = mach.step in
+    print_step_fonct_base (fun () ->
+        begin
+          try
+            print_ok_expr ppf stat; fprintf ppf "true"
+          with
+          | Ok_found -> ()
+        end)"_ok" ppf mach
 
-    (*if mach.memory = [] && mach.instances = [] then
-      fprintf ppf ""
-      else fprintf ppf "let { %a %a } = state in@\n"
-        (pp_list_brk "" (fun ppf (var, _) ->
-             fprintf ppf "%s = state_%s;" var var)) mach.memory
-        (pp_list_brk "" (fun ppf (i, _) ->
-             fprintf ppf "%s = state_%s; " i i)) mach.instances;*)
-    fprintf ppf "%a@\n"
-      (print_statement ~prop:true ~loc:(fun s' -> List.exists (fun (s,_) -> s = s') (var_in @ var_out)) ~fonct:true) stat;
-    (*(pp_list_brk ", " (fun ppf (var, _) ->
-           fprintf ppf "%s" var)) var_loc*)
-    begin
-      try
-        print_ok_expr ppf stat; fprintf ppf "true"
-      with
-      | Ok_found -> ()
-    end;
-    fprintf ppf "@]"
 
   let print_reset_fonct ppf mach =
     fprintf ppf "@[<2>function reset_state : state =@\n%a@\n%a@]"
@@ -343,9 +320,9 @@ module E = struct
     fprintf ppf "%a@\n"
       print_state mach;
     fprintf ppf "%a@\n"
-      print_step_fonct (mach, var_loc);
+      print_step_fonct mach;
     fprintf ppf "%a@\n"
-      print_step_fonct_plus (mach, var_loc);
+      print_step_fonct_plus mach;
     fprintf ppf "@\n%a@\n"
       print_reset_fonct mach;
     fprintf ppf "@\n%a"
