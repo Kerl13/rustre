@@ -1,11 +1,7 @@
-<<<<<<< HEAD
 /* main = incr */
 
 node incr (tic: bool) = (out:bool)
 with var ok: bool; cpt : int in
-=======
-node incr (tic: bool) = (out:bool) with var ok: bool; cpt : int in
->>>>>>> 1bf1fa9931004cd0de6b3745f59bd2bb04beb4fa
   cpt = (0 -> pre cpt) + if tic then 1 else 0;
   ok = true -> (pre cpt) <= cpt;
   out = ok

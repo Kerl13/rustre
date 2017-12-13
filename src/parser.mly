@@ -94,13 +94,8 @@
 %left ELSE
 %right ARROW
 %right IMPL
-<<<<<<< HEAD
 %right OR
 %right AND
-=======
-%left OR
-%left AND
->>>>>>> 1bf1fa9931004cd0de6b3745f59bd2bb04beb4fa
 %left EQUAL NEQ LT LE GT GE
 %right WHEN
 %left PLUS MINUS
