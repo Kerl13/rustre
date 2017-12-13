@@ -2,9 +2,6 @@
 /* Do not remove the line above */
 
 /* From the first lecture */
-/* currently buggy: t1 and t2 should have the same clock (I think) */
-
-/* comment: adding x = 0; in sum without stating it's a local variable result in a "not found"... */
 
 node sum(i: int) = (s: int)
 with
