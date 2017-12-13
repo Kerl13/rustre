@@ -1,0 +1,16 @@
+/* main = incr */
+node newton (tic: bool) = (out:int; t: int)
+with var cpt : int; ok: bool in
+  cpt = 1 fby (cpt + 1);
+out = 0 fby (out + cpt);
+ok = (cpt * (cpt - 1) = 2*out);
+t = (cpt-1) * (cpt)/2
+
+/*
+node obs(tic:bool) = (out: bool; i: int; cpt: int)
+with var ok: bool in
+  cpt = (0 -> (pre cpt)) + 1;
+  i = newton(tic);
+  ok = (cpt * (cpt + 1)/2 = i);
+  out = ok
+*/

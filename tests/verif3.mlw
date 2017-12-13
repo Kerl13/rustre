@@ -1,0 +1,70 @@
+module Types
+  function is_eq (a:'a) (b:'a): bool = (a = b)
+  
+end
+
+module Nodenewton
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  
+  type state = { mutable cpt: int; mutable out: int; }
+  predicate step_fonct (tic: bool) (out:int) 
+    (t:int) (state:state) (state2:state) =
+    out = state.out /\ 
+    let cpt = state.cpt in
+    
+    t = (div (((cpt - 1) * cpt)) (2)) /\ 
+    let ok = (is_eq ((cpt * (cpt - 1))) ((2 * out))) in
+    
+    state2.out = (out + cpt) /\ 
+    state2.cpt = (cpt + 1) /\ 
+     true
+  
+  predicate step_fonct_ok (tic: bool) (out:int) 
+    (t:int) (state:state) (state2:state) =
+    out = state.out /\ 
+    let cpt = state.cpt in
+    
+    t = (div (((cpt - 1) * cpt)) (2)) /\ 
+    let ok = (is_eq ((cpt * (cpt - 1))) ((2 * out))) in
+    
+    state2.out = (out + cpt) /\ 
+    state2.cpt = (cpt + 1) /\ 
+    (is_eq ((cpt * (cpt - 1))) ((2 * out)))
+  
+  function reset_state : state =
+    let state_out = 0 in
+    let state_cpt = 1 in
+    { cpt = state_cpt; out = state_out;  }
+  
+  let step (state:state) (tic: bool): (int, 
+    int) 
+    ensures { let (out, t) = result in
+               step_fonct tic out t (old state) state  } =
+    let out = state.out in
+    let cpt = state.cpt in
+    
+    let t = (div (((cpt - 1) * cpt)) (2)) in
+    let ok = ((cpt * (cpt - 1)) = (2 * out)) in
+    
+    state.out <- (out + cpt);
+    state.cpt <- (cpt + 1);
+    (out,  t)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    state.out <- 0;
+    state.cpt <- 1;
+    ()
+  goal prop_init: forall tic__1,  out__1,  t__1, _s2.
+    (step_fonct tic__1 out__1 t__1 reset_state _s2-> step_fonct_ok tic__1
+    out__1 t__1 reset_state _s2)
+  goal prop_ind: forall tic__1, tic__2,  out__1, out__2, 
+    t__1, t__2, _s, _s2, _s3.
+    (step_fonct_ok tic__1 out__1 t__1 _s _s2 /\ step_fonct tic__2 out__2
+    t__2 _s2 _s3)
+    -> step_fonct_ok tic__2 out__2 t__2 _s2 _s3
+  
+
+end
