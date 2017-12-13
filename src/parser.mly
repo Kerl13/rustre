@@ -93,7 +93,7 @@
 
 %left ELSE
 %right ARROW
-%left IMPL
+%right IMPL
 %left OR
 %left AND
 %left EQUAL NEQ LT LE GT GE
