@@ -1,4 +1,4 @@
-/* main = incr */
+/* main = newton */
 node newton (tic: bool) = (out:int; t: int)
 with var cpt : int; ok: bool in
   cpt = 1 fby (cpt + 1);

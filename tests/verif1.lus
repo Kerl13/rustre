@@ -1,12 +1,5 @@
 /* main = incr */
-node newton (tic: bool) = (out:int)
-with var ok: bool; cpt : int in
-  cpt = (0 -> (pre cpt)) + 1;
-  out = 0 -> out + cpt
-
-node obs(tic:bool) = (out: bool)
-with var ok: bool; i: int; cpt: int in
-  cpt = (0 -> (pre cpt)) + 1;
-  i = newton(tic);
-  ok = cpt * (cpt);
-  out = ok
+node incr (tic: bool) = (cpt:int)
+with var ok: bool in
+  cpt = (0 -> (pre cpt)) + if tic then 1 else 0;
+  ok = true -> (pre cpt <= cpt)
