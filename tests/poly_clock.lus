@@ -8,7 +8,7 @@ with
      s = i -> pre s + i
 
 node main (x:bool) = (t1, t2:int)
-with var t0, t1, t2, r1, r2:int; half:bool in
+with var t1, t2:int; half:bool in
      half = true -> not (pre half);
      t1 = sum(1 when true(half));
      t2 = sum(1) when true(half)
