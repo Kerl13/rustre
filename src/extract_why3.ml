@@ -169,21 +169,23 @@ module E = struct
     | SCase(_, l) -> List.map snd l |> List.map get_result_var |> List.concat
     | _ -> []
 
+  exception Ok_found
+
   let rec print_ok_expr ppf = function
     | SAssign { n; expr } when n = Loc "ok" ->
-      fprintf ppf "%a" (print_expr ~fonct:true ~prop:true) (Obj.magic expr)
+      fprintf ppf "%a" (print_expr ~fonct:true ~prop:true) (Obj.magic expr); raise Ok_found
     | SAssign { n = Loc s; expr } -> ()
     | SSeq(a, b) ->
       print_ok_expr ppf a; print_ok_expr ppf b
     | SCase(e, l) as s ->
       let defs = analyze_defs ~fonct:true s in
       if List.mem (Loc "ok") defs then
-        fprintf ppf "@[<2>match %a with@\n%a@]@\nend"
-          (print_expr ~prop:true ~fonct:true) e
-          (pp_list_n "" (fun ppf (s, o) ->
-               fprintf ppf "| %s -> @[<2>" s;
-               print_ok_expr ppf o;
-               fprintf ppf "@]@\n";)) l
+        (fprintf ppf "@[<2>match %a with@\n%a@]@\nend"
+           (print_expr ~prop:true ~fonct:true) e
+           (pp_list_n "" (fun ppf (s, o) ->
+                fprintf ppf "| %s -> @[<2>" s;
+                print_ok_expr ppf o;
+                fprintf ppf "@]@\n";)) l; raise Ok_found)
     | _ -> ()
 
   let print_step_fonct ppf (mach, _) =
@@ -238,7 +240,13 @@ module E = struct
       (print_statement ~prop:true ~loc:(fun s' -> List.exists (fun (s,_) -> s = s') (var_in @ var_out)) ~fonct:true) stat;
     (*(pp_list_brk ", " (fun ppf (var, _) ->
            fprintf ppf "%s" var)) var_loc*)
-    print_ok_expr ppf stat
+    begin
+      try
+        print_ok_expr ppf stat; fprintf ppf "true"
+      with
+      | Ok_found -> ()
+    end;
+    fprintf ppf "@]"
 
   let print_reset_fonct ppf mach =
     fprintf ppf "@[<2>function reset_state : state =@\n%a@\n%a@]"
@@ -286,7 +294,7 @@ module E = struct
       (pp_list_brk ", " (fun ppf s -> fprintf ppf "%s__1" s)) (var_in @ var_out);
     fprintf ppf "(step_fonct %a reset_state _s2"
       (pp_list_brk "" (fun ppf s -> fprintf ppf "%s__1" s)) (var_in @ var_out);
-    fprintf ppf "-> step_fonct_ok %a reset_state _s2)@\n"
+    fprintf ppf "-> step_fonct_ok %a reset_state _s2)@]@\n"
       (pp_list_brk "" (fun ppf s -> fprintf ppf "%s__1" s)) (var_in @ var_out);
     fprintf ppf "@[<2>goal prop_ind: forall %a, _s, _s2, _s3.@\n"
       (pp_list_brk ", " (fun ppf s -> fprintf ppf "%s__1, %s__2" s s)) (var_in @ var_out);
@@ -294,9 +302,7 @@ module E = struct
       (pp_list_brk "" (fun ppf s -> fprintf ppf "%s__1" s)) (var_in @ var_out);
     fprintf ppf "step_fonct %a _s2 _s3)@\n"
       (pp_list_brk "" (fun ppf s -> fprintf ppf "%s__2" s)) (var_in @ var_out);
-    fprintf ppf "-> step_fonct_ok %a _s2 _s3 @\n"
-      (pp_list_brk "" (fun ppf s -> fprintf ppf "%s__2" s)) (var_in @ var_out)
-
+    fprintf ppf "-> step_fonct_ok %a _s2 _s3@]@\n" (pp_list_brk "" (fun ppf s -> fprintf ppf "%s__2" s)) (var_in @ var_out)
 
   let print_machine locs ppf mach =
     let var_loc = List.assoc mach.name locs in
