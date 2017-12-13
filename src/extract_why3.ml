@@ -334,7 +334,8 @@ module E = struct
 
   let print_machine locs ppf mach =
     let var_loc = List.assoc mach.name locs in
-    let has_ok = List.exists (fun (s, _) -> s = "ok" ) var_loc in
+    (*let has_ok = List.exists (fun (s, _) -> s = "ok" ) (var_loc @ mach.var_out) in*)
+    let has_ok = true in
     fprintf ppf "@[<h 2>module Node%s@\nuse import int.Int@\nuse import int.ComputerDivision@\nuse import Types@\n"
       mach.name;
     fprintf ppf "%a@\n"

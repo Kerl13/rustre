@@ -1,0 +1,171 @@
+module Types
+  function is_eq (a:'a) (b:'a): bool = (a = b)
+  type abc = A | B | C
+end
+
+module Nodecount
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  
+  type state = { mutable nb_a: int; mutable nb_b: int; mutable nb_c: int; }
+  predicate step_fonct (x: Types.abc) (nb_a:int)  (nb_b:int) 
+    (nb_c:int) (state:state) (state2:state) =
+    nb_c = state.nb_c /\ 
+    nb_b = state.nb_b /\ 
+    nb_a = state.nb_a /\ 
+    
+    let (var1, var2, var3) = match x with
+      | A -> let var3 = nb_c in
+               let var2 = nb_b in
+               let var1 = (nb_a + 1) in (var1, var2, var3)
+      | B -> let var3 = nb_c in
+               let var2 = (nb_b + 1) in
+               let var1 = nb_a in (var1, var2, var3)
+      | C -> let var3 = (nb_c + 1) in
+               let var2 = nb_b in
+               let var1 = nb_a in (var1, var2, var3)
+    end in
+    
+    state2.nb_c = var3 /\ 
+    state2.nb_b = var2 /\ 
+    state2.nb_a = var1 /\ 
+     true
+  
+  predicate step_fonct_ok (x: Types.abc) (nb_a:int)  (nb_b:int) 
+    (nb_c:int) (state:state) (state2:state) =
+    nb_c = state.nb_c /\ 
+    nb_b = state.nb_b /\ 
+    nb_a = state.nb_a /\ 
+    
+    let (var1, var2, var3) = match x with
+      | A -> let var3 = nb_c in
+               let var2 = nb_b in
+               let var1 = (nb_a + 1) in (var1, var2, var3)
+      | B -> let var3 = nb_c in
+               let var2 = (nb_b + 1) in
+               let var1 = nb_a in (var1, var2, var3)
+      | C -> let var3 = (nb_c + 1) in
+               let var2 = nb_b in
+               let var1 = nb_a in (var1, var2, var3)
+    end in
+    
+    state2.nb_c = var3 /\ 
+    state2.nb_b = var2 /\ 
+    state2.nb_a = var1 /\ 
+    true
+  
+  function reset_state : state =
+    let state_nb_c = 0 in
+    let state_nb_b = 0 in
+    let state_nb_a = 0 in
+    { nb_a = state_nb_a; nb_b = state_nb_b; nb_c = state_nb_c;  }
+  
+  let step (state:state) (x: Types.abc): (int,  int, 
+    int) 
+    ensures { let (nb_a, nb_b, nb_c) = result in
+               step_fonct x nb_a nb_b nb_c (old state) state  } =
+    let nb_c = state.nb_c in
+    let nb_b = state.nb_b in
+    let nb_a = state.nb_a in
+    
+    let (var1, var2, var3) = match x with
+      | A -> let var3 = nb_c in
+               let var2 = nb_b in
+               let var1 = (nb_a + 1) in (var1, var2, var3)
+      | B -> let var3 = nb_c in
+               let var2 = (nb_b + 1) in
+               let var1 = nb_a in (var1, var2, var3)
+      | C -> let var3 = (nb_c + 1) in
+               let var2 = nb_b in
+               let var1 = nb_a in (var1, var2, var3)
+    end in
+    
+    state.nb_c <- var3;
+    state.nb_b <- var2;
+    state.nb_a <- var1;
+    (nb_a,  nb_b,  nb_c)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    state.nb_c <- 0;
+    state.nb_b <- 0;
+    state.nb_a <- 0;
+    ()
+  goal prop_init: forall x__1,  nb_a__1,  nb_b__1, 
+    nb_c__1, _s2.
+    (step_fonct x__1 nb_a__1 nb_b__1
+    nb_c__1 reset_state _s2-> step_fonct_ok x__1 nb_a__1 nb_b__1
+    nb_c__1 reset_state _s2)
+  goal prop_ind: forall x__1, x__2,  nb_a__1, nb_a__2,  nb_b__1, nb_b__2, 
+    nb_c__1, nb_c__2, _s, _s2, _s3.
+    (step_fonct_ok x__1 nb_a__1 nb_b__1 nb_c__1 _s _s2 /\ step_fonct x__2
+    nb_a__2 nb_b__2 nb_c__2 _s2 _s3)
+    -> step_fonct_ok x__2 nb_a__2 nb_b__2 nb_c__2 _s2 _s3
+  
+
+end
+
+module Nodecheck
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  use Nodecount
+  type state = { mutable cpt: int; inst1: Nodecount.state;}
+  predicate step_fonct (x: Types.abc) (ok:bool) (state:state) (state2:state) =
+    exists nb_a,  nb_b, 
+    nb_c.
+    let cpt = state.cpt in
+    
+    
+    Nodecount.step_fonct x nb_a nb_b nb_c state.inst1 state2.inst1 /\ 
+    ok = (is_eq (((nb_a + nb_b) + nb_c)) (cpt)) /\ 
+    
+    state2.cpt = (cpt + 1) /\ 
+     true
+  
+  predicate step_fonct_ok (x: Types.abc) (ok:bool) (state:state) (state2:state) =
+    exists nb_a,  nb_b, 
+    nb_c.
+    let cpt = state.cpt in
+    
+    
+    Nodecount.step_fonct x nb_a nb_b nb_c state.inst1 state2.inst1 /\ 
+    ok = (is_eq (((nb_a + nb_b) + nb_c)) (cpt)) /\ 
+    
+    state2.cpt = (cpt + 1) /\ 
+    (is_eq (((nb_a + nb_b) + nb_c)) (cpt))
+  
+  function reset_state : state =
+    let state_inst1 = Nodecount.reset_state in
+    let state_cpt = 0 in
+    { cpt = state_cpt; inst1 = state_inst1;  }
+  
+  let step (state:state) (x: Types.abc): (bool) 
+    ensures { let (ok) = result in
+               step_fonct x ok (old state) state  } =
+    let cpt = state.cpt in
+    
+    
+    let ((nb_a, nb_b, nb_c)) = Nodecount.step state.inst1 x in 
+    let ok = (((nb_a + nb_b) + nb_c) = cpt) in
+    
+    state.cpt <- (cpt + 1);
+    (ok)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    Nodecount.reset state.inst1;
+    state.cpt <- 0;
+    ()
+  goal prop_init: forall x__1,  ok__1, _s2.
+    (step_fonct x__1 ok__1 reset_state _s2-> step_fonct_ok x__1
+    ok__1 reset_state _s2)
+  goal prop_ind: forall x__1, x__2, 
+    ok__1, ok__2, _s, _s2, _s3.
+    (step_fonct_ok x__1 ok__1 _s _s2 /\ step_fonct x__2
+    ok__2 _s2 _s3)
+    -> step_fonct_ok x__2 ok__2 _s2 _s3
+  
+
+end
