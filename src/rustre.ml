@@ -83,7 +83,7 @@ let () =
       Format.fprintf format "=== Parsed file =====\n" ;
       Format.fprintf format "%a\n@." Ast_ext.pp_file file ;
 
-      (* Insert source-to-source transformations *)
+      let file = Reset.tr_file file in
 
       let trans = Ext_to_base.tr_file file in
       Format.fprintf format "=== Translated file =====\n" ;

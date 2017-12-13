@@ -1,0 +1,8 @@
+node ex_reset(v:int) = (o: int)
+with var t : int in
+  reset 
+    reset
+      t = 0 fby t + v;
+      o = 0 fby o + t
+    every o > 43 
+  every o > 42
