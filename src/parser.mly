@@ -94,8 +94,8 @@
 %left ELSE
 %right ARROW
 %right IMPL
-%left OR
-%left AND
+%right OR
+%right AND
 %left EQUAL NEQ LT LE GT GE
 %right WHEN
 %left PLUS MINUS
