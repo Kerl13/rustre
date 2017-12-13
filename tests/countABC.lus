@@ -1,0 +1,21 @@
+type abc = A + B + C
+
+node count(x : abc) = (nb_a, nb_b, nb_c : int)
+with
+  nb_a = 0 fby (merge x (A -> nb_a + 1 when A(x))
+                        (B -> nb_a     when B(x))
+                        (C -> nb_a     when C(x))) ;
+  nb_b = 0 fby (merge x (A -> nb_b     when A(x))
+                        (B -> nb_b + 1 when B(x))
+                        (C -> nb_b     when C(x))) ;
+  nb_c = 0 fby (merge x (A -> nb_c     when A(x))
+                        (B -> nb_c     when B(x))
+                        (C -> nb_c + 1 when C(x)))
+
+node check(x : abc) = (ok : bool)
+with var nb_a, nb_b, nb_c : int ;
+         cpt : int ;
+         ok : bool in
+  cpt = 0 fby (cpt + 1) ;
+  (nb_a, nb_b, nb_c) = count(x) ;
+  ok = (nb_a + nb_b + nb_c = cpt)

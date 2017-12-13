@@ -26,6 +26,7 @@ exception Expected_type of typed_ty_wrapped * typed_ty_wrapped * location
 exception Type_error_at of location
 exception Shadowing_data_constructor of ident * ident * ident
 exception UnboundVar of location * ident
+exception UnboundDC of location * ident
 
 (** Typing environment *)
 module Env = struct
@@ -66,7 +67,9 @@ module Env = struct
     |> snd
 
   (** Returns the type name of the data constructor [dc] *)
-  let get_type_name dc (env : t) = VarMap.find dc env.rev_typedefs
+  let get_type_name loc dc (env : t) =
+    try VarMap.find dc env.rev_typedefs
+    with Not_found -> raise (UnboundDC (loc, dc))
 
   (** Returns true iff [dc] is a data constructor of a known type *)
   let is_known_dc dc (env : t) = VarMap.mem dc env.rev_typedefs
@@ -94,10 +97,10 @@ let do_typing_const: type a. Env.t -> a ty -> location -> Ast_parsing.const -> a
        | TyBool -> CBool a
        | _ -> raise (Expected_type(TypedTy TyBool, TypedTy(ty), loc)))
    | Ast_parsing.CDataCons dc -> (match ty with
-       | TyEnum (ty_name, _) when Env.get_type_name dc env = ty_name -> CDataCons dc
+       | TyEnum (ty_name, _) when Env.get_type_name loc dc env = ty_name -> CDataCons dc
        | _ ->
          let expected_ty =
-           let ty_name = Env.get_type_name dc env in
+           let ty_name = Env.get_type_name loc dc env in
            TyEnum (ty_name, Env.get_dcs ty_name env)
          in
          raise (Expected_type(TypedTy expected_ty, TypedTy(ty), loc))))
@@ -146,7 +149,7 @@ let rec infer_type_opt (env : Env.t) (nodes : node list) (expr : Ast_parsing.exp
          | Ast_parsing.CReal _ -> Some (TypedTy (TyNum TyReal))
          | Ast_parsing.CBool _ -> Some (TypedTy TyBool)
          | Ast_parsing.CDataCons dc ->
-           let ty_name = Env.get_type_name dc env in
+           let ty_name = Env.get_type_name expr_loc dc env in
            let dcs = Env.get_dcs ty_name env in
            Some (TypedTy (TyEnum (ty_name, dcs)))
        )
@@ -161,7 +164,7 @@ let rec infer_type_opt (env : Env.t) (nodes : node list) (expr : Ast_parsing.exp
         | Ast_parsing.CReal _ -> Some (TypedTy (TyNum TyReal))
         | Ast_parsing.CBool _ -> Some (TypedTy TyBool)
         | Ast_parsing.CDataCons dc ->
-          let ty_name = Env.get_type_name dc env in
+          let ty_name = Env.get_type_name expr_loc dc env in
           let dcs = Env.get_dcs ty_name env in
           Some (TypedTy (TyEnum (ty_name, dcs))))
      | Ast_parsing.EOp (op,e) -> (match op with
@@ -429,7 +432,8 @@ let do_typing_node (env:Env.t) (nodes:node list) (node:Ast_parsing.node) =
 let add_typedef env (name, dcs) =
   List.iter (fun dc ->
     if Env.is_known_dc dc env then
-      raise (Shadowing_data_constructor (dc, name, Env.get_type_name dc env))
+      let pos = Lexing.dummy_pos in
+      raise (Shadowing_data_constructor (dc, name, Env.get_type_name (pos, pos) dc env))
   ) dcs;
   Env.add_typedef name dcs env
 
@@ -474,4 +478,7 @@ let do_typing f =
     error (pos, pos) msg
   | UnboundVar (loc, x) ->
     let msg = sprintf "Unbound var %s" x in
+    error loc msg
+  | UnboundDC (loc, dc) ->
+    let msg = sprintf "Unbound data constructor %s" dc in
     error loc msg

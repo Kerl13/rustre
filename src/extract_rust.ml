@@ -178,14 +178,13 @@ module E = struct
       (pp_list ", " (fun ppf (var, sty) ->
            fprintf ppf "%s:%a" var print_sty sty)) vars_in
 
-  let print_parse_type ppf (typedefs, n, Sty ty) =
+  let print_parse_type ppf (n, Sty ty) =
     match ty with
-    | Ast_typed.TyEnum(ty_enum, _) ->
-       let enum_name, enum_dcons = List.find (fun (x, _) -> x = ty_enum) typedefs in
+    | Ast_typed.TyEnum(_, dcs) ->
        fprintf ppf "@[<4>let arg%d = match splitted[%d] {@\n%a@\n%s@]@\n};"
          n n
-         (pp_list_n "" (fun ppf x ->
-              fprintf ppf "\"%s\" => %a," enum_name print_datacons x)) enum_dcons
+         (pp_list_n "" (fun ppf dc ->
+              fprintf ppf "\"%s\" => %a," dc print_datacons dc)) dcs
          "_ => continue"
     | _ ->
        fprintf ppf "@[<4>let arg%d = match splitted[%d].parse::<%a>() {@\nOk(i) => i,@\nErr(..) => continue@]@\n};"
@@ -198,7 +197,7 @@ module E = struct
        fprintf ppf ""
     | x::xs ->
        fprintf ppf "%a@\n%a"
-         print_parse_type (typedefs, n, snd x)
+         print_parse_type (n, snd x)
          print_parse_types (typedefs, n+1, xs)
 
 
