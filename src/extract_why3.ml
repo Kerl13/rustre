@@ -241,7 +241,7 @@ module E = struct
     fprintf ppf "@[<2>predicate step_fonct%s %a (state:state) (state2:state) =@\n" s
       (pp_list_brk " " (fun ppf (var, sty) ->
            fprintf ppf "(%s: %a)" var  print_sty sty)) (var_in @ var_out);
-    if result_vars <> [] then
+    if var_loc <> [] then
       fprintf ppf "exists %a.@\n"
         (pp_list_brk ", " (fun ppf (var, _) ->
              fprintf ppf "%s" var)) var_loc;

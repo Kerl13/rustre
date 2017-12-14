@@ -1,0 +1,10 @@
+node check (x: bool) = (a, b: int)
+with
+  a = 0 fby (8 fby (0 fby (a+1)));
+  b = 0 fby (42 fby (b+1))
+
+node check2 (x: bool) = (ok: bool; n1, n2: int; b: bool)
+with
+  b = true fby false;
+  (n1, n2) = check(b);
+  ok = (n1 + 1) = n2
