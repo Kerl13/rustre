@@ -18,6 +18,7 @@ let spec_op ppf o =
   | OpAnd -> fprintf ppf "sand"
   | OpOr -> fprintf ppf "sor"
   | OpEq -> fprintf ppf "seq"
+  | OpGt -> fprintf ppf "sgt"
   | _ -> assert false
 
 let rec spec_expr ppf expr =
@@ -96,16 +97,16 @@ let rec spec_print_state_flat pref states ppf s =
 
 let spec_proof_node ppf (states, node) =
   fprintf ppf "@[<2>lemma valid:@\nforall (* in and out vars *) %a%a (* state *) %a.  @\n"
-    var_pp (node.n_input @ node.n_output @ node.n_local)
+    var_pp (node.n_input @ node.n_local @ node.n_output)
     (fun ppf () ->
        if List.assoc node.n_name states <> [] then fprintf ppf ", ") ()
     (spec_print_state_flat "s" states) node.n_name;
-  fprintf ppf "(* definition by recurrence *)@\n(%a = reset_state /\\@\n@[<2>forall n: nat.@ ((%a), %a) =@ @[<2>step_fonct %a %a@])@]@\n"
-    (spec_print_state "s" (fun s -> "get " ^ s ^ " O") states) node.n_name
-    (var_pp_flat ", " (fun ppf s -> fprintf ppf "(get %s n)" s)) (node.n_output @ node.n_local)
-    (spec_print_state "s" (fun s -> "get " ^ s ^ " (S n)") states) node.n_name
+  fprintf ppf "(* definition by recurrence *)@\n(%a = reset_state /\\@\n"
+    (spec_print_state "s" (fun s -> "get " ^ s ^ " O") states) node.n_name;
+  fprintf ppf "@[<2>forall n: nat.@ @[<2>step_fonct %a %a %a@])@]@\n"
+    (var_pp_flat " " (fun ppf s -> fprintf ppf "(get %s n)" s)) (node.n_input @ node.n_output)
     (spec_print_state "s" (fun s -> "get " ^ s ^ " n") states) node.n_name
-    (var_pp_flat " " (fun ppf s -> fprintf ppf "(get %s n)" s)) node.n_input;
+    (spec_print_state "s" (fun s -> "get " ^ s ^ " (S n)") states) node.n_name;
   fprintf ppf "(* correction *)@\n-> spec %a %a@]"
     (var_pp_flat " " (fun ppf -> fprintf ppf "%s")) node.n_input
     (var_pp_flat " " (fun ppf -> fprintf ppf "%s")) node.n_output

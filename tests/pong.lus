@@ -96,13 +96,7 @@ with var virtual_y, abs_virtual_y, length : int ; in_bounds : bool ; gt, ok : bo
   target = if in_bounds
            then abs_virtual_y
            else ((2*HEIGHT -1) - abs_virtual_y) ;
-  ok = 0 <= target and target < HEIGHT and (true -> (
-  (not (dir = Left and pre dir = Right)) =>
-  (dir = Right => x = DX + pre x) =>
-  (dir = Left => x = pre x - DX) =>
-  (y = pre y + pre dy or y = - (pre y + pre dy) or y = 2*HEIGHT - (pre y + pre
-  dy + 1)) =>
-  target = pre target))
+  ok = 0 <= target and target < HEIGHT
 
 node aligned_with_paddle(y, paddle : int) = (yes : bool)
 with

@@ -1,0 +1,6 @@
+node incr (tic: bool) = (out:bool)
+with var ok: bool; cpt : int; pl: int in
+  pl = if tic then 1 else 0;
+  cpt = (0 -> pre cpt) + pl;
+  ok = (true -> (pre cpt) <= cpt) and pl >= 0;
+  out = ok

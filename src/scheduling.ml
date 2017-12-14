@@ -5,6 +5,82 @@ module type Scheduling = sig
   val schedule : Ast_normalized.nfile -> string -> Ast_normalized.nfile
 end
 
+module Check = struct
+  module Sset = Set.Make(String)
+
+  exception UnboundVar of string
+  exception UnboundNode of string
+
+
+  let assert_in x s = if not (Sset.mem x s) then raise (UnboundVar x)
+  let assert_in_node x s = if not (Sset.mem x s) then raise (UnboundNode x)
+
+  let rec check_expr : type a. Sset.t -> Sset.t -> a nexpr -> unit
+    = fun seen_nodes seen_vars e -> match e.nexpr_desc with
+      | Ast_normalized.NConst _ -> ()
+      | Ast_normalized.NIdent x ->
+        assert_in x seen_vars
+      | Ast_normalized.NBOp (_, e1, e2) ->
+        check_expr seen_nodes seen_vars e1 ;
+        check_expr seen_nodes seen_vars e2
+      | Ast_normalized.NUOp (_, e) ->
+        check_expr seen_nodes seen_vars e
+      | Ast_normalized.NWhen (e, _, x) ->
+        check_expr seen_nodes seen_vars e ;
+        assert_in x seen_vars
+
+  let rec check_mexpr seen_nodes seen_vars me = match me.nexpr_merge_desc with
+    | Ast_normalized.NMerge (x, clauses) ->
+      assert_in x seen_vars ;
+      List.iter (fun (_, e) -> check_mexpr seen_nodes seen_vars e) clauses
+    | Ast_normalized.NExpr e -> check_expr seen_nodes seen_vars e
+
+  let check_eq seen_nodes seen_vars = function
+    | EquSimple (x, e) ->
+      check_mexpr seen_nodes seen_vars e ;
+      Sset.add x seen_vars
+    | EquFby (x, _, _) ->
+      Sset.add x seen_vars
+    | EquApp (pat, Ast_typed.Tagged (_, _, f), args, every) ->
+      check_expr seen_nodes seen_vars every ;
+      assert_in_node f seen_nodes ;
+      Ast_typed_utils.var_list_fold (fun () x -> assert_in x seen_vars) () args ;
+      Ast_typed_utils.var_list_fold (fun seen x -> Sset.add x seen) seen_vars pat.Ast_typed.pat_desc
+
+  let check_node seen_nodes (NNode n) =
+    let seen_vars =
+      let add s x = Sset.add x s in
+      Ast_typed_utils.var_list_fold add Sset.empty n.n_input
+    in
+    let Ast_typed.Tagged (_, _, name) = n.n_name in
+    let () = begin try
+        let _ = List.fold_left (check_eq seen_nodes) seen_vars n.n_eqs in
+        ()
+        (* No problem found *)
+      with
+      | UnboundVar x ->
+        Format.eprintf "Internal error:\n" ;
+        Format.eprintf "Scheduling sanity checks failed on variable %s in node %s\n" x name ;
+        Format.eprintf "Continuing anyway… May the force be with you!@."
+      | UnboundNode f ->
+        Format.eprintf "Internal error:\n" ;
+        Format.eprintf "Scheduling sanity checks failed at call to node %s in node %s\n" f name ;
+        Format.eprintf "Continuing anyway… May the force be with you!@."
+    end in
+    Sset.add name seen_nodes
+
+  let check file main =
+    let _ = List.fold_left check_node Sset.empty file.nf_nodes in
+    begin match List.rev file.nf_nodes with
+    | [] -> assert false
+    | n :: _ ->
+      let NNode { n_name = Ast_typed.Tagged (_, _, name) ; _ } = n in
+      assert (name = main)
+    end ;
+    (* No problem found *)
+    ()
+end
+
 module Simple = struct
   (** Public exception *)
   exception Error of Ast_typed.location * string
@@ -148,7 +224,10 @@ module Simple = struct
     { file with nf_nodes = scheduled }
 
   let schedule file main =
-    try schedule file main
+    try
+      let file = schedule file main in
+      Check.check file main ;
+      file
     with
     | Not_a_node name ->
       let message = Format.sprintf "Unbound node %s" name in

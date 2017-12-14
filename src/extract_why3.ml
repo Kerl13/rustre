@@ -194,7 +194,7 @@ module E = struct
              fprintf ppf "%s" var)) (var_in @ var_out)
     in
 
-    fprintf ppf "@[<2>let step (state:state) %a: (%a) @\n%a =@\nlet ghost _state = state in@\n%a@\nassert{ step_fonct_full %a _state state };@\n(%a)@]"
+    fprintf ppf "@[<2>let step (state:state) %a: (%a) @\n%a =@\n'Init:@\n%a@\nassert { step_fonct_full %a (at state 'Init) state };@\n(%a)@]"
       (pp_list_brk " " (fun ppf (var, sty) ->
            fprintf ppf "(%s: %a)" var  print_sty sty)) var_in
       (pp_list_brk ", " (fun ppf (_, sty) ->
@@ -241,7 +241,7 @@ module E = struct
     fprintf ppf "@[<2>predicate step_fonct%s %a (state:state) (state2:state) =@\n" s
       (pp_list_brk " " (fun ppf (var, sty) ->
            fprintf ppf "(%s: %a)" var  print_sty sty)) (var_in @ var_out);
-    if result_vars <> [] then
+    if var_loc <> [] then
       fprintf ppf "exists %a.@\n"
         (pp_list_brk ", " (fun ppf (var, _) ->
              fprintf ppf "%s" var)) var_loc;
@@ -284,8 +284,9 @@ module E = struct
       (print_statement ~ok:false  ~loc:(fun s -> false) ~prop:false ~fonct:false) mach.reset
 
   let print_check_nil ppf mach =
-    let var_in, _, _, step = mach.step in
+    let var_in, _, var_out, step = mach.step in
     let var_in = List.map fst var_in in
+    let var_out = List.map fst var_out in
 
     assert (ostatement_get_nils step = []);
     let nils = ostatement_get_nils mach.reset in
@@ -293,14 +294,18 @@ module E = struct
         | State i -> i, "state_" ^ i
         | _ -> assert false) nils in
     let var_nils = List.map snd nils in
-    fprintf ppf "@[<2>lemma nil_analysis: forall %a.@\nlet reset_state_nil = %a in@\nstep_fonct reset_state %a = step_fonct reset_state_nil %a@]"
+    fprintf ppf "@[<2>lemma nil_analysis: forall _s1, _s2, %a, %a.@\nlet reset_state_nil = %a in@\nstep_fonct %a %a reset_state _s1 -> step_fonct %a %a reset_state_nil _s2 -> _s1 = _s2 /\\ %a @]"
       (pp_list_brk ", " (fun ppf s -> fprintf ppf "%s" s)) (var_in @ var_nils)
+      (pp_list_brk ", " (fun ppf s -> fprintf ppf "%s__1 %s__2" s s)) (var_out)
       (fun ppf () ->
          if nils = [] then fprintf ppf "reset_state"
          else fprintf ppf "{ reset_state with %a }"
              (pp_list_brk "" (fun ppf (i, s) -> fprintf ppf "%s = %s;" i s)) nils) ()
       (pp_list_brk "" (fun ppf s -> fprintf ppf "%s" s)) var_in
+      (pp_list_brk "" (fun ppf s -> fprintf ppf "%s__1" s)) var_out
       (pp_list_brk "" (fun ppf s -> fprintf ppf "%s" s)) var_in
+      (pp_list_brk "" (fun ppf s -> fprintf ppf "%s__2" s)) var_out
+      (pp_list_brk " /\\" (fun ppf s -> fprintf ppf "%s__1 = %s__2" s s)) var_out
 
   let print_prop ppf (mach, var_loc) =
     let var_in, var_loc, var_out, step = mach.step in
@@ -359,8 +364,8 @@ module E = struct
       (print_step ~fonct:true) (mach, var_loc);
     fprintf ppf "@\n@\n%a"
       (print_reset ~fonct:true) mach;
-    (*fprintf ppf "@\n%a"
-      print_check_nil mach;*)
+    fprintf ppf "@\n%a"
+      print_check_nil mach;
     if has_ok then
       fprintf ppf "@\n%a"
         print_prop (mach, var_loc);
