@@ -13,7 +13,7 @@ const INITIAL_DY = 3
 
 /* The paddle's spec */
 const PADDLE_SIZE = 30
-const PADDLE_SPEED = 3
+const PADDLE_SPEED = 4
 
 
 /* Simple utilities */
@@ -75,17 +75,24 @@ with var overflow_top, overflow_bot, overflow : bool ; ok : bool in
 /* Movements of the paddle */
 
 node paddle_move(target, pos : int) = (next_pos : int)
-with
-  next_pos = pos + clamp(PADDLE_SPEED, target - pos)
+with var ok: bool in
+  next_pos = pos + clamp(PADDLE_SPEED, target - pos);
+  ok = abs(target - pos) <= PADDLE_SPEED => next_pos = target
+
+node clength(dir: dir; x: int) = (length:int)
+with var ok: bool in
+length = merge dir (Right -> WIDTH - x when Right(dir))
+                     (Left  -> WIDTH + x when Left(dir));
+ ok = (dir = Right => length = WIDTH - x) and (dir = Left
+ => length = WIDTH + x)
 
 node target(x, y : int ; dir : dir ; dy : int) = (target : int)
 with var virtual_y, abs_virtual_y, length : int ; in_bounds : bool ; gt, ok : bool in
-  length = merge dir (Right -> WIDTH - x when Right(dir))
-                     (Left  -> WIDTH + x when Left(dir)) ;
+  length = clength(dir, x);
   virtual_y = (y + (length * dy) / DX) mod ((HEIGHT * 2) - 1) ;
   in_bounds = virtual_y < HEIGHT and virtual_y >= 1-HEIGHT ;
   gt = virtual_y >= 0;
-  abs_virtual_y = if gt then virtual_y else -virtual_y;
+  abs_virtual_y = abs(virtual_y);
   target = if in_bounds
            then abs_virtual_y
            else ((2*HEIGHT -1) - abs_virtual_y) ;
@@ -115,13 +122,14 @@ with var xx, y2, dy, paddle2, target : int ;
          dir : dir ;
          /* Terms of the proof: */
          length, delta_y : int ;
-         ok : bool
+         ok : bool; goal_: bool
 in
-  (xx, dir, score) = lat_move(x, aligned_with_paddle(y, paddle)) ;
+  goal_ = aligned_with_paddle(y, paddle);
+  (xx, dir, score) = lat_move(x, goal_) ;
   x = 100 fby xx ;
   (y2, dy) = vert_move(y) ;
   y = 10 fby y2 ;
-  target = target(x, y, dir, dy) ;
+  target = y2; /*target(x, y, dir, dy) ;*/
   paddle2 = paddle_move(target, paddle) ;
   paddle = 10 fby paddle2 ;
   /* Terms of the proof: */
@@ -131,8 +139,12 @@ in
   (0 <= x and x < WIDTH) and
   (-1 < xx and xx < WIDTH) and
 (0 <= y and y < HEIGHT) and
-       (-(HEIGHT-1) <= dy and dy <= HEIGHT) and (0 <= y2 and y2 < HEIGHT)
-       and (x mod DX = 0)
+       (-(HEIGHT-1) <= dy and dy <= HEIGHT) and (0 <= y2 and y2 < HEIGHT) and
+       abs(y2 - y) <= PADDLE_SPEED and
+       (paddle = y) and (paddle2 = y2) and
+       score = 0 and goal_ = true and score = 0
+
+       /*and (x mod DX = 0)*/
 /*    (PADDLE_SPEED * dist_to_goal(x, dir) >= abs(paddle - target) * DX)
     and (y >= target - delta_y and y <= target + delta_y)
     and (x mod DX = 0)*/
