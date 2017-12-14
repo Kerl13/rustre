@@ -1,0 +1,138 @@
+module Types
+  function is_eq (a:'a) (b:'a): bool = (a = b)
+  
+end
+
+module Nodeincr
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  
+  type state = { mutable _TfbyF: bool; mutable var1: int; mutable var4: int; }
+  predicate step_fonct_full (tic: bool) 
+    (cpt: int) (state:state) (state2:state) =
+    let var4 = state.var4 in
+    let var1 = state.var1 in
+    let _TfbyF = state._TfbyF in
+    
+    let (var3) = match tic with
+      | False -> let var3 = 0 in (var3)
+      | True -> let var3 = 1 in (var3)
+    end in
+    let (var2) = match _TfbyF with
+      | False -> let var2 = var1 in (var2)
+      | True -> let var2 = 0 in (var2)
+    end in
+    cpt = (var2 + var3) && 
+    let (ok) = match _TfbyF with
+      | False -> let ok = (var4 <= cpt) in (ok)
+      | True -> let ok = true in (ok)
+    end in
+    
+    state2.var4 = cpt && 
+    state2.var1 = cpt && 
+    state2._TfbyF = false && 
+    true
+  predicate step_fonct (tic: bool) 
+    (cpt: int) (state:state) (state2:state) =
+    step_fonct_full tic cpt state state2
+  
+  predicate step_fonct_ok_full (tic: bool) 
+    (cpt: int) (state:state) (state2:state) =
+    let var4 = state.var4 in
+    let var1 = state.var1 in
+    let _TfbyF = state._TfbyF in
+    
+    let (var3) = match tic with
+      | False -> let var3 = 0 in (var3)
+      | True -> let var3 = 1 in (var3)
+    end in
+    let (var2) = match _TfbyF with
+      | False -> let var2 = var1 in (var2)
+      | True -> let var2 = 0 in (var2)
+    end in
+    cpt = (var2 + var3) && 
+    let (ok) = match _TfbyF with
+      | False -> let ok = (var4 <= cpt) in (ok)
+      | True -> let ok = true in (ok)
+    end in
+    
+    state2.var4 = cpt && 
+    state2.var1 = cpt && 
+    state2._TfbyF = false && 
+    match _TfbyF with
+      | False -> (var4 <= cpt)
+      
+      | True -> true
+      
+    end
+  predicate step_fonct_ok (tic: bool) 
+    (cpt: int) (state:state) (state2:state) =
+    step_fonct_ok_full tic cpt state state2
+  
+  
+  function reset_state : state =
+    let state_var4 = 42 in
+    let state_var1 = 42 in
+    let state__TfbyF = true in
+    { _TfbyF = state__TfbyF; var1 = state_var1; var4 = state_var4;  }
+  
+  let step (state:state) (tic: bool): (int) 
+    ensures { let (cpt) = result in
+               step_fonct tic cpt (old state) state  } =
+    'Init:
+    let var4 = state.var4 in
+    let var1 = state.var1 in
+    let _TfbyF = state._TfbyF in
+    
+    let (var3) = match tic with
+      | False -> let var3 = 0 in (var3)
+      | True -> let var3 = 1 in (var3)
+    end in
+    let (var2) = match _TfbyF with
+      | False -> let var2 = var1 in (var2)
+      | True -> let var2 = 0 in (var2)
+    end in
+    let cpt = (var2 + var3) in
+    let (ok) = match _TfbyF with
+      | False -> let ok = (var4 <= cpt) in (ok)
+      | True -> let ok = true in (ok)
+    end in
+    
+    state.var4 <- cpt;
+    state.var1 <- cpt;
+    state._TfbyF <- false;
+    assert { step_fonct_full tic cpt (at state 'Init) state };
+    (cpt)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    state.var4 <- 42;
+    state.var1 <- 42;
+    state._TfbyF <- true;
+    ()
+  lemma nil_analysis: forall _s1, _s2, tic,  state_var4, 
+    state_var1, cpt__1 cpt__2.
+    let reset_state_nil = { reset_state with var4 = state_var4;
+    var1 = state_var1; } in
+    step_fonct tic cpt__1 reset_state _s1 -> step_fonct tic cpt__2 reset_state_nil _s2 -> _s1 = _s2 /\ cpt__1 = cpt__2 
+  lemma prop_init: forall tic__1,  cpt__1, _s2.
+    (step_fonct tic__1 cpt__1 reset_state _s2-> step_fonct_ok tic__1
+    cpt__1 reset_state _s2)
+    by forall tic__1,  cpt__1, _s2.
+    (step_fonct_full tic__1
+    cpt__1 reset_state _s2-> step_fonct_ok_full tic__1
+    cpt__1 reset_state _s2)
+  lemma prop_ind: forall tic__1, tic__2, 
+    cpt__1, cpt__2, _s, _s2, _s3.
+    (step_fonct_ok tic__1 cpt__1 _s _s2 /\ step_fonct tic__2
+    cpt__2 _s2 _s3)
+    -> step_fonct_ok tic__2 cpt__2 _s2 _s3
+    by forall tic__1, tic__2, 
+    cpt__1, cpt__2, _s, _s2, _s3.
+    (step_fonct_ok_full tic__1 cpt__1 _s _s2 /\ step_fonct_full tic__2
+    cpt__2 _s2 _s3)
+    -> step_fonct_ok_full tic__2 cpt__2 _s2 _s3
+  
+
+end
