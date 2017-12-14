@@ -111,7 +111,7 @@ let () =
     let clocked = Clocking.clock_file typed main_node in
     Format.fprintf format "ok\n=== Clocks =====\n";
     Format.fprintf format "%a\n@." Ast_clocked.pp_clocks_file clocked;
-    (* Checkclocking.check_clock_file typed main_node clocked; *)
+    (*Checkclocking.check_clock_file typed main_node clocked;*)
                             
     
     Format.fprintf format "Normalization… @?";
@@ -191,7 +191,7 @@ let () =
     report_loc loc;
     Format.eprintf "%s@." message;
     exit 1
-  | Checkclocking.Error (message) ->
-     (*report_loc loc;*)
+  | Checkclocking.Error (loc, message) ->
+     report_loc loc;
      Format.eprintf "Clocking internal error: %s@." message;
      exit 1
