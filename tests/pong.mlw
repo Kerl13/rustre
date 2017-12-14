@@ -1,0 +1,1266 @@
+module Types
+  function is_eq (a:'a) (b:'a): bool = (a = b)
+  type dir = Left | Right
+end
+
+module Nodemin
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  
+  type state = unit
+  predicate step_fonct_full (x: int)  (y: int) 
+    (z: int) (state:state) (state2:state) =
+    
+    let gt = (x > y) in
+    match gt with
+      | False -> z = x &&  true
+      | True -> z = y &&  true
+    end &&
+    let ok = (((is_eq (z) (y)) || (is_eq (z) (x))) && ((z <= x) && (z <= y))) in
+    true
+  predicate step_fonct (x: int)  (y: int) 
+    (z: int) (state:state) (state2:state) =
+    step_fonct_full x y z state state2
+  
+  predicate step_fonct_ok_full (x: int)  (y: int) 
+    (z: int) (state:state) (state2:state) =
+    
+    let gt = (x > y) in
+    match gt with
+      | False -> z = x &&  true
+      | True -> z = y &&  true
+    end &&
+    let ok = (((is_eq (z) (y)) || (is_eq (z) (x))) && ((z <= x) && (z <= y))) in
+    (((is_eq (z) (y)) || (is_eq (z) (x))) && ((z <= x) && (z <= y)))
+  predicate step_fonct_ok (x: int)  (y: int) 
+    (z: int) (state:state) (state2:state) =
+    step_fonct_ok_full x y z state state2
+  
+  
+  function reset_state : state =
+    
+    ()
+  
+  let step (state:state) (x: int) 
+    (y: int): (int) 
+    ensures { let (z) = result in
+               step_fonct x y z (old state) state  } =
+    'Init:
+    
+    let gt = (x > y) in
+    let (z) = match gt with
+      | False -> let z = x in (z)
+      | True -> let z = y in (z)
+    end in
+    let ok = (((z = y) || (z = x)) && ((z <= x) && (z <= y))) in
+    assert { step_fonct_full x y z (at state 'Init) state };
+    (z)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    
+    ()
+  lemma nil_analysis: forall _s1, _s2, x, 
+    y, z__1 z__2.
+    let reset_state_nil = reset_state in
+    step_fonct x y z__1 reset_state _s1 -> step_fonct x
+    y z__2 reset_state_nil _s2 -> _s1 = _s2 /\ z__1 = z__2 
+  lemma prop_init: forall x__1,  y__1,  z__1, _s2.
+    (step_fonct x__1 y__1 z__1 reset_state _s2-> step_fonct_ok x__1 y__1
+    z__1 reset_state _s2)
+    by forall x__1,  y__1,  z__1, _s2.
+    (step_fonct_full x__1 y__1 z__1 reset_state _s2-> step_fonct_ok_full x__1
+    y__1 z__1 reset_state _s2)
+  lemma prop_ind: forall x__1, x__2,  y__1, y__2, 
+    z__1, z__2, _s, _s2, _s3.
+    (step_fonct_ok x__1 y__1 z__1 _s _s2 /\ step_fonct x__2 y__2
+    z__2 _s2 _s3)
+    -> step_fonct_ok x__2 y__2 z__2 _s2 _s3
+    by forall x__1, x__2,  y__1, y__2, 
+    z__1, z__2, _s, _s2, _s3.
+    (step_fonct_ok_full x__1 y__1 z__1 _s _s2 /\ step_fonct_full x__2 y__2
+    z__2 _s2 _s3)
+    -> step_fonct_ok_full x__2 y__2 z__2 _s2 _s3
+  
+
+end
+
+module Nodeabs
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  
+  type state = unit
+  predicate step_fonct_full (x: int) 
+    (ax: int) (state:state) (state2:state) =
+    
+    let pos = (x >= 0) in
+    match pos with
+      | False -> ax = (0 - x) &&  true
+      | True -> ax = x &&  true
+    end &&
+    let ok = ((ax >= 0) && ((is_eq (ax) (x)) || (is_eq (ax) ((0 - x))))) in
+    true
+  predicate step_fonct (x: int) 
+    (ax: int) (state:state) (state2:state) =
+    step_fonct_full x ax state state2
+  
+  predicate step_fonct_ok_full (x: int) 
+    (ax: int) (state:state) (state2:state) =
+    
+    let pos = (x >= 0) in
+    match pos with
+      | False -> ax = (0 - x) &&  true
+      | True -> ax = x &&  true
+    end &&
+    let ok = ((ax >= 0) && ((is_eq (ax) (x)) || (is_eq (ax) ((0 - x))))) in
+    ((ax >= 0) && ((is_eq (ax) (x)) || (is_eq (ax) ((0 - x)))))
+  predicate step_fonct_ok (x: int) 
+    (ax: int) (state:state) (state2:state) =
+    step_fonct_ok_full x ax state state2
+  
+  
+  function reset_state : state =
+    
+    ()
+  
+  let step (state:state) (x: int): (int) 
+    ensures { let (ax) = result in
+               step_fonct x ax (old state) state  } =
+    'Init:
+    
+    let pos = (x >= 0) in
+    let (ax) = match pos with
+      | False -> let ax = (0 - x) in (ax)
+      | True -> let ax = x in (ax)
+    end in
+    let ok = ((ax >= 0) && ((ax = x) || (ax = (0 - x)))) in
+    assert { step_fonct_full x ax (at state 'Init) state };
+    (ax)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    
+    ()
+  lemma nil_analysis: forall _s1, _s2, x, ax__1 ax__2.
+    let reset_state_nil = reset_state in
+    step_fonct x ax__1 reset_state _s1 -> step_fonct x ax__2 reset_state_nil _s2 -> _s1 = _s2 /\ ax__1 = ax__2 
+  lemma prop_init: forall x__1,  ax__1, _s2.
+    (step_fonct x__1 ax__1 reset_state _s2-> step_fonct_ok x__1
+    ax__1 reset_state _s2)
+    by forall x__1,  ax__1, _s2.
+    (step_fonct_full x__1 ax__1 reset_state _s2-> step_fonct_ok_full x__1
+    ax__1 reset_state _s2)
+  lemma prop_ind: forall x__1, x__2, 
+    ax__1, ax__2, _s, _s2, _s3.
+    (step_fonct_ok x__1 ax__1 _s _s2 /\ step_fonct x__2
+    ax__2 _s2 _s3)
+    -> step_fonct_ok x__2 ax__2 _s2 _s3
+    by forall x__1, x__2, 
+    ax__1, ax__2, _s, _s2, _s3.
+    (step_fonct_ok_full x__1 ax__1 _s _s2 /\ step_fonct_full x__2
+    ax__2 _s2 _s3)
+    -> step_fonct_ok_full x__2 ax__2 _s2 _s3
+  
+
+end
+
+module Nodeclamp
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  use Nodeabs
+  use Nodeabs
+  use Nodemin
+  use Nodemin
+  use Nodeabs
+  type state = {  inst5: Nodeabs.state; inst4: Nodeabs.state;
+                 inst3: Nodemin.state; inst2: Nodemin.state;
+                 inst1: Nodeabs.state;}
+  predicate step_fonct_full (bound: int)  (v: int)  (w: int)  (var6: int) 
+    (var5: int)  (var4: int)  (var3: int) 
+    (var2: int) (state:state) (state2:state) =
+    
+    
+    Nodeabs.step_fonct v var5 state.inst1 state2.inst1 && 
+    
+    Nodemin.step_fonct v bound var3 state.inst2 state2.inst2 && 
+    let var1 = (0 - v) in
+    
+    Nodemin.step_fonct var1 bound var2 state.inst3 state2.inst3 && 
+    let pos = (v >= 0) in
+    match pos with
+      | False -> w = (0 - var2) &&  true
+      | True -> w = var3 &&  true
+    end &&
+    
+    Nodeabs.step_fonct w var6 state.inst4 state2.inst4 && 
+    
+    Nodeabs.step_fonct w var4 state.inst5 state2.inst5 && 
+    let ok = (((bound >= 0)) -> (((var4 <= var5) && (var6 <= bound)))) in
+    true
+  predicate step_fonct (bound: int)  (v: int) 
+    (w: int) (state:state) (state2:state) =
+    exists var6,  var5,  var4,  var3,  var2.
+    step_fonct_full bound v w var6 var5 var4 var3 var2 state state2
+  
+  predicate step_fonct_ok_full (bound: int)  (v: int)  (w: int)  (var6: int) 
+    (var5: int)  (var4: int)  (var3: int) 
+    (var2: int) (state:state) (state2:state) =
+    
+    
+    Nodeabs.step_fonct_ok v var5 state.inst1 state2.inst1 && 
+    
+    Nodemin.step_fonct_ok v bound var3 state.inst2 state2.inst2 && 
+    let var1 = (0 - v) in
+    
+    Nodemin.step_fonct_ok var1 bound var2 state.inst3 state2.inst3 && 
+    let pos = (v >= 0) in
+    match pos with
+      | False -> w = (0 - var2) &&  true
+      | True -> w = var3 &&  true
+    end &&
+    
+    Nodeabs.step_fonct_ok w var6 state.inst4 state2.inst4 && 
+    
+    Nodeabs.step_fonct_ok w var4 state.inst5 state2.inst5 && 
+    let ok = (((bound >= 0)) -> (((var4 <= var5) && (var6 <= bound)))) in
+    (((bound >= 0)) -> (((var4 <= var5) && (var6 <= bound))))
+  predicate step_fonct_ok (bound: int)  (v: int) 
+    (w: int) (state:state) (state2:state) =
+    exists var6,  var5,  var4,  var3,  var2.
+    step_fonct_ok_full bound v w var6 var5 var4 var3 var2 state state2
+  
+  
+  function reset_state : state =
+    let state_inst1 = Nodeabs.reset_state in
+    let state_inst2 = Nodemin.reset_state in
+    let state_inst3 = Nodemin.reset_state in
+    let state_inst4 = Nodeabs.reset_state in
+    let state_inst5 = Nodeabs.reset_state in
+    {  inst5 = state_inst5;  inst4 = state_inst4;  inst3 = state_inst3; 
+    inst2 = state_inst2;  inst1 = state_inst1;  }
+  
+  let step (state:state) (bound: int) 
+    (v: int): (int) 
+    ensures { let (w) = result in
+               step_fonct bound v w (old state) state  } =
+    'Init:
+    
+    
+    let (var5) = Nodeabs.step state.inst1 v in 
+    
+    let (var3) = Nodemin.step state.inst2 v bound in 
+    let var1 = (0 - v) in
+    
+    let (var2) = Nodemin.step state.inst3 var1 bound in 
+    let pos = (v >= 0) in
+    let (w) = match pos with
+      | False -> let w = (0 - var2) in (w)
+      | True -> let w = var3 in (w)
+    end in
+    
+    let (var6) = Nodeabs.step state.inst4 w in 
+    
+    let (var4) = Nodeabs.step state.inst5 w in 
+    let ok = ((not ((bound >= 0))) || (((var4 <= var5) && (var6 <= bound)))) in
+    assert { step_fonct_full bound v w var6 var5 var4 var3
+    var2 (at state 'Init) state };
+    (w)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    Nodeabs.reset state.inst1;
+    Nodemin.reset state.inst2;
+    Nodemin.reset state.inst3;
+    Nodeabs.reset state.inst4;
+    Nodeabs.reset state.inst5;
+    ()
+  lemma nil_analysis: forall _s1, _s2, bound, 
+    v, w__1 w__2.
+    let reset_state_nil = reset_state in
+    step_fonct bound v w__1 reset_state _s1 -> step_fonct bound
+    v w__2 reset_state_nil _s2 -> _s1 = _s2 /\ w__1 = w__2 
+  lemma prop_init: forall bound__1,  v__1,  w__1, _s2.
+    (step_fonct bound__1 v__1 w__1 reset_state _s2-> step_fonct_ok bound__1
+    v__1 w__1 reset_state _s2)
+    by forall bound__1,  v__1,  w__1,  var6__1,  var5__1,  var4__1, 
+    var3__1,  var2__1, _s2.
+    (step_fonct_full bound__1 v__1 w__1 var6__1 var5__1 var4__1 var3__1
+    var2__1 reset_state _s2-> step_fonct_ok_full bound__1 v__1 w__1 var6__1
+    var5__1 var4__1 var3__1 var2__1 reset_state _s2)
+  lemma prop_ind: forall bound__1, bound__2,  v__1, v__2, 
+    w__1, w__2, _s, _s2, _s3.
+    (step_fonct_ok bound__1 v__1 w__1 _s _s2 /\ step_fonct bound__2 v__2
+    w__2 _s2 _s3)
+    -> step_fonct_ok bound__2 v__2 w__2 _s2 _s3
+    by forall bound__1, bound__2,  v__1, v__2,  w__1, w__2, 
+    var6__1, var6__2,  var5__1, var5__2,  var4__1, var4__2, 
+    var3__1, var3__2, 
+    var2__1, var2__2, _s, _s2, _s3.
+    (step_fonct_ok_full bound__1 v__1 w__1 var6__1 var5__1 var4__1 var3__1
+    var2__1 _s _s2 /\ step_fonct_full bound__2 v__2 w__2 var6__2 var5__2
+    var4__2 var3__2 var2__2 _s2 _s3)
+    -> step_fonct_ok_full bound__2 v__2 w__2 var6__2 var5__2 var4__2 var3__2
+    var2__2 _s2 _s3
+  
+
+end
+
+module Nodelat_move
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  
+  type state = { mutable dir: Types.dir; mutable score: int; }
+  predicate step_fonct_full (x: int)  (aligned: bool)  (x2: int) 
+    (dir: Types.dir) 
+    (score: int) (state:state) (state2:state) =
+    score = state.score && 
+    dir = state.dir && 
+    
+    let (dx) = match dir with
+      | Right -> let dx = 2 in (dx)
+      | Left -> let dx = (0 - 2) in (dx)
+    end in
+    let l_overflow = ((is_eq (dir) (Left)) && ((x - 2) < 0)) in
+    let (var10, var7) = match l_overflow with
+      | False -> let var10 = (x + dx) in
+                   let var7 = dir in (var10, var7)
+      | True -> let var10 = (0 - (x + dx)) in
+                  let var7 = Right in (var10, var7)
+    end in
+    let r_overflow = ((is_eq (dir) (Right)) && ((x + 2) >= 1200)) in
+    match r_overflow with
+      | False -> x2 = var10 &&  true
+      | True -> x2 = ((((2 * 1200) - x) - dx) - 1) &&  true
+    end &&
+    let ok = (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1200))) -> ((((0 - 1) < x2) && (x2 < 1200))))) in
+    let goal_ = (r_overflow && (not aligned)) in
+    let (var9) = match goal_ with
+      | False -> let var9 = score in (var9)
+      | True -> let var9 = (score + 1) in (var9)
+    end in
+    let (var8) = match r_overflow with
+      | False -> let var8 = var7 in (var8)
+      | True -> let var8 = Left in (var8)
+    end in
+    
+    state2.score = var9 && 
+    state2.dir = var8 && 
+    true
+  predicate step_fonct (x: int)  (aligned: bool)  (x2: int) 
+    (dir: Types.dir) 
+    (score: int) (state:state) (state2:state) =
+    step_fonct_full x aligned x2 dir score state state2
+  
+  predicate step_fonct_ok_full (x: int)  (aligned: bool)  (x2: int) 
+    (dir: Types.dir) 
+    (score: int) (state:state) (state2:state) =
+    score = state.score && 
+    dir = state.dir && 
+    
+    let (dx) = match dir with
+      | Right -> let dx = 2 in (dx)
+      | Left -> let dx = (0 - 2) in (dx)
+    end in
+    let l_overflow = ((is_eq (dir) (Left)) && ((x - 2) < 0)) in
+    let (var10, var7) = match l_overflow with
+      | False -> let var10 = (x + dx) in
+                   let var7 = dir in (var10, var7)
+      | True -> let var10 = (0 - (x + dx)) in
+                  let var7 = Right in (var10, var7)
+    end in
+    let r_overflow = ((is_eq (dir) (Right)) && ((x + 2) >= 1200)) in
+    match r_overflow with
+      | False -> x2 = var10 &&  true
+      | True -> x2 = ((((2 * 1200) - x) - dx) - 1) &&  true
+    end &&
+    let ok = (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1200))) -> ((((0 - 1) < x2) && (x2 < 1200))))) in
+    let goal_ = (r_overflow && (not aligned)) in
+    let (var9) = match goal_ with
+      | False -> let var9 = score in (var9)
+      | True -> let var9 = (score + 1) in (var9)
+    end in
+    let (var8) = match r_overflow with
+      | False -> let var8 = var7 in (var8)
+      | True -> let var8 = Left in (var8)
+    end in
+    
+    state2.score = var9 && 
+    state2.dir = var8 && 
+    (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1200))) -> ((((0 - 1) < x2) && (x2 < 1200)))))
+  predicate step_fonct_ok (x: int)  (aligned: bool)  (x2: int) 
+    (dir: Types.dir) 
+    (score: int) (state:state) (state2:state) =
+    step_fonct_ok_full x aligned x2 dir score state state2
+  
+  
+  function reset_state : state =
+    let state_score = 0 in
+    let state_dir = Right in
+    { dir = state_dir; score = state_score;  }
+  
+  let step (state:state) (x: int)  (aligned: bool): (int,  Types.dir, 
+    int) 
+    ensures { let (x2, dir, score) = result in
+               step_fonct x aligned x2 dir score (old state) state  } =
+    'Init:
+    let score = state.score in
+    let dir = state.dir in
+    
+    let (dx) = match dir with
+      | Right -> let dx = 2 in (dx)
+      | Left -> let dx = (0 - 2) in (dx)
+    end in
+    let l_overflow = ((dir = Left) && ((x - 2) < 0)) in
+    let (var10, var7) = match l_overflow with
+      | False -> let var10 = (x + dx) in
+                   let var7 = dir in (var10, var7)
+      | True -> let var10 = (0 - (x + dx)) in
+                  let var7 = Right in (var10, var7)
+    end in
+    let r_overflow = ((dir = Right) && ((x + 2) >= 1200)) in
+    let (x2) = match r_overflow with
+      | False -> let x2 = var10 in (x2)
+      | True -> let x2 = ((((2 * 1200) - x) - dx) - 1) in (x2)
+    end in
+    let ok = (((dx = 2) || (dx = (0 - 2))) && ((not (((0 <= x) && (x < 1200)))) || ((((0 - 1) < x2) && (x2 < 1200))))) in
+    let goal_ = (r_overflow && (not aligned)) in
+    let (var9) = match goal_ with
+      | False -> let var9 = score in (var9)
+      | True -> let var9 = (score + 1) in (var9)
+    end in
+    let (var8) = match r_overflow with
+      | False -> let var8 = var7 in (var8)
+      | True -> let var8 = Left in (var8)
+    end in
+    
+    state.score <- var9;
+    state.dir <- var8;
+    assert { step_fonct_full x aligned x2 dir
+    score (at state 'Init) state };
+    (x2,  dir,  score)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    state.score <- 0;
+    state.dir <- Right;
+    ()
+  lemma nil_analysis: forall _s1, _s2, x,  aligned, x2__1 x2__2, 
+    dir__1 dir__2, 
+    score__1 score__2.
+    let reset_state_nil = reset_state in
+    step_fonct x aligned x2__1 dir__1
+    score__1 reset_state _s1 -> step_fonct x aligned x2__2 dir__2
+    score__2 reset_state_nil _s2 -> _s1 = _s2 /\ x2__1 = x2__2 /\
+    dir__1 = dir__2 /\ score__1 = score__2 
+  lemma prop_init: forall x__1,  aligned__1,  x2__1,  dir__1, 
+    score__1, _s2.
+    (step_fonct x__1 aligned__1 x2__1 dir__1
+    score__1 reset_state _s2-> step_fonct_ok x__1 aligned__1 x2__1 dir__1
+    score__1 reset_state _s2)
+    by forall x__1,  aligned__1,  x2__1,  dir__1, 
+    score__1, _s2.
+    (step_fonct_full x__1 aligned__1 x2__1 dir__1
+    score__1 reset_state _s2-> step_fonct_ok_full x__1 aligned__1 x2__1
+    dir__1 score__1 reset_state _s2)
+  lemma prop_ind: forall x__1, x__2,  aligned__1, aligned__2,  x2__1, x2__2, 
+    dir__1, dir__2,  score__1, score__2, _s, _s2, _s3.
+    (step_fonct_ok x__1 aligned__1 x2__1 dir__1
+    score__1 _s _s2 /\ step_fonct x__2 aligned__2 x2__2 dir__2
+    score__2 _s2 _s3)
+    -> step_fonct_ok x__2 aligned__2 x2__2 dir__2
+    score__2 _s2 _s3
+    by forall x__1, x__2,  aligned__1, aligned__2,  x2__1, x2__2, 
+    dir__1, dir__2, 
+    score__1, score__2, _s, _s2, _s3.
+    (step_fonct_ok_full x__1 aligned__1 x2__1 dir__1
+    score__1 _s _s2 /\ step_fonct_full x__2 aligned__2 x2__2 dir__2
+    score__2 _s2 _s3)
+    -> step_fonct_ok_full x__2 aligned__2 x2__2 dir__2 score__2 _s2 _s3
+  
+
+end
+
+module Nodevert_move
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  
+  type state = { mutable dy: int; }
+  predicate step_fonct_full (y: int)  (y2: int) 
+    (dy: int) (state:state) (state2:state) =
+    dy = state.dy && 
+    
+    let overflow_bot = (((y + dy) < 0) && (dy < 0)) in
+    let (var11) = match overflow_bot with
+      | False -> let var11 = (y + dy) in (var11)
+      | True -> let var11 = (0 - (dy + y)) in (var11)
+    end in
+    let overflow_top = (((y + dy) >= 400) && (dy >= 0)) in
+    match overflow_top with
+      | False -> y2 = var11 &&  true
+      | True -> y2 = ((((2 * 400) - y) - dy) - 1) &&  true
+    end &&
+    let ok = (((is_eq (dy) (3)) || (is_eq (dy) ((0 - 3)))) && ((((0 <= y) && (y < 400))) -> ((((((0 - (400 - 1)) <= dy) && (dy <= 400))) -> (((0 <= y2) && (y2 < 400))))))) in
+    let overflow = (overflow_bot || overflow_top) in
+    let (var12) = match overflow with
+      | False -> let var12 = dy in (var12)
+      | True -> let var12 = (0 - dy) in (var12)
+    end in
+    
+    state2.dy = var12 && 
+    true
+  predicate step_fonct (y: int)  (y2: int) 
+    (dy: int) (state:state) (state2:state) =
+    step_fonct_full y y2 dy state state2
+  
+  predicate step_fonct_ok_full (y: int)  (y2: int) 
+    (dy: int) (state:state) (state2:state) =
+    dy = state.dy && 
+    
+    let overflow_bot = (((y + dy) < 0) && (dy < 0)) in
+    let (var11) = match overflow_bot with
+      | False -> let var11 = (y + dy) in (var11)
+      | True -> let var11 = (0 - (dy + y)) in (var11)
+    end in
+    let overflow_top = (((y + dy) >= 400) && (dy >= 0)) in
+    match overflow_top with
+      | False -> y2 = var11 &&  true
+      | True -> y2 = ((((2 * 400) - y) - dy) - 1) &&  true
+    end &&
+    let ok = (((is_eq (dy) (3)) || (is_eq (dy) ((0 - 3)))) && ((((0 <= y) && (y < 400))) -> ((((((0 - (400 - 1)) <= dy) && (dy <= 400))) -> (((0 <= y2) && (y2 < 400))))))) in
+    let overflow = (overflow_bot || overflow_top) in
+    let (var12) = match overflow with
+      | False -> let var12 = dy in (var12)
+      | True -> let var12 = (0 - dy) in (var12)
+    end in
+    
+    state2.dy = var12 && 
+    (((is_eq (dy) (3)) || (is_eq (dy) ((0 - 3)))) && ((((0 <= y) && (y < 400))) -> ((((((0 - (400 - 1)) <= dy) && (dy <= 400))) -> (((0 <= y2) && (y2 < 400)))))))
+  predicate step_fonct_ok (y: int)  (y2: int) 
+    (dy: int) (state:state) (state2:state) =
+    step_fonct_ok_full y y2 dy state state2
+  
+  
+  function reset_state : state =
+    let state_dy = 3 in
+    { dy = state_dy;  }
+  
+  let step (state:state) (y: int): (int, 
+    int) 
+    ensures { let (y2, dy) = result in
+               step_fonct y y2 dy (old state) state  } =
+    'Init:
+    let dy = state.dy in
+    
+    let overflow_bot = (((y + dy) < 0) && (dy < 0)) in
+    let (var11) = match overflow_bot with
+      | False -> let var11 = (y + dy) in (var11)
+      | True -> let var11 = (0 - (dy + y)) in (var11)
+    end in
+    let overflow_top = (((y + dy) >= 400) && (dy >= 0)) in
+    let (y2) = match overflow_top with
+      | False -> let y2 = var11 in (y2)
+      | True -> let y2 = ((((2 * 400) - y) - dy) - 1) in (y2)
+    end in
+    let ok = (((dy = 3) || (dy = (0 - 3))) && ((not (((0 <= y) && (y < 400)))) || (((not ((((0 - (400 - 1)) <= dy) && (dy <= 400)))) || (((0 <= y2) && (y2 < 400))))))) in
+    let overflow = (overflow_bot || overflow_top) in
+    let (var12) = match overflow with
+      | False -> let var12 = dy in (var12)
+      | True -> let var12 = (0 - dy) in (var12)
+    end in
+    
+    state.dy <- var12;
+    assert { step_fonct_full y y2 dy (at state 'Init) state };
+    (y2,  dy)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    state.dy <- 3;
+    ()
+  lemma nil_analysis: forall _s1, _s2, y, y2__1 y2__2, 
+    dy__1 dy__2.
+    let reset_state_nil = reset_state in
+    step_fonct y y2__1 dy__1 reset_state _s1 -> step_fonct y y2__2
+    dy__2 reset_state_nil _s2 -> _s1 = _s2 /\ y2__1 = y2__2 /\ dy__1 = dy__2 
+  lemma prop_init: forall y__1,  y2__1,  dy__1, _s2.
+    (step_fonct y__1 y2__1 dy__1 reset_state _s2-> step_fonct_ok y__1 y2__1
+    dy__1 reset_state _s2)
+    by forall y__1,  y2__1,  dy__1, _s2.
+    (step_fonct_full y__1 y2__1
+    dy__1 reset_state _s2-> step_fonct_ok_full y__1 y2__1
+    dy__1 reset_state _s2)
+  lemma prop_ind: forall y__1, y__2,  y2__1, y2__2, 
+    dy__1, dy__2, _s, _s2, _s3.
+    (step_fonct_ok y__1 y2__1 dy__1 _s _s2 /\ step_fonct y__2 y2__2
+    dy__2 _s2 _s3)
+    -> step_fonct_ok y__2 y2__2 dy__2 _s2 _s3
+    by forall y__1, y__2,  y2__1, y2__2, 
+    dy__1, dy__2, _s, _s2, _s3.
+    (step_fonct_ok_full y__1 y2__1 dy__1 _s _s2 /\ step_fonct_full y__2 y2__2
+    dy__2 _s2 _s3)
+    -> step_fonct_ok_full y__2 y2__2 dy__2 _s2 _s3
+  
+
+end
+
+module Nodepaddle_move
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  use Nodeclamp
+  use Nodeabs
+  type state = {  inst7: Nodeclamp.state; inst6: Nodeabs.state;}
+  predicate step_fonct_full (target: int)  (pos: int)  (next_pos: int) 
+    (var17: int) 
+    (var15: int) (state:state) (state2:state) =
+    
+    let var16 = (target - pos) in
+    
+    Nodeabs.step_fonct var16 var17 state.inst6 state2.inst6 && 
+    let var14 = (target - pos) in
+    let var13 = 4 in
+    
+    Nodeclamp.step_fonct var13 var14 var15 state.inst7 state2.inst7 && 
+    next_pos = (pos + var15) && 
+    let ok = (((var17 <= 4)) -> ((is_eq (next_pos) (target)))) in
+    true
+  predicate step_fonct (target: int)  (pos: int) 
+    (next_pos: int) (state:state) (state2:state) =
+    exists var17,  var15.
+    step_fonct_full target pos next_pos var17 var15 state state2
+  
+  predicate step_fonct_ok_full (target: int)  (pos: int)  (next_pos: int) 
+    (var17: int) 
+    (var15: int) (state:state) (state2:state) =
+    
+    let var16 = (target - pos) in
+    
+    Nodeabs.step_fonct_ok var16 var17 state.inst6 state2.inst6 && 
+    let var14 = (target - pos) in
+    let var13 = 4 in
+    
+    Nodeclamp.step_fonct_ok var13 var14 var15 state.inst7 state2.inst7 && 
+    next_pos = (pos + var15) && 
+    let ok = (((var17 <= 4)) -> ((is_eq (next_pos) (target)))) in
+    (((var17 <= 4)) -> ((is_eq (next_pos) (target))))
+  predicate step_fonct_ok (target: int)  (pos: int) 
+    (next_pos: int) (state:state) (state2:state) =
+    exists var17,  var15.
+    step_fonct_ok_full target pos next_pos var17 var15 state state2
+  
+  
+  function reset_state : state =
+    let state_inst6 = Nodeabs.reset_state in
+    let state_inst7 = Nodeclamp.reset_state in
+    {  inst7 = state_inst7;  inst6 = state_inst6;  }
+  
+  let step (state:state) (target: int) 
+    (pos: int): (int) 
+    ensures { let (next_pos) = result in
+               step_fonct target pos next_pos (old state) state  } =
+    'Init:
+    
+    let var16 = (target - pos) in
+    
+    let (var17) = Nodeabs.step state.inst6 var16 in 
+    let var14 = (target - pos) in
+    let var13 = 4 in
+    
+    let (var15) = Nodeclamp.step state.inst7 var13 var14 in 
+    let next_pos = (pos + var15) in
+    let ok = ((not ((var17 <= 4))) || ((next_pos = target))) in
+    assert { step_fonct_full target pos next_pos var17
+    var15 (at state 'Init) state };
+    (next_pos)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    Nodeabs.reset state.inst6;
+    Nodeclamp.reset state.inst7;
+    ()
+  lemma nil_analysis: forall _s1, _s2, target, 
+    pos, next_pos__1 next_pos__2.
+    let reset_state_nil = reset_state in
+    step_fonct target pos next_pos__1 reset_state _s1 -> step_fonct target
+    pos next_pos__2 reset_state_nil _s2 -> _s1 = _s2 /\ next_pos__1 = next_pos__2 
+  lemma prop_init: forall target__1,  pos__1, 
+    next_pos__1, _s2.
+    (step_fonct target__1 pos__1
+    next_pos__1 reset_state _s2-> step_fonct_ok target__1 pos__1
+    next_pos__1 reset_state _s2)
+    by forall target__1,  pos__1,  next_pos__1,  var17__1, 
+    var15__1, _s2.
+    (step_fonct_full target__1 pos__1 next_pos__1 var17__1
+    var15__1 reset_state _s2-> step_fonct_ok_full target__1 pos__1
+    next_pos__1 var17__1 var15__1 reset_state _s2)
+  lemma prop_ind: forall target__1, target__2,  pos__1, pos__2, 
+    next_pos__1, next_pos__2, _s, _s2, _s3.
+    (step_fonct_ok target__1 pos__1
+    next_pos__1 _s _s2 /\ step_fonct target__2 pos__2
+    next_pos__2 _s2 _s3)
+    -> step_fonct_ok target__2 pos__2
+    next_pos__2 _s2 _s3
+    by forall target__1, target__2,  pos__1, pos__2, 
+    next_pos__1, next_pos__2,  var17__1, var17__2, 
+    var15__1, var15__2, _s, _s2, _s3.
+    (step_fonct_ok_full target__1 pos__1 next_pos__1 var17__1
+    var15__1 _s _s2 /\ step_fonct_full target__2 pos__2 next_pos__2 var17__2
+    var15__2 _s2 _s3)
+    -> step_fonct_ok_full target__2 pos__2 next_pos__2 var17__2
+    var15__2 _s2 _s3
+  
+
+end
+
+module Nodeclength
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  
+  type state = unit
+  predicate step_fonct_full (dir: Types.dir)  (x: int) 
+    (length: int) (state:state) (state2:state) =
+    
+    match dir with
+      | Left -> length = (1200 + x) &&  true
+      | Right -> length = (1200 - x) &&  true
+    end &&
+    let ok = ((((is_eq (dir) (Right))) -> ((is_eq (length) ((1200 - x))))) && (((is_eq (dir) (Left))) -> ((is_eq (length) ((1200 + x)))))) in
+    true
+  predicate step_fonct (dir: Types.dir)  (x: int) 
+    (length: int) (state:state) (state2:state) =
+    step_fonct_full dir x length state state2
+  
+  predicate step_fonct_ok_full (dir: Types.dir)  (x: int) 
+    (length: int) (state:state) (state2:state) =
+    
+    match dir with
+      | Left -> length = (1200 + x) &&  true
+      | Right -> length = (1200 - x) &&  true
+    end &&
+    let ok = ((((is_eq (dir) (Right))) -> ((is_eq (length) ((1200 - x))))) && (((is_eq (dir) (Left))) -> ((is_eq (length) ((1200 + x)))))) in
+    ((((is_eq (dir) (Right))) -> ((is_eq (length) ((1200 - x))))) && (((is_eq (dir) (Left))) -> ((is_eq (length) ((1200 + x))))))
+  predicate step_fonct_ok (dir: Types.dir)  (x: int) 
+    (length: int) (state:state) (state2:state) =
+    step_fonct_ok_full dir x length state state2
+  
+  
+  function reset_state : state =
+    
+    ()
+  
+  let step (state:state) (dir: Types.dir) 
+    (x: int): (int) 
+    ensures { let (length) = result in
+               step_fonct dir x length (old state) state  } =
+    'Init:
+    
+    let (length) = match dir with
+      | Left -> let length = (1200 + x) in (length)
+      | Right -> let length = (1200 - x) in (length)
+    end in
+    let ok = (((not ((dir = Right))) || ((length = (1200 - x)))) && ((not ((dir = Left))) || ((length = (1200 + x))))) in
+    assert { step_fonct_full dir x length (at state 'Init) state };
+    (length)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    
+    ()
+  lemma nil_analysis: forall _s1, _s2, dir, 
+    x, length__1 length__2.
+    let reset_state_nil = reset_state in
+    step_fonct dir x length__1 reset_state _s1 -> step_fonct dir
+    x length__2 reset_state_nil _s2 -> _s1 = _s2 /\ length__1 = length__2 
+  lemma prop_init: forall dir__1,  x__1,  length__1, _s2.
+    (step_fonct dir__1 x__1 length__1 reset_state _s2-> step_fonct_ok dir__1
+    x__1 length__1 reset_state _s2)
+    by forall dir__1,  x__1,  length__1, _s2.
+    (step_fonct_full dir__1 x__1
+    length__1 reset_state _s2-> step_fonct_ok_full dir__1 x__1
+    length__1 reset_state _s2)
+  lemma prop_ind: forall dir__1, dir__2,  x__1, x__2, 
+    length__1, length__2, _s, _s2, _s3.
+    (step_fonct_ok dir__1 x__1 length__1 _s _s2 /\ step_fonct dir__2 x__2
+    length__2 _s2 _s3)
+    -> step_fonct_ok dir__2 x__2 length__2 _s2 _s3
+    by forall dir__1, dir__2,  x__1, x__2, 
+    length__1, length__2, _s, _s2, _s3.
+    (step_fonct_ok_full dir__1 x__1
+    length__1 _s _s2 /\ step_fonct_full dir__2 x__2
+    length__2 _s2 _s3)
+    -> step_fonct_ok_full dir__2 x__2 length__2 _s2 _s3
+  
+
+end
+
+module Nodetarget
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  use Nodeabs
+  use Nodeclength
+  type state = {  inst9: Nodeabs.state; inst8: Nodeclength.state;}
+  predicate step_fonct_full (x: int)  (y: int)  (dir: Types.dir)  (dy: int) 
+    (target: int)  (abs_virtual_y: int) 
+    (length: int) (state:state) (state2:state) =
+    
+    
+    Nodeclength.step_fonct dir x length state.inst8 state2.inst8 && 
+    let virtual_y = (mod ((y + (div ((length * dy)) (2)))) (((400 * 2) - 1))) in
+    
+    Nodeabs.step_fonct virtual_y abs_virtual_y state.inst9 state2.inst9 && 
+    let gt = (virtual_y >= 0) in
+    let in_bounds = ((virtual_y < 400) && (virtual_y >= (1 - 400))) in
+    match in_bounds with
+      | False -> target = (((2 * 400) - 1) - abs_virtual_y) &&  true
+      | True -> target = abs_virtual_y &&  true
+    end &&
+    let ok = ((0 <= target) && (target < 400)) in
+    true
+  predicate step_fonct (x: int)  (y: int)  (dir: Types.dir)  (dy: int) 
+    (target: int) (state:state) (state2:state) =
+    exists abs_virtual_y,  length.
+    step_fonct_full x y dir dy target abs_virtual_y length state state2
+  
+  predicate step_fonct_ok_full (x: int)  (y: int)  (dir: Types.dir) 
+    (dy: int)  (target: int)  (abs_virtual_y: int) 
+    (length: int) (state:state) (state2:state) =
+    
+    
+    Nodeclength.step_fonct_ok dir x length state.inst8 state2.inst8 && 
+    let virtual_y = (mod ((y + (div ((length * dy)) (2)))) (((400 * 2) - 1))) in
+    
+    Nodeabs.step_fonct_ok virtual_y abs_virtual_y state.inst9 state2.inst9 && 
+    let gt = (virtual_y >= 0) in
+    let in_bounds = ((virtual_y < 400) && (virtual_y >= (1 - 400))) in
+    match in_bounds with
+      | False -> target = (((2 * 400) - 1) - abs_virtual_y) &&  true
+      | True -> target = abs_virtual_y &&  true
+    end &&
+    let ok = ((0 <= target) && (target < 400)) in
+    ((0 <= target) && (target < 400))
+  predicate step_fonct_ok (x: int)  (y: int)  (dir: Types.dir)  (dy: int) 
+    (target: int) (state:state) (state2:state) =
+    exists abs_virtual_y,  length.
+    step_fonct_ok_full x y dir dy target abs_virtual_y length state state2
+  
+  
+  function reset_state : state =
+    let state_inst8 = Nodeclength.reset_state in
+    let state_inst9 = Nodeabs.reset_state in
+    {  inst9 = state_inst9;  inst8 = state_inst8;  }
+  
+  let step (state:state) (x: int)  (y: int)  (dir: Types.dir) 
+    (dy: int): (int) 
+    ensures { let (target) = result in
+               step_fonct x y dir dy target (old state) state  } =
+    'Init:
+    
+    
+    let (length) = Nodeclength.step state.inst8 dir x in 
+    let virtual_y = (mod ((y + (div ((length * dy)) (2)))) (((400 * 2) - 1))) in
+    
+    let (abs_virtual_y) = Nodeabs.step state.inst9 virtual_y in 
+    let gt = (virtual_y >= 0) in
+    let in_bounds = ((virtual_y < 400) && (virtual_y >= (1 - 400))) in
+    let (target) = match in_bounds with
+      | False -> let target = (((2 * 400) - 1) - abs_virtual_y) in (target)
+      | True -> let target = abs_virtual_y in (target)
+    end in
+    let ok = ((0 <= target) && (target < 400)) in
+    assert { step_fonct_full x y dir dy target abs_virtual_y
+    length (at state 'Init) state };
+    (target)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    Nodeclength.reset state.inst8;
+    Nodeabs.reset state.inst9;
+    ()
+  lemma nil_analysis: forall _s1, _s2, x,  y,  dir, 
+    dy, target__1 target__2.
+    let reset_state_nil = reset_state in
+    step_fonct x y dir dy target__1 reset_state _s1 -> step_fonct x y dir
+    dy target__2 reset_state_nil _s2 -> _s1 = _s2 /\ target__1 = target__2 
+  lemma prop_init: forall x__1,  y__1,  dir__1,  dy__1, 
+    target__1, _s2.
+    (step_fonct x__1 y__1 dir__1 dy__1
+    target__1 reset_state _s2-> step_fonct_ok x__1 y__1 dir__1 dy__1
+    target__1 reset_state _s2)
+    by forall x__1,  y__1,  dir__1,  dy__1,  target__1,  abs_virtual_y__1, 
+    length__1, _s2.
+    (step_fonct_full x__1 y__1 dir__1 dy__1 target__1 abs_virtual_y__1
+    length__1 reset_state _s2-> step_fonct_ok_full x__1 y__1 dir__1 dy__1
+    target__1 abs_virtual_y__1 length__1 reset_state _s2)
+  lemma prop_ind: forall x__1, x__2,  y__1, y__2,  dir__1, dir__2, 
+    dy__1, dy__2,  target__1, target__2, _s, _s2, _s3.
+    (step_fonct_ok x__1 y__1 dir__1 dy__1 target__1 _s _s2 /\ step_fonct x__2
+    y__2 dir__2 dy__2 target__2 _s2 _s3)
+    -> step_fonct_ok x__2 y__2 dir__2 dy__2
+    target__2 _s2 _s3
+    by forall x__1, x__2,  y__1, y__2,  dir__1, dir__2,  dy__1, dy__2, 
+    target__1, target__2,  abs_virtual_y__1, abs_virtual_y__2, 
+    length__1, length__2, _s, _s2, _s3.
+    (step_fonct_ok_full x__1 y__1 dir__1 dy__1 target__1 abs_virtual_y__1
+    length__1 _s _s2 /\ step_fonct_full x__2 y__2 dir__2 dy__2 target__2
+    abs_virtual_y__2 length__2 _s2 _s3)
+    -> step_fonct_ok_full x__2 y__2 dir__2 dy__2 target__2 abs_virtual_y__2
+    length__2 _s2 _s3
+  
+
+end
+
+module Nodealigned_with_paddle
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  
+  type state = unit
+  predicate step_fonct_full (y: int)  (paddle: int) 
+    (yes: bool) (state:state) (state2:state) =
+    
+    yes = ((y <= (paddle + (div (30) (2)))) && (y >= (paddle - (div (30) (2))))) && 
+    true
+  predicate step_fonct (y: int)  (paddle: int) 
+    (yes: bool) (state:state) (state2:state) =
+    step_fonct_full y paddle yes state state2
+  
+  predicate step_fonct_ok_full (y: int)  (paddle: int) 
+    (yes: bool) (state:state) (state2:state) =
+    
+    yes = ((y <= (paddle + (div (30) (2)))) && (y >= (paddle - (div (30) (2))))) && 
+    true
+  predicate step_fonct_ok (y: int)  (paddle: int) 
+    (yes: bool) (state:state) (state2:state) =
+    step_fonct_ok_full y paddle yes state state2
+  
+  
+  function reset_state : state =
+    
+    ()
+  
+  let step (state:state) (y: int) 
+    (paddle: int): (bool) 
+    ensures { let (yes) = result in
+               step_fonct y paddle yes (old state) state  } =
+    'Init:
+    
+    let yes = ((y <= (paddle + (div (30) (2)))) && (y >= (paddle - (div (30) (2))))) in
+    assert { step_fonct_full y paddle yes (at state 'Init) state };
+    (yes)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    
+    ()
+  lemma nil_analysis: forall _s1, _s2, y, 
+    paddle, yes__1 yes__2.
+    let reset_state_nil = reset_state in
+    step_fonct y paddle yes__1 reset_state _s1 -> step_fonct y
+    paddle yes__2 reset_state_nil _s2 -> _s1 = _s2 /\ yes__1 = yes__2 
+  lemma prop_init: forall y__1,  paddle__1,  yes__1, _s2.
+    (step_fonct y__1 paddle__1 yes__1 reset_state _s2-> step_fonct_ok y__1
+    paddle__1 yes__1 reset_state _s2)
+    by forall y__1,  paddle__1,  yes__1, _s2.
+    (step_fonct_full y__1 paddle__1
+    yes__1 reset_state _s2-> step_fonct_ok_full y__1 paddle__1
+    yes__1 reset_state _s2)
+  lemma prop_ind: forall y__1, y__2,  paddle__1, paddle__2, 
+    yes__1, yes__2, _s, _s2, _s3.
+    (step_fonct_ok y__1 paddle__1 yes__1 _s _s2 /\ step_fonct y__2 paddle__2
+    yes__2 _s2 _s3)
+    -> step_fonct_ok y__2 paddle__2 yes__2 _s2 _s3
+    by forall y__1, y__2,  paddle__1, paddle__2, 
+    yes__1, yes__2, _s, _s2, _s3.
+    (step_fonct_ok_full y__1 paddle__1 yes__1 _s _s2 /\ step_fonct_full y__2
+    paddle__2 yes__2 _s2 _s3)
+    -> step_fonct_ok_full y__2 paddle__2 yes__2 _s2 _s3
+  
+
+end
+
+module Nodedist_to_goal
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  
+  type state = unit
+  predicate step_fonct_full (x: int)  (dir: Types.dir) 
+    (d: int) (state:state) (state2:state) =
+    
+    match dir with
+      | Left -> d = (1200 + x) &&  true
+      | Right -> d = (1200 - x) &&  true
+    end &&
+    true
+  predicate step_fonct (x: int)  (dir: Types.dir) 
+    (d: int) (state:state) (state2:state) =
+    step_fonct_full x dir d state state2
+  
+  predicate step_fonct_ok_full (x: int)  (dir: Types.dir) 
+    (d: int) (state:state) (state2:state) =
+    
+    match dir with
+      | Left -> d = (1200 + x) &&  true
+      | Right -> d = (1200 - x) &&  true
+    end &&
+    true
+  predicate step_fonct_ok (x: int)  (dir: Types.dir) 
+    (d: int) (state:state) (state2:state) =
+    step_fonct_ok_full x dir d state state2
+  
+  
+  function reset_state : state =
+    
+    ()
+  
+  let step (state:state) (x: int) 
+    (dir: Types.dir): (int) 
+    ensures { let (d) = result in
+               step_fonct x dir d (old state) state  } =
+    'Init:
+    
+    let (d) = match dir with
+      | Left -> let d = (1200 + x) in (d)
+      | Right -> let d = (1200 - x) in (d)
+    end in
+    assert { step_fonct_full x dir d (at state 'Init) state };
+    (d)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    
+    ()
+  lemma nil_analysis: forall _s1, _s2, x, 
+    dir, d__1 d__2.
+    let reset_state_nil = reset_state in
+    step_fonct x dir d__1 reset_state _s1 -> step_fonct x
+    dir d__2 reset_state_nil _s2 -> _s1 = _s2 /\ d__1 = d__2 
+  lemma prop_init: forall x__1,  dir__1,  d__1, _s2.
+    (step_fonct x__1 dir__1 d__1 reset_state _s2-> step_fonct_ok x__1 dir__1
+    d__1 reset_state _s2)
+    by forall x__1,  dir__1,  d__1, _s2.
+    (step_fonct_full x__1 dir__1
+    d__1 reset_state _s2-> step_fonct_ok_full x__1 dir__1
+    d__1 reset_state _s2)
+  lemma prop_ind: forall x__1, x__2,  dir__1, dir__2, 
+    d__1, d__2, _s, _s2, _s3.
+    (step_fonct_ok x__1 dir__1 d__1 _s _s2 /\ step_fonct x__2 dir__2
+    d__2 _s2 _s3)
+    -> step_fonct_ok x__2 dir__2 d__2 _s2 _s3
+    by forall x__1, x__2,  dir__1, dir__2, 
+    d__1, d__2, _s, _s2, _s3.
+    (step_fonct_ok_full x__1 dir__1 d__1 _s _s2 /\ step_fonct_full x__2
+    dir__2 d__2 _s2 _s3)
+    -> step_fonct_ok_full x__2 dir__2 d__2 _s2 _s3
+  
+
+end
+
+module Nodepong
+  use import int.Int
+  use import int.ComputerDivision
+  use import Types
+  use Nodedist_to_goal
+  use Nodelat_move
+  use Nodealigned_with_paddle
+  use Nodepaddle_move
+  use Nodeabs
+  use Nodeabs
+  use Nodevert_move
+  type state = { mutable x: int; mutable y: int;
+                 mutable paddle: int; inst16: Nodedist_to_goal.state;
+                 inst15: Nodelat_move.state;
+                 inst14: Nodealigned_with_paddle.state;
+                 inst13: Nodepaddle_move.state; inst12: Nodeabs.state;
+                 inst11: Nodeabs.state; inst10: Nodevert_move.state;}
+  predicate step_fonct_full (wind: int)  (x: int)  (y: int)  (paddle: int) 
+    (score: int)  (var20: int)  (var18: int)  (xx: int)  (y2: int) 
+    (dy: int)  (paddle2: int)  (dir: Types.dir)  (length: int) 
+    (goal_: bool) (state:state) (state2:state) =
+    paddle = state.paddle && 
+    y = state.y && 
+    x = state.x && 
+    
+    
+    Nodevert_move.step_fonct y y2 dy state.inst10 state2.inst10 && 
+    let var19 = (y2 - y) in
+    
+    Nodeabs.step_fonct var19 var20 state.inst11 state2.inst11 && 
+    
+    Nodeabs.step_fonct dy var18 state.inst12 state2.inst12 && 
+    let target = y2 in
+    
+    Nodepaddle_move.step_fonct target paddle paddle2 state.inst13 state2.inst13 && 
+    
+    Nodealigned_with_paddle.step_fonct y paddle goal_ state.inst14 state2.inst14 && 
+    
+    Nodelat_move.step_fonct x goal_ xx dir score state.inst15 state2.inst15 && 
+    let ok = (((0 <= x) && (x < 1200)) && ((((0 - 1) < xx) && (xx < 1200)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && ((is_eq (goal_) (true)) && (is_eq (score) (0)))))))))))) in
+    
+    Nodedist_to_goal.step_fonct x dir length state.inst16 state2.inst16 && 
+    let delta_y = (div ((length * var18)) (2)) in
+    
+    state2.paddle = paddle2 && 
+    state2.y = y2 && 
+    state2.x = xx && 
+    true
+  predicate step_fonct (wind: int)  (x: int)  (y: int)  (paddle: int) 
+    (score: int) (state:state) (state2:state) =
+    exists var20,  var18,  xx,  y2,  dy,  paddle2,  dir,  length, 
+    goal_.
+    step_fonct_full wind x y paddle score var20 var18 xx y2 dy paddle2 dir
+    length goal_ state state2
+  
+  predicate step_fonct_ok_full (wind: int)  (x: int)  (y: int) 
+    (paddle: int)  (score: int)  (var20: int)  (var18: int)  (xx: int) 
+    (y2: int)  (dy: int)  (paddle2: int)  (dir: Types.dir)  (length: int) 
+    (goal_: bool) (state:state) (state2:state) =
+    paddle = state.paddle && 
+    y = state.y && 
+    x = state.x && 
+    
+    
+    Nodevert_move.step_fonct_ok y y2 dy state.inst10 state2.inst10 && 
+    let var19 = (y2 - y) in
+    
+    Nodeabs.step_fonct_ok var19 var20 state.inst11 state2.inst11 && 
+    
+    Nodeabs.step_fonct_ok dy var18 state.inst12 state2.inst12 && 
+    let target = y2 in
+    
+    Nodepaddle_move.step_fonct_ok target paddle paddle2 state.inst13 state2.inst13 && 
+    
+    Nodealigned_with_paddle.step_fonct_ok y paddle goal_ state.inst14 state2.inst14 && 
+    
+    Nodelat_move.step_fonct_ok x goal_ xx dir score state.inst15 state2.inst15 && 
+    let ok = (((0 <= x) && (x < 1200)) && ((((0 - 1) < xx) && (xx < 1200)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && ((is_eq (goal_) (true)) && (is_eq (score) (0)))))))))))) in
+    
+    Nodedist_to_goal.step_fonct_ok x dir length state.inst16 state2.inst16 && 
+    let delta_y = (div ((length * var18)) (2)) in
+    
+    state2.paddle = paddle2 && 
+    state2.y = y2 && 
+    state2.x = xx && 
+    (((0 <= x) && (x < 1200)) && ((((0 - 1) < xx) && (xx < 1200)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && ((is_eq (goal_) (true)) && (is_eq (score) (0))))))))))))
+  predicate step_fonct_ok (wind: int)  (x: int)  (y: int)  (paddle: int) 
+    (score: int) (state:state) (state2:state) =
+    exists var20,  var18,  xx,  y2,  dy,  paddle2,  dir,  length, 
+    goal_.
+    step_fonct_ok_full wind x y paddle score var20 var18 xx y2 dy paddle2 dir
+    length goal_ state state2
+  
+  
+  function reset_state : state =
+    let state_inst10 = Nodevert_move.reset_state in
+    let state_inst11 = Nodeabs.reset_state in
+    let state_inst12 = Nodeabs.reset_state in
+    let state_inst13 = Nodepaddle_move.reset_state in
+    let state_inst14 = Nodealigned_with_paddle.reset_state in
+    let state_inst15 = Nodelat_move.reset_state in
+    let state_inst16 = Nodedist_to_goal.reset_state in
+    let state_paddle = 10 in
+    let state_y = 10 in
+    let state_x = 100 in
+    { x = state_x; y = state_y;
+    paddle = state_paddle; inst16 = state_inst16;  inst15 = state_inst15; 
+    inst14 = state_inst14;  inst13 = state_inst13;  inst12 = state_inst12; 
+    inst11 = state_inst11;  inst10 = state_inst10;  }
+  
+  let step (state:state) (wind: int): (int,  int,  int, 
+    int) 
+    ensures { let (x, y, paddle, score) = result in
+               step_fonct wind x y paddle score (old state) state  } =
+    'Init:
+    let paddle = state.paddle in
+    let y = state.y in
+    let x = state.x in
+    
+    
+    let (y2, dy) = Nodevert_move.step state.inst10 y in 
+    let var19 = (y2 - y) in
+    
+    let (var20) = Nodeabs.step state.inst11 var19 in 
+    
+    let (var18) = Nodeabs.step state.inst12 dy in 
+    let target = y2 in
+    
+    let (paddle2) = Nodepaddle_move.step state.inst13 target paddle in 
+    
+    let (goal_) = Nodealigned_with_paddle.step state.inst14 y paddle in 
+    
+    let (xx, dir, score) = Nodelat_move.step state.inst15 x goal_ in 
+    let ok = (((0 <= x) && (x < 1200)) && ((((0 - 1) < xx) && (xx < 1200)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((paddle = y) && ((paddle2 = y2) && ((score = 0) && ((goal_ = true) && (score = 0))))))))))) in
+    
+    let (length) = Nodedist_to_goal.step state.inst16 x dir in 
+    let delta_y = (div ((length * var18)) (2)) in
+    
+    state.paddle <- paddle2;
+    state.y <- y2;
+    state.x <- xx;
+    assert { step_fonct_full wind x y paddle score var20 var18 xx y2 dy
+    paddle2 dir length goal_ (at state 'Init) state };
+    (x,  y,  paddle,  score)
+  
+  let reset (state:state): unit 
+    ensures { state = reset_state } =
+    Nodevert_move.reset state.inst10;
+    Nodeabs.reset state.inst11;
+    Nodeabs.reset state.inst12;
+    Nodepaddle_move.reset state.inst13;
+    Nodealigned_with_paddle.reset state.inst14;
+    Nodelat_move.reset state.inst15;
+    Nodedist_to_goal.reset state.inst16;
+    state.paddle <- 10;
+    state.y <- 10;
+    state.x <- 100;
+    ()
+  lemma nil_analysis: forall _s1, _s2, wind, x__1 x__2,  y__1 y__2, 
+    paddle__1 paddle__2, 
+    score__1 score__2.
+    let reset_state_nil = reset_state in
+    step_fonct wind x__1 y__1 paddle__1
+    score__1 reset_state _s1 -> step_fonct wind x__2 y__2 paddle__2
+    score__2 reset_state_nil _s2 -> _s1 = _s2 /\ x__1 = x__2 /\
+    y__1 = y__2 /\ paddle__1 = paddle__2 /\ score__1 = score__2 
+  lemma prop_init: forall wind__1,  x__1,  y__1,  paddle__1, 
+    score__1, _s2.
+    (step_fonct wind__1 x__1 y__1 paddle__1
+    score__1 reset_state _s2-> step_fonct_ok wind__1 x__1 y__1 paddle__1
+    score__1 reset_state _s2)
+    by forall wind__1,  x__1,  y__1,  paddle__1,  score__1,  var20__1, 
+    var18__1,  xx__1,  y2__1,  dy__1,  paddle2__1,  dir__1,  length__1, 
+    goal___1, _s2.
+    (step_fonct_full wind__1 x__1 y__1 paddle__1 score__1 var20__1 var18__1
+    xx__1 y2__1 dy__1 paddle2__1 dir__1 length__1
+    goal___1 reset_state _s2-> step_fonct_ok_full wind__1 x__1 y__1 paddle__1
+    score__1 var20__1 var18__1 xx__1 y2__1 dy__1 paddle2__1 dir__1 length__1
+    goal___1 reset_state _s2)
+  lemma prop_ind: forall wind__1, wind__2,  x__1, x__2,  y__1, y__2, 
+    paddle__1, paddle__2, 
+    score__1, score__2, _s, _s2, _s3.
+    (step_fonct_ok wind__1 x__1 y__1 paddle__1
+    score__1 _s _s2 /\ step_fonct wind__2 x__2 y__2 paddle__2
+    score__2 _s2 _s3)
+    -> step_fonct_ok wind__2 x__2 y__2 paddle__2
+    score__2 _s2 _s3
+    by forall wind__1, wind__2,  x__1, x__2,  y__1, y__2, 
+    paddle__1, paddle__2,  score__1, score__2,  var20__1, var20__2, 
+    var18__1, var18__2,  xx__1, xx__2,  y2__1, y2__2,  dy__1, dy__2, 
+    paddle2__1, paddle2__2,  dir__1, dir__2,  length__1, length__2, 
+    goal___1, goal___2, _s, _s2, _s3.
+    (step_fonct_ok_full wind__1 x__1 y__1 paddle__1 score__1 var20__1
+    var18__1 xx__1 y2__1 dy__1 paddle2__1 dir__1 length__1
+    goal___1 _s _s2 /\ step_fonct_full wind__2 x__2 y__2 paddle__2 score__2
+    var20__2 var18__2 xx__2 y2__2 dy__2 paddle2__2 dir__2 length__2
+    goal___2 _s2 _s3)
+    -> step_fonct_ok_full wind__2 x__2 y__2 paddle__2 score__2 var20__2
+    var18__2 xx__2 y2__2 dy__2 paddle2__2 dir__2 length__2 goal___2 _s2 _s3
+  
+
+end

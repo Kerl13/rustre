@@ -9,29 +9,36 @@ module Nodenewton
   use import Types
   
   type state = { mutable cpt: int; mutable out: int; }
-  predicate step_fonct (tic: bool) (out:int) 
-    (t:int) (state:state) (state2:state) =
-    out = state.out /\ 
+  predicate step_fonct_full (tic: bool)  (out: int) 
+    (t: int) (state:state) (state2:state) =
+    out = state.out && 
     let cpt = state.cpt in
     
-    t = (div (((cpt - 1) * cpt)) (2)) /\ 
+    t = (div ((cpt * cpt)) (2)) && 
     let ok = (is_eq ((cpt * (cpt - 1))) ((2 * out))) in
     
-    state2.out = (out + cpt) /\ 
-    state2.cpt = (cpt + 1) /\ 
-     true
+    state2.out = (out + cpt) && 
+    state2.cpt = (cpt + 1) && 
+    true
+  predicate step_fonct (tic: bool)  (out: int) 
+    (t: int) (state:state) (state2:state) =
+    step_fonct_full tic out t state state2
   
-  predicate step_fonct_ok (tic: bool) (out:int) 
-    (t:int) (state:state) (state2:state) =
-    out = state.out /\ 
+  predicate step_fonct_ok_full (tic: bool)  (out: int) 
+    (t: int) (state:state) (state2:state) =
+    out = state.out && 
     let cpt = state.cpt in
     
-    t = (div (((cpt - 1) * cpt)) (2)) /\ 
+    t = (div ((cpt * cpt)) (2)) && 
     let ok = (is_eq ((cpt * (cpt - 1))) ((2 * out))) in
     
-    state2.out = (out + cpt) /\ 
-    state2.cpt = (cpt + 1) /\ 
+    state2.out = (out + cpt) && 
+    state2.cpt = (cpt + 1) && 
     (is_eq ((cpt * (cpt - 1))) ((2 * out)))
+  predicate step_fonct_ok (tic: bool)  (out: int) 
+    (t: int) (state:state) (state2:state) =
+    step_fonct_ok_full tic out t state state2
+  
   
   function reset_state : state =
     let state_out = 0 in
@@ -42,14 +49,16 @@ module Nodenewton
     int) 
     ensures { let (out, t) = result in
                step_fonct tic out t (old state) state  } =
+    'Init:
     let out = state.out in
     let cpt = state.cpt in
     
-    let t = (div (((cpt - 1) * cpt)) (2)) in
+    let t = (div ((cpt * cpt)) (2)) in
     let ok = ((cpt * (cpt - 1)) = (2 * out)) in
     
     state.out <- (out + cpt);
     state.cpt <- (cpt + 1);
+    assert { step_fonct_full tic out t (at state 'Init) state };
     (out,  t)
   
   let reset (state:state): unit 
@@ -57,14 +66,28 @@ module Nodenewton
     state.out <- 0;
     state.cpt <- 1;
     ()
-  goal prop_init: forall tic__1,  out__1,  t__1, _s2.
+  lemma nil_analysis: forall _s1, _s2, tic, out__1 out__2, 
+    t__1 t__2.
+    let reset_state_nil = reset_state in
+    step_fonct tic out__1 t__1 reset_state _s1 -> step_fonct tic out__2
+    t__2 reset_state_nil _s2 -> _s1 = _s2 /\ out__1 = out__2 /\ t__1 = t__2 
+  lemma prop_init: forall tic__1,  out__1,  t__1, _s2.
     (step_fonct tic__1 out__1 t__1 reset_state _s2-> step_fonct_ok tic__1
     out__1 t__1 reset_state _s2)
-  goal prop_ind: forall tic__1, tic__2,  out__1, out__2, 
+    by forall tic__1,  out__1,  t__1, _s2.
+    (step_fonct_full tic__1 out__1
+    t__1 reset_state _s2-> step_fonct_ok_full tic__1 out__1
+    t__1 reset_state _s2)
+  lemma prop_ind: forall tic__1, tic__2,  out__1, out__2, 
     t__1, t__2, _s, _s2, _s3.
     (step_fonct_ok tic__1 out__1 t__1 _s _s2 /\ step_fonct tic__2 out__2
     t__2 _s2 _s3)
     -> step_fonct_ok tic__2 out__2 t__2 _s2 _s3
+    by forall tic__1, tic__2,  out__1, out__2, 
+    t__1, t__2, _s, _s2, _s3.
+    (step_fonct_ok_full tic__1 out__1 t__1 _s _s2 /\ step_fonct_full tic__2
+    out__2 t__2 _s2 _s3)
+    -> step_fonct_ok_full tic__2 out__2 t__2 _s2 _s3
   
 
 end
