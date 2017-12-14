@@ -179,8 +179,8 @@ local:
 equation:
 | p = pattern EQUAL e = located(expr)
   {{ eq_desc = EEq (p, e) ; eq_loc = ($startpos, $endpos) }}
-| MATCH e = located(expr) WITH PIPE? hl = separated_nonempty_list(PIPE, match_handler) END
-  {{ eq_desc = EMatch (e, hl); eq_loc = ($startpos, $endpos) }}
+| MATCH x = ident WITH PIPE? hl = separated_nonempty_list(PIPE, match_handler) END
+  {{ eq_desc = EMatch (x, hl); eq_loc = ($startpos, $endpos) }}
 | RESET eqs = separated_nonempty_list(SEMICOL, equation) EVERY e = located(expr)
   {{ eq_desc = EReset (eqs, e) ; eq_loc = ($startpos, $endpos) }}
 | AUTOMATON states = nonempty_list(state_handler) END

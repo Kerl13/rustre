@@ -1,5 +1,7 @@
 (**
  * Transforming reset constructs
+ *
+ * Assumes no automaton, match and last
  *)
 
 open Ast_ext

@@ -83,6 +83,8 @@ let () =
       Format.fprintf format "=== Parsed file =====\n" ;
       Format.fprintf format "%a\n@." Ast_ext.pp_file file ;
 
+      (*let file = Match.tr_file file in*)
+
       let file = Reset.tr_file file in
 
       let trans = Ext_to_base.tr_file file in
