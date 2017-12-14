@@ -15,6 +15,10 @@ Ltac s h2 sinst1a sinst1b sc sd se  := match goal with
   apply sext
 | [ |-  _ = seq ?A ?B] =>
   apply sext
+| [ |-  _ = swhen ?A ?B] =>
+  apply sext
+| [ |-  _ = smerge _ _ _] =>
+  apply sext
 | [ |- forall n:nat, ?C] =>
     intros nk;
     pose (h2 nk) as nk2;
@@ -44,6 +48,12 @@ Ltac s h2 sinst1a sinst1b sc sd se  := match goal with
   || (pose (seq_rw_false a b n dec2) as c; clearbody c; rewrite c; clear c))
 | [ |- context[get (splus _ _) _]] => rewrite splus_rw
 | [ |- context[get (sconst _) _]] => rewrite sconst_rw
+| [ |- context[get (smerge ?a _ _) ?n]] =>
+    let h := fresh "merge" in
+    case_eq (get a n); [
+    intro h; rewrite h in *; rewrite smerge_rw_true |
+    intro h; rewrite h in *;  rewrite smerge_rw_false]
+| [ |- context[get (swhen _ _)]] => rewrite swhen_rw
 | [ |- context[get (sfby _ _) (O)]] => rewrite sfby_rw_o
 | [ |- context[get (sfby _ _) (S _)]] => rewrite sfby_rw_s
 | [ |- context[get (sfby _ _) ?n]] =>
@@ -100,3 +110,21 @@ Ltac solve step_fonct1 h2 sinst1a sinst1b sc sd se := simpl_all step_fonct_full;
 inversion h1.
 
 solve step_fonct h2 sinst1a sinst1b sc sd se.
+
+
+
+Lemma snot_rw2: forall (a:(stream bool)) (n:nat), ((get (snot a) n = negb (get a n))).
+intros.
+pose (snot_rw a n).
+destruct i.
+case_eq (get (snot a) n); intuition;
+case_eq (get a n); intuition.
+rewrite H2 in H0.
+cut (false = true -> False).
+intro.
+pose (H0 H3).
+rewrite e in H1.
+inversion H1.
+intro.
+inversion H3.
+Qed.
