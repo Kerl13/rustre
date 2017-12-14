@@ -1,5 +1,5 @@
 open Lexing
-
+   
 let usage = Format.sprintf "usage: %s [options] file.lus main" Sys.argv.(0)
 
 
@@ -69,6 +69,7 @@ let report_loc (b,e) =
 
 let () =
   let module Clocking = Clocking.W in
+  let module Checkclocking = Checkclocking.CheckW in
   let module Scheduling = Scheduling.Simple in
   let c = open_in file in
   let lb = Lexing.from_channel c in
@@ -110,7 +111,9 @@ let () =
     let clocked = Clocking.clock_file typed main_node in
     Format.fprintf format "ok\n=== Clocks =====\n";
     Format.fprintf format "%a\n@." Ast_clocked.pp_clocks_file clocked;
-
+    (* Checkclocking.check_clock_file typed main_node clocked; *)
+                            
+    
     Format.fprintf format "Normalization… @?";
     let normalized = Normalization.normalize_file clocked in
     Format.fprintf format "ok@." ;
@@ -188,3 +191,7 @@ let () =
     report_loc loc;
     Format.eprintf "%s@." message;
     exit 1
+  | Checkclocking.Error (message) ->
+     (*report_loc loc;*)
+     Format.eprintf "Clocking internal error: %s@." message;
+     exit 1
