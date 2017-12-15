@@ -1,12 +1,13 @@
 /* main = ex_reset */
 /* Do not remove the line above */
 
-node f(a : int) = (b : int) with
+node f(a : int) = (b : int)
+with
   b = 0 fby a
 
-node ex_reset(v:int) = (o: int)
+node ex_reset(v:int; r:bool) = (o: int)
 with var t : int in
   reset
     t = 0 fby t + v;
-    o = t + f(t) every o > 13
-  revery o > 42
+    o = t + (f(t) every (False fby (o > 13)))
+  revery r

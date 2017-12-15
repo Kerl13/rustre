@@ -1,3 +1,6 @@
+/* main = two */
+/* Do not remove the line above */
+
 /* From Heptagon manual */
 
 type modes = Up + Down
