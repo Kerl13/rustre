@@ -40,8 +40,10 @@ sur la sortie standard. Utiliser `-o` pour écrire le code dans un fichier.
   avec `-extract why3`.
 - Si l'argument `-ext` est passé, la syntaxe concrète est étendue avec des automates (voir le rapport).
 
-**TODO: versions de why3 ?**
+### Why3
+**todo**
 
+### Rust
 L'extraction Rust génère un fichier standalone qui peut être compilé avec la commande `rustc <file>`.
 
 ## Tester
