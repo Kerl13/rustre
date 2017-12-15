@@ -26,7 +26,7 @@ module E = struct
       )
 
   let print_bop: type a b. 'c -> (a, b) Ast_typed.binop -> unit =
-    let open Ast_typed in
+    let open! Ast_typed in
     fun ppf -> function
       | OpAdd -> fprintf ppf "+"
       | OpSub -> fprintf ppf "-"
@@ -113,7 +113,7 @@ module E = struct
            )) result
         inst
         (print_expr ~prop  ~fonct) (EVar (State node))
-        (pp_list " " (print_expr ~fonct)) (List.map (fun i -> EVar i) args)
+        (pp_list " " (print_expr ~prop ~fonct)) (List.map (fun i -> EVar i) args)
         (pp_list_brk "" (fun p s ->
              match s with
              | State s -> fprintf p "state.%s := state_%s;" s s
@@ -182,7 +182,7 @@ module E = struct
     | SCase(_, l) -> List.map snd l |> List.map get_result_var |> List.concat
     | _ -> []
 
-  let print_step ?(fonct=false) ppf (mach, _) =
+  let print_step ppf (mach, _) =
     let var_in, var_loc, var_out, stat = mach.step in
     let result_vars = get_result_var stat in
     let var_loc = List.filter (fun (s, _) -> List.mem s result_vars) var_loc in
@@ -305,7 +305,7 @@ module E = struct
              (pp_list_brk "" (fun ppf (i, _) ->
                   fprintf ppf "%s = state_%s; " i i)) mach.instances) mach
 
-  let print_reset ?(fonct = true) ppf mach =
+  let print_reset ppf mach =
     let print_post ppf () =
       fprintf ppf "ensures { state = reset_state }" in
     fprintf ppf "@[<2>let reset (state:state): unit @\n%a =@\n%a@\n()@]"
@@ -390,11 +390,11 @@ module E = struct
     fprintf ppf "@\n%a@\n"
       print_reset_fonct mach;
     fprintf ppf "@\n%a"
-      (print_step ~fonct:true) (mach, var_loc);
+      print_step (mach, var_loc);
     (*fprintf ppf "@\n%a"
       (print_step_sem) (mach, var_loc);*)
     fprintf ppf "@\n@\n%a"
-      (print_reset ~fonct:true) mach;
+      print_reset mach;
     fprintf ppf "@\n%a"
       print_check_nil mach;
     if has_ok then

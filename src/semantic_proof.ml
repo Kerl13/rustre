@@ -11,7 +11,7 @@ let rec spec_print_state_flat pref states ppf s =
       | Ast_object.State_var(i, ty) -> fprintf ppf "%s%s: stream %a" pref i pp_ty ty
       | Ast_object.Mach_var (i, target) -> fprintf ppf "%a" (spec_print_state_flat (pref ^ i) states) target)) st
 
-let rec spec_count = ref 0
+let spec_count = ref 0
 let node_ind = ref []
 
 let rec spec_print_intro pref states ppf s =
@@ -21,7 +21,7 @@ let rec spec_print_intro pref states ppf s =
       | _ -> true) st in
   fprintf ppf "%a" (pp_list_brk "" (fun ppf sc ->
       match sc with
-      | Ast_object.State_var(i, ty) -> fprintf ppf "%s%s" pref i
+      | Ast_object.State_var(i, _) -> fprintf ppf "%s%s" pref i
       | Ast_object.Mach_var (i, target) -> fprintf ppf "%a" (spec_print_intro (pref ^ i) states) target)) st
 
 let rec extract_apps = function
@@ -55,115 +55,115 @@ let spec_node states f_obj ppf node =
     fprintf ppf "unfold spec.@\n"
   else
     fprintf ppf "unfold spec%d.@\n" !spec_count;
-  fprintf ppf "Ltac simpl_all u1 := repeat match goal with
-  | [ H: context[u1] |- _ ] => unfold u1 in H; simpl in H
-  end.
-
-  Ltac s h2 %a := match goal with
-  | [ |- _ /\\ _] => split
-  | [H: _ /\\ _ |- _] => destruct H
-  | [ |-  _ = sfby _ _] =>
-    apply sext
-  | [ |-  _ = splus ?A ?B] =>
-    apply sext
-  | [ |-  _ = sminus ?A ?B] =>
-    apply sext
-  | [ |-  _ = sgt ?A ?B] =>
-    apply sext
-  | [ |-  _ = seq ?A ?B] =>
-    apply sext
-  | [ |-  _ = swhen ?A ?B] =>
-    apply sext
-  | [ |-  _ = sconst _] =>
-    apply sext
-  | [ |-  _ = smerge _ _ _] =>
-    apply sext
-  | [ |- forall n:nat, ?C] =>
-      intros nk;
-      pose (h2 nk) as nk2;
-      try match goal with
-      | [ |- context [S ?n]] => pose (h2 (S n)) as nk3
-      end
-  | [ H : ?A = ?C, K : ?C = ?D |- ?A = ?D] => rewrite H; eauto
-  | [ H: context[get (splus _ _)] |- _] => rewrite splus_rw in H
-  | [ H: context[get (sconst _)] |- _] => rewrite sconst_rw in H
-  | [ |- context[get (sgt ?a ?b) ?n] ] =>
-    let dec_bool := fresh \"dec_bool\" in
-    pose (gt_dec (get a n) (get b n)) as dec_bool;
-    let dec1 := fresh dec_bool in
-    let dec2 := fresh dec_bool in
-    destruct dec_bool as [dec1 | dec2];
-    let c := fresh \"c\" in
-    ((pose (sgt_rw_true a b n dec1) as c; clearbody c; rewrite c; clear c)
-    || (pose (sgt_rw_false a b n dec2) as c; clearbody c; rewrite c; clear c))
-  | [ |- context[get (seq ?a ?b) ?n]] =>
-    let dec_bool := fresh \"dec_bool\" in
-    pose (Z.eq_dec (get a n) (get b n)) as dec_bool;
-    let dec1 := fresh dec_bool in
-    let dec2 := fresh dec_bool in
-    destruct dec_bool as [dec1 | dec2];
-    let c := fresh \"c\" in
-    ((pose (seq_rw_true a b n dec1) as c; clearbody c; rewrite c; clear c)
-    || (pose (seq_rw_false a b n dec2) as c; clearbody c; rewrite c; clear c))
-  | [ |- context[get (splus _ _) _]] => rewrite splus_rw
-  | [ |- context[get (sconst _) _]] => rewrite sconst_rw
-  | [ |- context[get (smerge ?a _ _) ?n]] =>
-      let h := fresh \"merge\" in
-      case_eq (get a n); [
-      intro h; rewrite h in *; rewrite smerge_rw_true |
-      intro h; rewrite h in *;  rewrite smerge_rw_false]
-  | [ |- context[get (swhen _ _)]] => rewrite swhen_rw
-  | [ |- context[get (sfby _ _) (O)]] => rewrite sfby_rw_o
-  | [ |- context[get (sfby _ _) (S _)]] => rewrite sfby_rw_s
-  | [ |- context[get (sfby _ _) ?n]] =>
-    let n2 := fresh \"n\" in
-    destruct n as [ _ | n2 ];
-    let h2n := fresh \"h2pn\" in
-    try pose (h2 n2) as h2n; try inversion h2n
-  | [ H: ?A <> ?B, H2: ?A = ?B -> ?C |- _ ] => clear H2
-  | [ H: ?A = ?B, H2: ?A <> ?B -> ?C |- _ ] => clear H2
-  | [ H : (?A = ?B -> ?C) /\\ (?A <> ?B -> ?D) |- _ ] =>
-    let h := fresh H in
-    let h' := fresh H in
-    destruct H as (h & h');
-    let u := fresh \"dec\" in
-    pose (Z.eq_dec A B) as u;
-    let u1 := fresh u in
-    let u2 := fresh u in
-    destruct u as [u1 | u2];
-    (let h'' := fresh h in
-    pose (h u1) as h'';  clearbody h''; clear h) ||
-    (let h'' := fresh h in
-    pose (h' u2) as h''; clearbody h''; clear h)
-  | [ |- ?a <-> ?b ] => split; intro
-%a
-%a
-  | [H: ?A -> _, H2:?A |- _] =>
-    let h := fresh H in
-    pose (H H2) as h;
-    clearbody h;
-    clear H
-  | [H: (?c = true) -> False |- _ ] =>
-    let c2 := fresh \"c\" in
-    case_eq c; intro c2; (destruct (H c2) || clear H)
-  end.
-
-  Ltac unfold_eq := match goal with
-  | [ H: ?A = ?E |- _] =>
-    match E with
-    | context[is_eq ?C ?D] =>
-      let y := fresh \"y\" in
-      pose (is_eq_def C D) as y;
-      clearbody y;
-      symmetry in H
-      end
-  end.
-
-  Ltac simpl_pairs := repeat match goal with
-  | [ H: pair _ _ = pair _ _ |- _ ] => inversion H; clear H
-  end.
-
-Ltac solve u1 h_rec %a := simpl_all u1; repeat (repeat (s h_rec %a); simpl_pairs; try congruence; unfold_eq).
+  fprintf ppf "Ltac simpl_all u1 := repeat match goal with \
+  | [ H: context[u1] |- _ ] => unfold u1 in H; simpl in H \
+  end. \
+ \
+  Ltac s h2 %a := match goal with \
+  | [ |- _ /\\ _] => split \
+  | [H: _ /\\ _ |- _] => destruct H \
+  | [ |-  _ = sfby _ _] => \
+    apply sext \
+  | [ |-  _ = splus ?A ?B] => \
+    apply sext \
+  | [ |-  _ = sminus ?A ?B] => \
+    apply sext \
+  | [ |-  _ = sgt ?A ?B] => \
+    apply sext \
+  | [ |-  _ = seq ?A ?B] => \
+    apply sext \
+  | [ |-  _ = swhen ?A ?B] => \
+    apply sext \
+  | [ |-  _ = sconst _] => \
+    apply sext \
+  | [ |-  _ = smerge _ _ _] => \
+    apply sext \
+  | [ |- forall n:nat, ?C] => \
+      intros nk; \
+      pose (h2 nk) as nk2; \
+      try match goal with \
+      | [ |- context [S ?n]] => pose (h2 (S n)) as nk3 \
+      end \
+  | [ H : ?A = ?C, K : ?C = ?D |- ?A = ?D] => rewrite H; eauto \
+  | [ H: context[get (splus _ _)] |- _] => rewrite splus_rw in H \
+  | [ H: context[get (sconst _)] |- _] => rewrite sconst_rw in H \
+  | [ |- context[get (sgt ?a ?b) ?n] ] => \
+    let dec_bool := fresh \"dec_bool\" in \
+    pose (gt_dec (get a n) (get b n)) as dec_bool; \
+    let dec1 := fresh dec_bool in \
+    let dec2 := fresh dec_bool in \
+    destruct dec_bool as [dec1 | dec2]; \
+    let c := fresh \"c\" in \
+    ((pose (sgt_rw_true a b n dec1) as c; clearbody c; rewrite c; clear c) \
+    || (pose (sgt_rw_false a b n dec2) as c; clearbody c; rewrite c; clear c)) \
+  | [ |- context[get (seq ?a ?b) ?n]] => \
+    let dec_bool := fresh \"dec_bool\" in \
+    pose (Z.eq_dec (get a n) (get b n)) as dec_bool; \
+    let dec1 := fresh dec_bool in \
+    let dec2 := fresh dec_bool in \
+    destruct dec_bool as [dec1 | dec2]; \
+    let c := fresh \"c\" in \
+    ((pose (seq_rw_true a b n dec1) as c; clearbody c; rewrite c; clear c) \
+    || (pose (seq_rw_false a b n dec2) as c; clearbody c; rewrite c; clear c)) \
+  | [ |- context[get (splus _ _) _]] => rewrite splus_rw \
+  | [ |- context[get (sconst _) _]] => rewrite sconst_rw \
+  | [ |- context[get (smerge ?a _ _) ?n]] => \
+      let h := fresh \"merge\" in \
+      case_eq (get a n); [ \
+      intro h; rewrite h in *; rewrite smerge_rw_true | \
+      intro h; rewrite h in *;  rewrite smerge_rw_false] \
+  | [ |- context[get (swhen _ _)]] => rewrite swhen_rw \
+  | [ |- context[get (sfby _ _) (O)]] => rewrite sfby_rw_o \
+  | [ |- context[get (sfby _ _) (S _)]] => rewrite sfby_rw_s \
+  | [ |- context[get (sfby _ _) ?n]] => \
+    let n2 := fresh \"n\" in \
+    destruct n as [ _ | n2 ]; \
+    let h2n := fresh \"h2pn\" in \
+    try pose (h2 n2) as h2n; try inversion h2n \
+  | [ H: ?A <> ?B, H2: ?A = ?B -> ?C |- _ ] => clear H2 \
+  | [ H: ?A = ?B, H2: ?A <> ?B -> ?C |- _ ] => clear H2 \
+  | [ H : (?A = ?B -> ?C) /\\ (?A <> ?B -> ?D) |- _ ] => \
+    let h := fresh H in \
+    let h' := fresh H in \
+    destruct H as (h & h'); \
+    let u := fresh \"dec\" in \
+    pose (Z.eq_dec A B) as u; \
+    let u1 := fresh u in \
+    let u2 := fresh u in \
+    destruct u as [u1 | u2]; \
+    (let h'' := fresh h in \
+    pose (h u1) as h'';  clearbody h''; clear h) || \
+    (let h'' := fresh h in \
+    pose (h' u2) as h''; clearbody h''; clear h) \
+  | [ |- ?a <-> ?b ] => split; intro \
+%a \
+%a \
+  | [H: ?A -> _, H2:?A |- _] => \
+    let h := fresh H in \
+    pose (H H2) as h; \
+    clearbody h; \
+    clear H \
+  | [H: (?c = true) -> False |- _ ] => \
+    let c2 := fresh \"c\" in \
+    case_eq c; intro c2; (destruct (H c2) || clear H) \
+  end. \
+ \
+  Ltac unfold_eq := match goal with \
+  | [ H: ?A = ?E |- _] => \
+    match E with \
+    | context[is_eq ?C ?D] => \
+      let y := fresh \"y\" in \
+      pose (is_eq_def C D) as y; \
+      clearbody y; \
+      symmetry in H \
+      end \
+  end. \
+ \
+  Ltac simpl_pairs := repeat match goal with \
+  | [ H: pair _ _ = pair _ _ |- _ ] => inversion H; clear H \
+  end. \
+ \
+Ltac solve u1 h_rec %a := simpl_all u1; repeat (repeat (s h_rec %a); simpl_pairs; try congruence; unfold_eq). \
 solve step_fonct_full%a h_rec %a.@\n"
     f ()
     (fun ppf () ->
@@ -201,10 +201,6 @@ solve step_fonct_full%a h_rec %a.@\n"
 let find_offset f =
   let a = open_in f in
   let lo0 = ref 0 in
-  let lo1 = ref 0 in
-  let lo2 = ref 0 in
-  let lo3 = ref 0 in
-  let lo4 = ref 0 in
   try
     while true do
       let l = pos_in a in
