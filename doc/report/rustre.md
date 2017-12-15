@@ -25,7 +25,7 @@ Des variables globales peuvent être déclarées en début de fichier après les
 et avant le premier nœud avec la syntaxe `const SOMETHING = 42`. Ces constantes sont substituées
 dans le code dès le parsing à la manière des `#DEFINE` de C.
 
-Les constructions `if`, `->` et `pre` sont traitées comme du sucre syntaxique dès le parsing tel que décris
+Les constructions `if`, `->` et `pre` sont traitées comme du sucre syntaxique dès le parsing tel que décrit
 dans l'article.
 
 ### Typage
@@ -50,13 +50,13 @@ a pour horloge `('a, 'a) -> 'a`.
 L'analogie avec ML est la suivante :
 
 - Un nœud est traité comme une déclaration de fonction : on associe une variable
-  d'horloge fraiche à chaque entrée et on unifie à l'aide des expressions et
+  d'horloge fraîche à chaque entrée et on unifie à l'aide des expressions et
   équations du nœud.
 - Dans les expressions, on unifie comme dans W.
 - Chaque équation permet d'unifier les variables du pattern avec les horloges
   inférées pour l'expression à droite du signe `=`.
 
-La correction du résultat est assurée par une deuxième passe sur l'AST qui se
+La correction du résultat est assurée par une deuxième passe sur l'AST qui
 effectue une vérification des horloges (par opposition à la première qui les
 infère).
 
