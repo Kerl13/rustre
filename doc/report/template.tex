@@ -222,6 +222,12 @@ $endif$
 \date{$date$}
 
 \usepackage{xcolor}
+\usepackage{listings}
+
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
 
 \lstdefinelanguage{minils}%
 {morekeywords={and,const,else,every,fby,if,in,merge,mod,node,not,or,pre,then,true,type,var,when,with,True,False},%
@@ -235,14 +241,9 @@ $endif$
   morestring=[b]""",%
 }[keywords,comments,strings]%
 
-
-\definecolor{mygreen}{rgb}{0,0.6,0}
-\definecolor{mygray}{rgb}{0.5,0.5,0.5}
-\definecolor{mymauve}{rgb}{0.58,0,0.82}
-
 \lstset{ %
   %backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
-  basicstyle=\ttfamily\footnotesize,        % the size of the fonts that are used for the code
+  basicstyle=\ttfamily,        % the size of the fonts that are used for the code
   breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
   breaklines=true,                 % sets automatic line breaking
 %  captionpos=b,                    % sets the caption-position to bottom
@@ -274,11 +275,17 @@ $endif$
 %  literate={\#}{{/}}
 }
 
+
+
+
 \lstdefinelanguage{why3}
 {
-basicstyle=\ttfamily,
-keywordstyle=\color{blue},
-morekeywords=[1]{inductive,predicate,function,goal,type,use,import,theory,end,in,axiom,lemma,export,forall,constant,module,let,exception,match,with,exists,val,unit},%
+morekeywords=[1]{predicate,constant,function,goal,type,use,%
+import,theory,end,in,%
+mutable,invariant,model,requires,ensures,raises,returns,reads,writes,diverges,%
+variant,let,val,while,for,loop,abstract,private,any,assert,assume,check,%
+rec,clone,if,then,else,result,old,ghost,%
+axiom,lemma,export,forall,exists,match,with,not,inductive,coinductive},%
 %keywordstyle=[1]{\color{red}},%
 morekeywords=[2]{true,false},%
 %keywordstyle=[2]{\color{blue}},%
@@ -291,14 +298,15 @@ escapeinside={*?}{?*},%
 keepspaces=true,
 }
 
-\lstnewenvironment{why3}
-{\lstset{language=Why3}}
-{}
+\lstnewenvironment{why3}{\lstset{language=why3}}{}
+
+\newcommand{\whyf}[1]{\lstinline[language=why3]{#1}}
+
+
+\title{De Lustre à Rust : Rustre \\ \Large Un compilateur vérifiable, vérifié et vérifiant}
 
 \begin{document}
-$if(title)$
 \maketitle
-$endif$
 $if(abstract)$
 \begin{abstract}
 $abstract$

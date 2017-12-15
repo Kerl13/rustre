@@ -1,6 +1,9 @@
 ---
-title: "De lustre à Rust : Rustre"
-subtitle: "Un compilateur vérifiable, vérifié et vérifiant"
+author:
+  - Raphaël Monat
+  - Lucas Baudin
+  - Martin Pépin
+  - Auguste Olivry
 ---
 
 ![Pong](pong.png)
@@ -63,10 +66,10 @@ Un nœud peut donc être polymorphe en termes d'horloge et peut donc être utili
 plusieurs fois sur des horloges différentes. Par exemple, le code suivant a pour
 horloge `('a, 'a) -> 'a`:
 
-```lustre
+\begin{lstlisting}[language=minils]
 node add2(a, b: int) = (c: int)
 with c = a + b ;
-```
+\end{lstlisting}
 
 L'analogie avec ML est la suivante :
 
@@ -172,25 +175,25 @@ de flots.
 Nous avons axiomatisé ces flots dans une bibliothèque Why3. Un flot est un élément du
 type `stream 'a` avec une fonction d'accès `get` :
 
-~~~why3
+\begin{lstlisting}[language=why3]
 type stream 'a
 type nat = O | S nat
 function get (stream 'a) nat: 'a
 (* axiome d'extensionnalite *)
 axiom sext: forall a, b: stream 'a.
     (forall n: nat. get a n = get b n) -> a = b
-~~~
+\end{lstlisting}
 
 Ensuite, on définit toutes les opérations possibles, par exemple la somme de deux
 flots ou le fby via des règles de réécriture (le reste est dans `why3/stream.mlw`) :
 
-```why3
+\begin{lstlisting}[language=why3]
 function sfby 'a (stream 'a): stream 'a
 function splus (stream int) (stream int): stream int
 axiom sfby_rw_s: forall a:'a, b:stream 'a, n. get (sfby a b) (S n) = get b n
 axiom sfby_rw_o: forall a:'a, b:stream 'a. get (sfby a b) O = a
 axiom splus_rw: forall a, b, n. get (splus a b) n = get a n + get b n
-```
+\end{lstlisting}
 
 La traduction est très simple, il s'agit de traduire les équations en une conjonction
 d'égalités logiques.
@@ -198,17 +201,17 @@ On note que cette traduction est réalisée depuis le premier AST, ainsi on n'a
 pas besoin de faire confiance aux autres passes de compilation.
 Par exemple, le nœud suivant :
 
-```lustre
+\begin{lstlisting}[language=minils]
 node add(a, b: int) = (c, d: int)
 with c = a + b ; d = 0 fby c
-```
+\end{lstlisting}
 
 est traduit par la spécification Why3 suivante :
 
-```why3
+\begin{lstlisting}[language=why3]
 predicate spec (a:stream int) (b:stream int) (c:stream int) (d:stream int) =
   c = (splus a b) /\ d = (sfby 0 c)
-```
+\end{lstlisting}
 
 #### Preuve sémantique
 
@@ -217,7 +220,8 @@ spécification abstraite. Formellement, cela revient à définir par induction d
 montrer qu'ils satisfont le prédicat `spec`.
 On appelle `spec_log` la postcondition du code exécutable, et `spec_abs` la spécification abstraite.
 Ainsi dans l'exemple précédent, le lemme qu'on cherche à montrer est le suivant :
-```why3
+
+\begin{lstlisting}[language=why3]
 lemma valid:
   forall (* in and out vars *) a:stream int,  b:stream int,  c:stream int,
   d:stream int,  (* state *) sd: stream int.
@@ -227,7 +231,7 @@ lemma valid:
     spec_log (get a n) (get b n) (get c n)
       (get d n) { Nodeadd.d = get sd n; } { Nodeadd.d = get sd (S n); })
   (* correction *) -> spec_abs a b c d
-```
+\end{lstlisting}
 
 On note qu'on a besoin de supposer l'existence d'un flot supplémentaire pour l'état,
 qui n'apparaît pourtant pas dans `spec_abs`. Ce lemme définit bien des flots valides :
@@ -272,7 +276,7 @@ précédents), un pour l'étape d'initialisation, l'autre pour la récurrence.
 
 Par exemple pour le nœud suivant, qui compte le nombre de A, B, C reçus en entrée :
 
-```why3
+\begin{lstlisting}[language=minils]
 type abc = A + B + C
 
 node count(x : abc) = (nb_a, nb_b, nb_c : int)
@@ -292,21 +296,21 @@ with var nb_a, nb_b, nb_c, cpt : int ; ok : bool in
   cpt = 0 fby (cpt + 1) ;
   (nb_a, nb_b, nb_c) = count(x) ;
   ok = (nb_a + nb_b + nb_c = cpt)
-```
+\end{lstlisting}
 
 L'extraction nous donne un prédicat `step_fonct` qui caractérise la fonction
 séquentielle exécutable. On génère en plus un prédicat `step_fonct_ok` dans lequel on demande que `ok = true` et que les `ok` des nœuds appelés soient aussi égaux à `true`.
 Ainsi, pour prouver que `ok = true` dans notre système synchrone, il suffit que les deux
 lemmes suivants soient satisfaits :
 
-```why3
-lemme prop_init: forall x__1, ok__1, _s2.
+\begin{lstlisting}[language=why3]
+lemma prop_init: forall x__1, ok__1, _s2.
   (step_fonct x__1 ok__1 reset_state _s2 -> step_fonct_ok x__1 ok__1 reset_state _s2)
 
-lemme prop_ind: forall x__1, x__2, ok__1, ok__2, _s, _s2, _s3.
+lemma prop_ind: forall x__1, x__2, ok__1, ok__2, _s, _s2, _s3.
   (step_fonct_ok x__1 ok__1 _s _s2 /\ step_fonct x__2 ok__2 _s2 _s3) ->
   step_fonct_ok x__2 ok__2 _s2 _s3
-```
+\end{lstlisting}
 
 #### Analyses des valeurs non initialisées
 
@@ -316,7 +320,7 @@ valeur des variables de sorties et de l'état est indépendantes des valeurs mis
 défaut (nécessaire à la compilation en Rust et à Why3). On peut le formuler avec le
 lemme suivant :
 
-```why3
+\begin{lstlisting}[language=why3]
 lemma nil_analysis:
   forall (* etats de sortie *) s1, s2,
          (* entrees *) a,  b, ...
@@ -326,7 +330,7 @@ lemma nil_analysis:
   step_fonct a b c1_1 reset_state s1 ->
   step_fonct a b c1_2 reset_state_nil s2 ->
   s1 = s2 /\ c1_1 = c1_2
-```
+\end{lstlisting}
 
 L'option `-nils` permet de générer ce lemme puis, en passant par Why3, de demander à
 Z3 de le prouver. Si Z3 en donne une preuve, cela prouve qu'il n'y a pas de problème
