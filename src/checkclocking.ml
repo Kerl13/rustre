@@ -11,9 +11,19 @@ module CheckW = struct
   open Pp_utils
   exception Error of location * string
 
+  module Vmap = Map.Make(struct
+      type t = cvar
+      let compare v1 v2 = v1.id - v2.id
+  end)
+
   let rec head = function
     | CVar { id = _ ; def = Some c } -> head c
     | c -> c
+
+  let rec canon c = match head c with
+    | CBase -> CBase
+    | COn (c, dc, x) -> COn (canon c, dc, x)
+    | CVar v -> CVar v
 
   let rec ck_eq ck1 ck2 = match head ck1, head ck2 with
     | CBase, CBase -> true
@@ -29,10 +39,10 @@ module CheckW = struct
     let clock_out = Ast_typed_utils.var_list_map (fun x -> Smap.find x n.n_clocks) n.n_output in
     (n_name, clock_in, clock_out)
 
-  let rec cts_of_cexpr_list : type a. a cexpr_list -> ct = fun cexpr_l -> match cexpr_l with
-    | CLNil -> assert false
-    | CLSing x -> x.texpr_clock
-    | CLCons (x, xs) -> x.texpr_clock @ (cts_of_cexpr_list xs)
+  let rec cts_of_cexpr_list : type a. a cexpr_list -> ct list = fun cexpr_l -> match cexpr_l with
+    | CLNil -> []
+    | CLSing x -> [x.texpr_clock]
+    | CLCons (x, xs) -> x.texpr_clock :: (cts_of_cexpr_list xs)
 
 
   let rec check_clock_expr : type a. (string * Ast_clocked.ct * Ast_clocked.ct) list
@@ -65,18 +75,51 @@ module CheckW = struct
          check_clock_expr node_env ck_map e1
     | CApp (f, arg, every) ->
        let Ast_typed.Tagged (_, _, f_id) = f in
-       let (_, f_in_ct, f_out_ct) = List.find (fun (x, _, _) -> x = f_id) node_env in
+       let (f_name, f_in_ct, f_out_ct) = List.find (fun (x, _, _) -> x = f_id) node_env in
        let arg_cts = cts_of_cexpr_list arg in
-       (* if not (ct_eq cexpr_clock f_out_ct) then
-        *   let sym = Ast_clocked.symbol_map () in
-        *   raise (Error (loc, let _ = pp_list " ; " (pp_ck sym) Format.str_formatter cexpr_clock in
-        *                      let _ = Format.fprintf Format.str_formatter "@." in
-        *                      let _ = pp_list " , " (pp_ck sym) Format.str_formatter f_out_ct in
-        *                      Format.flush_str_formatter ()))
-        * else if not (List.fold_left2 (fun b c1 c2 -> b && ck_eq c1 c2) true f_in_ct arg_cts) then
-        *   raise (Error (loc, Format.sprintf "check_clock_expr, App, fold_left2"))
-        * else *)
-         check_clock_expr_list node_env ck_map arg; check_clock_expr node_env ck_map every;
+       let subst_map =
+         let rec inst m ck' ck = match head ck', head ck with
+           | CBase, CBase -> m
+           | COn (ck', dc', x'), COn (ck, dc, x) ->
+             assert (dc' = dc) ;
+             assert (x' = x) ;
+             inst m ck' ck
+           | CVar v, ck -> Vmap.add v ck m
+           | _ -> assert false
+         in
+         let inst m (ct, ck) = match ct with
+           | [ck'] -> inst m ck ck'
+           | _ -> assert false
+         in
+         List.map2 (fun ct ck -> (ct, ck)) arg_cts f_in_ct
+         |> List.fold_left inst Vmap.empty
+       in
+       let find x =
+         try Vmap.find x subst_map
+         with Not_found -> CVar x
+       in
+       let out_cks =
+         let rec subst ck = match head ck with
+           | CBase -> CBase
+           | COn (ck, dc, x) -> COn (subst ck, dc, x)
+           | CVar v -> find v
+         in
+         List.map subst f_out_ct
+       in
+       let ct_le =
+         let rec ck_le ck1 ck2 = match head ck1, head ck2 with
+           | CBase, CBase -> true
+           | COn (ck1, dc1, x1), COn (ck2, dc2, x2) ->
+             dc1 = dc2 && x1 = x2 && ck_le ck1 ck2
+           | _, CVar _ -> true
+           | _ ->
+             false
+         in List.for_all2 ck_le
+       in
+       if not (ct_le cexpr_clock out_cks) then
+         raise (Error (loc, Format.sprintf "check_clock_expr, CApp")) ;
+       check_clock_expr_list node_env ck_map arg;
+       check_clock_expr node_env ck_map every
     | CWhen (e, c, x) ->
         let ck_e = match e.texpr_clock with
           | [ck_e] -> ck_e
