@@ -2,19 +2,19 @@
 
 ## Dépendences
 
-Pour compiler le binaire `rustre`, il faut:
-- une version d'ocaml (testé en version 4.04.0)
+Pour compiler le binaire `rustre`, il faut :
+- une version d'ocaml (testé en version 4.04.0, 4.05.x)
 - menhir (testé en version 20171206)
 
-Il est aussi recommandé d'avoir installé:
+Il est aussi recommandé d'avoir installé :
 - rustc (testé en version 1.22.1)
-- **TODO** ocamlgraphics? (pour pong)
-- **TODO** why3, alt-ergo, z3?
+- ocamlgraphics (pour pong)
+- Why3 0.88.1, Alt-Ergo 1.30, Z3 4.4.2
 
 
 ## Compiler le binaire
 
-Le binaire `rustre` peut être compilé à l'aide de la commande `make` lancée à la racine du projet. 
+Le binaire `rustre` peut être compilé à l'aide de la commande `make` lancée à la racine du projet.
 
 La commande `./rustre -help` devrait donner quelque chose comme :
 
