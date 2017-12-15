@@ -331,12 +331,12 @@ module Nodelat_move
       | True -> let var10 = (0 - (x + dx)) in
                   let var7 = Right in (var10, var7)
     end in
-    let r_overflow = ((is_eq (dir) (Right)) && ((x + 2) >= 1200)) in
+    let r_overflow = ((is_eq (dir) (Right)) && ((x + 2) >= 1000)) in
     match r_overflow with
       | False -> x2 = var10 &&  true
-      | True -> x2 = ((((2 * 1200) - x) - dx) - 1) &&  true
+      | True -> x2 = ((((2 * 1000) - x) - dx) - 1) &&  true
     end &&
-    let ok = (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1200))) -> ((((0 - 1) < x2) && (x2 < 1200))))) in
+    let ok = (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1000))) -> ((((0 - 1) < x2) && (x2 < 1000))))) in
     let goal_ = (r_overflow && (not aligned)) in
     let (var9) = match goal_ with
       | False -> let var9 = score in (var9)
@@ -372,12 +372,12 @@ module Nodelat_move
       | True -> let var10 = (0 - (x + dx)) in
                   let var7 = Right in (var10, var7)
     end in
-    let r_overflow = ((is_eq (dir) (Right)) && ((x + 2) >= 1200)) in
+    let r_overflow = ((is_eq (dir) (Right)) && ((x + 2) >= 1000)) in
     match r_overflow with
       | False -> x2 = var10 &&  true
-      | True -> x2 = ((((2 * 1200) - x) - dx) - 1) &&  true
+      | True -> x2 = ((((2 * 1000) - x) - dx) - 1) &&  true
     end &&
-    let ok = (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1200))) -> ((((0 - 1) < x2) && (x2 < 1200))))) in
+    let ok = (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1000))) -> ((((0 - 1) < x2) && (x2 < 1000))))) in
     let goal_ = (r_overflow && (not aligned)) in
     let (var9) = match goal_ with
       | False -> let var9 = score in (var9)
@@ -390,7 +390,7 @@ module Nodelat_move
     
     state2.score = var9 && 
     state2.dir = var8 && 
-    (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1200))) -> ((((0 - 1) < x2) && (x2 < 1200)))))
+    (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1000))) -> ((((0 - 1) < x2) && (x2 < 1000)))))
   predicate step_fonct_ok (x: int)  (aligned: bool)  (x2: int) 
     (dir: Types.dir) 
     (score: int) (state:state) (state2:state) =
@@ -421,12 +421,12 @@ module Nodelat_move
       | True -> let var10 = (0 - (x + dx)) in
                   let var7 = Right in (var10, var7)
     end in
-    let r_overflow = ((dir = Right) && ((x + 2) >= 1200)) in
+    let r_overflow = ((dir = Right) && ((x + 2) >= 1000)) in
     let (x2) = match r_overflow with
       | False -> let x2 = var10 in (x2)
-      | True -> let x2 = ((((2 * 1200) - x) - dx) - 1) in (x2)
+      | True -> let x2 = ((((2 * 1000) - x) - dx) - 1) in (x2)
     end in
-    let ok = (((dx = 2) || (dx = (0 - 2))) && ((not (((0 <= x) && (x < 1200)))) || ((((0 - 1) < x2) && (x2 < 1200))))) in
+    let ok = (((dx = 2) || (dx = (0 - 2))) && ((not (((0 <= x) && (x < 1000)))) || ((((0 - 1) < x2) && (x2 < 1000))))) in
     let goal_ = (r_overflow && (not aligned)) in
     let (var9) = match goal_ with
       | False -> let var9 = score in (var9)
@@ -726,10 +726,10 @@ module Nodeclength
     (length: int) (state:state) (state2:state) =
     
     match dir with
-      | Left -> length = (1200 + x) &&  true
-      | Right -> length = (1200 - x) &&  true
+      | Left -> length = (1000 + x) &&  true
+      | Right -> length = (1000 - x) &&  true
     end &&
-    let ok = ((((is_eq (dir) (Right))) -> ((is_eq (length) ((1200 - x))))) && (((is_eq (dir) (Left))) -> ((is_eq (length) ((1200 + x)))))) in
+    let ok = ((((is_eq (dir) (Right))) -> ((is_eq (length) ((1000 - x))))) && (((is_eq (dir) (Left))) -> ((is_eq (length) ((1000 + x)))))) in
     true
   predicate step_fonct (dir: Types.dir)  (x: int) 
     (length: int) (state:state) (state2:state) =
@@ -739,11 +739,11 @@ module Nodeclength
     (length: int) (state:state) (state2:state) =
     
     match dir with
-      | Left -> length = (1200 + x) &&  true
-      | Right -> length = (1200 - x) &&  true
+      | Left -> length = (1000 + x) &&  true
+      | Right -> length = (1000 - x) &&  true
     end &&
-    let ok = ((((is_eq (dir) (Right))) -> ((is_eq (length) ((1200 - x))))) && (((is_eq (dir) (Left))) -> ((is_eq (length) ((1200 + x)))))) in
-    ((((is_eq (dir) (Right))) -> ((is_eq (length) ((1200 - x))))) && (((is_eq (dir) (Left))) -> ((is_eq (length) ((1200 + x))))))
+    let ok = ((((is_eq (dir) (Right))) -> ((is_eq (length) ((1000 - x))))) && (((is_eq (dir) (Left))) -> ((is_eq (length) ((1000 + x)))))) in
+    ((((is_eq (dir) (Right))) -> ((is_eq (length) ((1000 - x))))) && (((is_eq (dir) (Left))) -> ((is_eq (length) ((1000 + x))))))
   predicate step_fonct_ok (dir: Types.dir)  (x: int) 
     (length: int) (state:state) (state2:state) =
     step_fonct_ok_full dir x length state state2
@@ -760,10 +760,10 @@ module Nodeclength
     'Init:
     
     let (length) = match dir with
-      | Left -> let length = (1200 + x) in (length)
-      | Right -> let length = (1200 - x) in (length)
+      | Left -> let length = (1000 + x) in (length)
+      | Right -> let length = (1000 - x) in (length)
     end in
-    let ok = (((not ((dir = Right))) || ((length = (1200 - x)))) && ((not ((dir = Left))) || ((length = (1200 + x))))) in
+    let ok = (((not ((dir = Right))) || ((length = (1000 - x)))) && ((not ((dir = Left))) || ((length = (1000 + x))))) in
     assert { step_fonct_full dir x length (at state 'Init) state };
     (length)
   
@@ -994,8 +994,8 @@ module Nodedist_to_goal
     (d: int) (state:state) (state2:state) =
     
     match dir with
-      | Left -> d = (1200 + x) &&  true
-      | Right -> d = (1200 - x) &&  true
+      | Left -> d = (1000 + x) &&  true
+      | Right -> d = (1000 - x) &&  true
     end &&
     true
   predicate step_fonct (x: int)  (dir: Types.dir) 
@@ -1006,8 +1006,8 @@ module Nodedist_to_goal
     (d: int) (state:state) (state2:state) =
     
     match dir with
-      | Left -> d = (1200 + x) &&  true
-      | Right -> d = (1200 - x) &&  true
+      | Left -> d = (1000 + x) &&  true
+      | Right -> d = (1000 - x) &&  true
     end &&
     true
   predicate step_fonct_ok (x: int)  (dir: Types.dir) 
@@ -1026,8 +1026,8 @@ module Nodedist_to_goal
     'Init:
     
     let (d) = match dir with
-      | Left -> let d = (1200 + x) in (d)
-      | Right -> let d = (1200 - x) in (d)
+      | Left -> let d = (1000 + x) in (d)
+      | Right -> let d = (1000 - x) in (d)
     end in
     assert { step_fonct_full x dir d (at state 'Init) state };
     (d)
@@ -1101,7 +1101,7 @@ module Nodepong
     Nodealigned_with_paddle.step_fonct y paddle goal_ state.inst14 state2.inst14 && 
     
     Nodelat_move.step_fonct x goal_ xx dir score state.inst15 state2.inst15 && 
-    let ok = (((0 <= x) && (x < 1200)) && ((((0 - 1) < xx) && (xx < 1200)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && ((is_eq (goal_) (true)) && (is_eq (score) (0)))))))))))) in
+    let ok = (((0 <= x) && (x < 1000)) && ((((0 - 1) < xx) && (xx < 1000)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && ((is_eq (goal_) (true)) && (is_eq (score) (0)))))))))))) in
     
     Nodedist_to_goal.step_fonct x dir length state.inst16 state2.inst16 && 
     let delta_y = (div ((length * var18)) (2)) in
@@ -1139,7 +1139,7 @@ module Nodepong
     Nodealigned_with_paddle.step_fonct_ok y paddle goal_ state.inst14 state2.inst14 && 
     
     Nodelat_move.step_fonct_ok x goal_ xx dir score state.inst15 state2.inst15 && 
-    let ok = (((0 <= x) && (x < 1200)) && ((((0 - 1) < xx) && (xx < 1200)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && ((is_eq (goal_) (true)) && (is_eq (score) (0)))))))))))) in
+    let ok = (((0 <= x) && (x < 1000)) && ((((0 - 1) < xx) && (xx < 1000)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && ((is_eq (goal_) (true)) && (is_eq (score) (0)))))))))))) in
     
     Nodedist_to_goal.step_fonct_ok x dir length state.inst16 state2.inst16 && 
     let delta_y = (div ((length * var18)) (2)) in
@@ -1147,7 +1147,7 @@ module Nodepong
     state2.paddle = paddle2 && 
     state2.y = y2 && 
     state2.x = xx && 
-    (((0 <= x) && (x < 1200)) && ((((0 - 1) < xx) && (xx < 1200)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && ((is_eq (goal_) (true)) && (is_eq (score) (0))))))))))))
+    (((0 <= x) && (x < 1000)) && ((((0 - 1) < xx) && (xx < 1000)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && ((is_eq (goal_) (true)) && (is_eq (score) (0))))))))))))
   predicate step_fonct_ok (wind: int)  (x: int)  (y: int)  (paddle: int) 
     (score: int) (state:state) (state2:state) =
     exists var20,  var18,  xx,  y2,  dy,  paddle2,  dir,  length, 
@@ -1195,7 +1195,7 @@ module Nodepong
     let (goal_) = Nodealigned_with_paddle.step state.inst14 y paddle in 
     
     let (xx, dir, score) = Nodelat_move.step state.inst15 x goal_ in 
-    let ok = (((0 <= x) && (x < 1200)) && ((((0 - 1) < xx) && (xx < 1200)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((paddle = y) && ((paddle2 = y2) && ((score = 0) && ((goal_ = true) && (score = 0))))))))))) in
+    let ok = (((0 <= x) && (x < 1000)) && ((((0 - 1) < xx) && (xx < 1000)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((paddle = y) && ((paddle2 = y2) && ((score = 0) && ((goal_ = true) && (score = 0))))))))))) in
     
     let (length) = Nodedist_to_goal.step state.inst16 x dir in 
     let delta_y = (div ((length * var18)) (2)) in

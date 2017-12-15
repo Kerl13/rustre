@@ -5,12 +5,13 @@ let usage = Format.sprintf "usage: %s [options] file.lus main" Sys.argv.(0)
 
 type extractor = Rust | Why3
 
-let file, main_node, extractor, output, verbose, opt, specification, nils, ext =
+let file, main_node, extractor, output, verbose, opt, specification, nils, ext, verif =
   let extractor = ref Rust in
   let output = ref "" in
   let verbose = ref false in
   let opt = ref false in
   let specification = ref false in
+  let verif = ref false in
   let nils = ref false in
   let ext = ref false in
   let spec = [
@@ -22,6 +23,7 @@ let file, main_node, extractor, output, verbose, opt, specification, nils, ext =
     "-v", Arg.Set verbose, "Verbose output";
     "-opt", Arg.Set opt, "Optimize object code";
     "-spec", Arg.Set specification, "Prove compilation";
+    "-verif", Arg.Set verif, "Do verification";
     "-nils", Arg.Set nils, "Prove that nils are not used";
     "-ext", Arg.Set ext, "Use automata extension"
   ] in
@@ -53,7 +55,8 @@ let file, main_node, extractor, output, verbose, opt, specification, nils, ext =
   !opt,
   !specification,
   !nils,
-  !ext
+  !ext,
+  !verif
 
 module Extractor = (val (match extractor with
     | Rust -> (module Extract_rust.E)
@@ -159,6 +162,11 @@ let () =
         if output = "" || extractor <> Why3 then
           (Format.printf "Error: must extract to Why3 and write to a file to check nils (options -extract why3 -o <file>.mlw)"; exit 1);
         Nil_analysis.do_analysis output (List.map (fun n -> n.Ast_parsing.n_name) file.Ast_parsing.f_nodes)
+      end;
+
+    if verif then
+      begin
+        Verification.do_init output (List.map (fun n -> n.Ast_parsing.n_name) file.Ast_parsing.f_nodes)
       end;
 
 
