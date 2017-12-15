@@ -14,7 +14,7 @@ all: pong display
 	@echo 'if [ "_$$1" != "_" ]; then DT=$$1; fi' >> $(PONG_SH)
 	@echo './timer.sh $$DT | ./pong -silent | ./pong_display.native' >> $(PONG_SH)
 	@chmod +x $(PONG_SH)
-	@echo "Execute \`./$(PONG_SH) [DT]\` to run pong"
+	@echo "Execute \`./$(PONG_SH) [DT]\` to run pong (example: DT=0.01)"
 
 .PHONY: pong
 pong:

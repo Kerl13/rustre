@@ -1,7 +1,7 @@
 # Rustre, un compilateur vérifiable, vérifié et vérifiant de minilustre vers Rust
 
 Nous avons réalisé un compilateur de minilustre vers Rust. Nous avons d'abord suivi
-l'architecture proposée dans [ref], mais nous nous sommes attachés à produire un
+l'architecture proposée dans [^ref1], mais nous nous sommes attachés à produire un
 compilateur vérifiable. Il est modulaire, il s'organise en plusieurs passes
 distinctes disposant souvent de leur propre type d'AST : parsing, typage, clocking,
 normalisation, ordonnancement, optimisation et production de code objet. Pour la plupart
@@ -14,7 +14,7 @@ Puis, tout un second volet de notre travail a été consacré à une extraction 
 Cette extraction permet, outre l'utilisation d'un langage particulièrement sûr, de
 produire, sur un noyau du langage, une preuve de correction sémantique pour chaque
 extraction.
-Au contraire d'un compilateur formellement vérifié [ref PLDI2017], la
+Au contraire d'un compilateur formellement vérifié [^ref2], la
 correction sémantique doit être ici prouvée lors de chaque extraction.
 Cela permet de considérer que notre compilateur est formellement prouvé pour **ce noyau** : il
 suffit de faire confiance à la première phase de traduction vers une spécification de
@@ -32,7 +32,7 @@ compilation et l'utilisation du compilateur sont dans le fichier `README.md`.
 
 ### Syntaxe concrète
 
-Nous avons essayé de nous rapprocher au plus de la syntaxe concrète décrite dans [ref lctes08a].
+Nous avons essayé de nous rapprocher au plus de la syntaxe concrète décrite dans [^ref1].
 En particulier, la condition du `if` et du `merge` ainsi que le terme de droite dans la
 construction `when` doivent être des variables et non des expressions arbitraires.
 De nouveaux types de données peuvent être déclarés avec la syntaxe `type direction = Right + Left` par exemple.
@@ -116,7 +116,7 @@ L'extraction vers Rust se fait en un parcours linéaire sur l'AST objet.
 Chaque nœud est encapsulé dans un module, où est décrit :
 
 - une `struct Machine`, décrivant la mémoire et les instances du nœud courant. En utilisant `#[derive(Default)]` avant la déclaration de `struct Machine`, le compilateur Rust génère automatiquement une procédure d'initialisation pour la structure.
-- une méthode `step` fonctionnant sur `Machine`, définie quasi-comme qui est définie de manière similaire au langage objet. Grâce aux transformations effectuées précédemment, toutes les variables locales de cette méthode sont immuables.
+- une méthode `step` fonctionnant sur `Machine`, très similaire à celle du langage objet. Grâce aux transformations effectuées précédemment, toutes les variables locales de cette méthode sont immuables.
 - une méthode `reset` opérant sur `Machine`, réinitialisant la mémoire et les instances du nœud.
 
 
@@ -251,7 +251,7 @@ d'implémentation majeure additionnelle).
 On adopte une approche qui permet une vérification modulaire : on peut choisir de
 spécifier les nœuds un par un, ce qui dans un contexte industriel pourrait permettre
 de passer à l'échelle.
-Pour spécifier les programmes nous suivons l'approche décrite dans l'article de [ref].
+Pour spécifier les programmes nous suivons l'approche décrite dans l'article de [todo: ref].
 Plutôt que d'introduire une nouvelle syntaxe pour les préconditions et les
 postconditions, on utilise une variable spéciale appelée `ok` et on essaye de prouver
 par induction qu'elle est toujours égale à `true`.
@@ -330,7 +330,7 @@ Why3 fonctionnait, elle ne permet pas d'expliciter l'erreur si elle échoue.
 ## Extension avec les automates hiérarchiques
 
 Nous avons essayé d'étendre le langage avec les constructions `reset`, `match` et
-`automata` décrites dans [ref emsoft05b].
+`automata` décrites dans [^ref4] emsoft05b].
 Le manque de temps nous a obligé à traiter ces constructions directement sur
 l'AST de parsing, au détriment d'une gestion correcte des erreurs. Les
 constructions `match` et `reset` sont implémentées, mais pas encore les
@@ -347,12 +347,11 @@ Pour être compatible avec le langage de base, nous nous sommes un peu éloigné
 de la syntaxe proposée dans l'article : les déclarations de variables
 locales sont limitées, et les horloges ne sont pas explicitement déclarées.
 
-
 ## Un exemple pratique : Pong
 
 Comme exemple d'application, nous avons implémenté une version simple de pong
-en minilustre qui peut être compilée en un binaire executable via Rust ou via
-why3 et l'extraction OCaml. Le code se trouve dans le fichier `tests/pong.lus`.
+en minilustre qui peut être compilée en un binaire exécutable via Rust ou via
+why3 et l'extraction OCaml.
 
 Le pong consiste en une arène rectangulaire dans laquelle rebondit un balle. Trois
 des côtés du rectangle sont des murs et sur le quatrième côté une intelligence
@@ -384,3 +383,18 @@ celle ci tout le long de la partie. Dans cette configuration, why3 parvient à p
 que le score reste à 0 à condition que la raquette de l'IA puisse aller assez vite. On
 constate que la preuve échoue lorsqu'on baisse la vitesse de la raquette ce qui est
 attendu.
+
+
+[^ref1]: Darek Biernacki and Jean-Louis Colaco and Grégoire Hamon and
+Marc Pouzet.  Clock-directed Modular Code Generation of Synchronous
+Data-flow Languages.  ACM International Conference on Languages,
+Compilers, and Tools for Embedded Systems (LCTES). 2008.
+
+[^ref2]: T. Bourke, L. Brun, P.-É. Dagand, X. Leroy, M. Pouzet, and
+    L. Rieg. A verified compiler for Lustre. Proceedings of the 38th
+    ACM SIGPLAN Conference on Programming Language Design and
+    Implementation, 586–601, Barcelona, Spain, 18–23 June 2017.
+
+[^ref4]: Jean-Louis Colaço, Bruno Pagano, Marc Pouzet. A conservative
+extension of synchronous data-flow with state machines. EMSOFT 2005:
+173-182.

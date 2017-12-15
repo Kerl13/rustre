@@ -87,7 +87,7 @@ module E = struct
     | Ast_object.SSkip ->
       fprintf ppf ""
     | Ast_object.SCall (args, node, inst, result) when fonct && ok ->
-      fprintf ppf "Node%s.step_fonct_ok %a state.%s state2.%s && "
+      fprintf ppf "Node%s.step_fonct_ok %a state_%s state2.%s && "
         inst
         (pp_list " " (fun p s ->
              match s with
@@ -96,7 +96,7 @@ module E = struct
                assert false)) (args @ result)
         node node
     | Ast_object.SCall (args, node, inst, result) when fonct ->
-      fprintf ppf "Node%s.step_fonct %a state.%s state2.%s && "
+      fprintf ppf "Node%s.step_fonct %a state_%s state2.%s && "
         inst
         (pp_list " " (fun p s ->
              match s with
@@ -234,6 +234,7 @@ module E = struct
     fprintf ppf "@[<2>predicate step_fonct%s_full %a (state:state) (state2:state) =@\n" s
       (pp_list_brk " " (fun ppf (var, sty) ->
            fprintf ppf "(%s: %a)" var  print_sty sty)) (var_in @ var_out @ var_loc);
+    (pp_list_n "" (fun ppf (s, _) -> fprintf ppf "let state_%s = state.%s in@\n" s s)) ppf mach.instances;
     fprintf ppf "%a@\n"
       (print_statement ~ok ~prop:true ~loc:(fun s' -> List.exists (fun (s,_) -> s = s') (var_in @ var_out)) ~fonct:true) stat;
     f ();

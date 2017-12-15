@@ -31,7 +31,7 @@ let do_init filename node_names =
             Format.printf "%s: property \027[31mNOT OK\027[0m at init@." n
         | _ -> Format.printf "%s: property checking failed@." n
       end;
-      let ch = Unix.open_process_in (Format.sprintf "why3 prove %s -T Node%s -t 2 -G prop_ind -a split_goal_wp  -a split_goal_wp -P Z3" filename n)
+      let ch = Unix.open_process_in (Format.sprintf "why3 prove %s -T Node%s -t 10 -G prop_ind -a split_goal_wp  -a split_goal_wp -P Z3" filename n)
       in
       let ok = ref true in
       begin
