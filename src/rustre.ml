@@ -1,5 +1,5 @@
 open Lexing
-   
+
 let usage = Format.sprintf "usage: %s [options] file.lus main" Sys.argv.(0)
 
 
@@ -77,6 +77,7 @@ let () =
     let empty_formatter = Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ()) in
     let format = if verbose then Format.std_formatter else empty_formatter in
 
+
     let file =
       if ext then begin
           let file = Parser_ext.file Lexer_ext.token lb in
@@ -113,8 +114,7 @@ let () =
     Format.fprintf format "ok\n=== Clocks =====\n";
     Format.fprintf format "%a\n@." Ast_clocked.pp_clocks_file clocked;
     Checkclocking.check_clock_file typed main_node clocked;
-                            
-    
+
     Format.fprintf format "Normalization… @?";
     let normalized = Normalization.normalize_file clocked in
     Format.fprintf format "ok@." ;
@@ -167,6 +167,7 @@ let () =
 
         Format.printf "Spec:@\n%a@." Specifications.spec_file (states, file);
         Format.fprintf (Format.formatter_of_out_channel (open_out "spec.mlw")) "%a@." Specifications.spec_file (states, file);
+        Format.printf "Coq proof:@\n%a@." Semantic_proof.spec_file (states, file, obc);
       end;
 
 
