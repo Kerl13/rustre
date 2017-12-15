@@ -4,7 +4,7 @@
 \ 
 
 Nous avons réalisé un compilateur de minilustre vers Rust. Nous avons d'abord suivi
-l'architecture proposée dans [^ref1], mais nous nous sommes attachés à produire un
+l'architecture proposée dans l'article donné en référence[^ref1], mais nous nous sommes attachés à produire un
 compilateur vérifiable. Il est modulaire, il s'organise en plusieurs passes
 distinctes disposant souvent de leur propre type d'AST : parsing, typage, clocking,
 normalisation, ordonnancement, optimisation et production de code objet. Pour la plupart
@@ -17,7 +17,7 @@ Puis, tout un second volet de notre travail a été consacré à une extraction 
 Cette extraction permet, outre l'utilisation d'un langage particulièrement sûr, de
 produire, sur un noyau du langage, une preuve de correction sémantique pour chaque
 extraction.
-Au contraire d'un compilateur formellement vérifié [^ref2], la
+Au contraire d'un compilateur formellement vérifié[^ref2], la
 correction sémantique doit être ici prouvée lors de chaque extraction.
 Cela permet de considérer que notre compilateur est formellement prouvé pour **ce noyau** : il
 suffit de faire confiance à la première phase de traduction vers une spécification de
@@ -35,7 +35,7 @@ compilation et l'utilisation du compilateur sont dans le fichier `README.md`.
 
 ### Syntaxe concrète
 
-Nous avons essayé de nous rapprocher au plus de la syntaxe concrète décrite dans [^ref1].
+Nous avons essayé de nous rapprocher au plus de la syntaxe concrète décrite dans l'article de Biernacki et al.[^ref1]
 En particulier, la condition du `if` et du `merge` ainsi que le terme de droite dans la
 construction `when` doivent être des variables et non des expressions arbitraires.
 De nouveaux types de données peuvent être déclarés avec la syntaxe `type direction = Right + Left` par exemple.
@@ -336,7 +336,7 @@ Why3 fonctionnait, elle ne permet pas d'expliciter l'erreur si elle échoue.
 ## Extension avec les automates hiérarchiques
 
 Nous avons essayé d'étendre le langage avec les constructions `reset`, `match` et
-`automata` décrites dans [^ref4] emsoft05b].
+`automata` décrites dans l'article de Colaço, Pagano et Pouzet[^ref4].
 Le manque de temps nous a obligé à traiter ces constructions directement sur
 l'AST de parsing, au détriment d'une gestion correcte des erreurs. Les
 constructions `match` et `reset` sont implémentées, mais pas encore les
@@ -393,7 +393,7 @@ que le score reste à 0 à condition que la raquette de l'IA puisse aller assez 
 constate que la preuve échoue lorsqu'on baisse la vitesse de la raquette est insuffisante.
 
 
-[^ref1]: Darek Biernacki and Jean-Louis Colaco and Grégoire Hamon and
+[^ref1]: Darek Biernacki and Jean-Louis Colaço and Grégoire Hamon and
 Marc Pouzet.  Clock-directed Modular Code Generation of Synchronous
 Data-flow Languages.  ACM International Conference on Languages,
 Compilers, and Tools for Embedded Systems (LCTES). 2008.
