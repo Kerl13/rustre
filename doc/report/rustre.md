@@ -351,7 +351,7 @@ locales sont limitées, et les horloges ne sont pas explicitement déclarées.
 ## Un exemple pratique : Pong
 
 Comme exemple d'application, nous avons implémenté une version simple de pong
-en minilustre qui peut être compilée en un binaire executable via Rust ou via
+en minilustre qui peut être compilée en un binaire exécutable via Rust ou via
 why3 et l'extraction OCaml.
 
 Le pong consiste en une arène rectangulaire dans laquelle rebondit un balle. Trois
