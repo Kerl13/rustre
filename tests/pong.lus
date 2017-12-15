@@ -4,7 +4,7 @@
 type dir = Left + Right
 
 /* Size of the arena */
-const WIDTH = 1200
+const WIDTH =  1000
 const HEIGHT = 400
 
 /* Speed of the ball */
