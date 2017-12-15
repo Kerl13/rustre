@@ -1,5 +1,8 @@
 # Rustre, un compilateur vérifiable, vérifié et vérifiant de minilustre vers Rust
 
+![Pong](pong.png)
+\ 
+
 Nous avons réalisé un compilateur de minilustre vers Rust. Nous avons d'abord suivi
 l'architecture proposée dans [^ref1], mais nous nous sommes attachés à produire un
 compilateur vérifiable. Il est modulaire, il s'organise en plusieurs passes
@@ -354,18 +357,19 @@ locales sont limitées, et les horloges ne sont pas explicitement déclarées.
 
 Comme exemple d'application, nous avons implémenté une version simple de pong
 en minilustre qui peut être compilée en un binaire exécutable via Rust ou via
-why3 et l'extraction OCaml.
+Why3 et l'extraction OCaml.
 
 Le pong consiste en une arène rectangulaire dans laquelle rebondit un balle. Trois
 des côtés du rectangle sont des murs et sur le quatrième côté une intelligence
-artificielle joue contre le mur et essaie de garder son score à 0.
+artificielle joue contre le mur et essaie toujours rattraper la balle, pour garder
+son score à 0.
 
 Le nœud principal attend un entrée qui n'est pas utilisée et qui sert à donner
 l'horloge de base, la sortie indique la position de la balle, la position de la
 raquette de l'IA et le score. Un interface graphique écrite en OCaml permet de
 visualiser la partie.
 
-Nous avons voulu prouver des propriété sur le pong à l'aide de why3, en particulier
+Nous avons voulu prouver des propriété sur le pong à l'aide de Why3, en particulier
 deux invariants :
 
 1. La balle ne sort pas du cadre
@@ -373,19 +377,18 @@ deux invariants :
 
 La première propriété a été plus difficile à prouver que nous l'espérions. Il a
 fallu trouver les bons invariants à mettre sur les nœuds qui calculent la position
-pour aider why3 à faire la preuve.
+pour aider Why3 à faire la preuve.
 
 Nous avons échoué dans un premier temps à prouver la seconde propriété car notre IA
 était trop sophistiquée : elle calculait à l'avance la position d'arrivée de la balle
 et se plaçait directement à la bonne position. Bien que cela permette à l'IA de gagner
 même quand sa vitesse est faible, nous n'avons pas réussi à trouver une propriété inductive
-à donner à why3, propriété qui serait de toute façon non linéaire et par conséquent difficile.
+à donner à Why3, propriété qui serait de toute façon non linéaire et par conséquent difficile.
 
 Nous avons donc simplifié l'IA qui désormais s'aligne avec la balle et reste en face de
-celle ci tout le long de la partie. Dans cette configuration, why3 parvient à prouver
+celle ci tout au long de la partie. Dans cette configuration, Why3 parvient à prouver
 que le score reste à 0 à condition que la raquette de l'IA puisse aller assez vite. On
-constate que la preuve échoue lorsqu'on baisse la vitesse de la raquette ce qui est
-attendu.
+constate que la preuve échoue lorsqu'on baisse la vitesse de la raquette est insuffisante.
 
 
 [^ref1]: Darek Biernacki and Jean-Louis Colaco and Grégoire Hamon and
