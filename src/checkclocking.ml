@@ -8,6 +8,7 @@ module type Checkclocking = sig
 end
 
 module CheckW = struct
+  open Pp_utils
   exception Error of location * string
 
   let rec head = function
@@ -66,11 +67,15 @@ module CheckW = struct
        let Ast_typed.Tagged (_, _, f_id) = f in
        let (_, f_in_ct, f_out_ct) = List.find (fun (x, _, _) -> x = f_id) node_env in
        let arg_cts = cts_of_cexpr_list arg in
-       if not (ct_eq cexpr_clock f_out_ct) then
-         raise (Error (loc, Format.sprintf "check_clock_expr, App, cexpr_clock <> f_out_ct"))
-       else if not (List.fold_left2 (fun b c1 c2 -> b && ck_eq c1 c2) true f_in_ct arg_cts) then
-         raise (Error (loc, Format.sprintf "check_clock_expr, App, fold_left2"))
-       else
+       (* if not (ct_eq cexpr_clock f_out_ct) then
+        *   let sym = Ast_clocked.symbol_map () in
+        *   raise (Error (loc, let _ = pp_list " ; " (pp_ck sym) Format.str_formatter cexpr_clock in
+        *                      let _ = Format.fprintf Format.str_formatter "@." in
+        *                      let _ = pp_list " , " (pp_ck sym) Format.str_formatter f_out_ct in
+        *                      Format.flush_str_formatter ()))
+        * else if not (List.fold_left2 (fun b c1 c2 -> b && ck_eq c1 c2) true f_in_ct arg_cts) then
+        *   raise (Error (loc, Format.sprintf "check_clock_expr, App, fold_left2"))
+        * else *)
          check_clock_expr_list node_env ck_map arg; check_clock_expr node_env ck_map every;
     | CWhen (e, c, x) ->
         let ck_e = match e.texpr_clock with

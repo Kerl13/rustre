@@ -1,0 +1,10 @@
+/* main = switcher */
+/* Do not remove the line above */
+
+node accumulation(v: int) = (tot: int)
+with
+  tot = (0 fby (tot + v)) + v
+
+node switcher(b: bool; v: int) = (tot: int)
+with var x:bool in
+  tot = accumulation(v) every b
