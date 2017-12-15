@@ -1,12 +1,30 @@
 # Rustre, un compilateur vérifiable, vérifié et vérifiant de minilustre vers Rust
 
-intro
+Nous avons réalisé un compilateur de minilustre vers Rust. Nous avons d'abord suivi
+l'architecture proposée dans [ref], mais nous sommes attachés à produire un
+compilateur vérifiable. Il est modulaire, il s'organise en plusieurs passes
+distinctes disposant souvent de leur propre type d'AST : parsing, typage, clocking,
+normalisation, ordonnancement, optimisation et production de code objet. Pour la plupart
+de ces passes, nous avons des arguments pour garantir une certaine correction. Pour le
+typage, nous utilisons des GADT, donnant des AST bien typés par constructions. Pour d'autres,
+comme l'ordonnancement et le clocking, nous avons des fonctions de vérification. Le type
+d'AST utilisé après la normalisation garantie aussi la bonne formation des AST.
 
-- but : écrire un compilateur de minilustre vers Rust
-- vérification sémantique partielle et fonctions de vérification
-- extraction vers why3 permet aussi de faire de la vérification
-- exemple : pong
-- manuel dans README.md
+Puis, tout un second volet de notre travail a été consacré à une extraction vers Why3.
+Cette extraction permet, outre l'utilisation d'un langage particulièrement sûr, de
+produire, sur un noyau du langage, une preuve de correction sémantique pour chaque
+extraction.
+Cela permet de considérer que notre compilateur est **formellement prouvé pour ce noyau** : il
+suffit de faire confiance à la première phase de traduction vers une spécification de
+haut niveau, qui est succincte.
+
+Enfin, nous avons aussi utilisé cette extraction pour faire de la vérification de code
+Lustre et nous présentons ce qui est, à notre connaissance, la première implémentation
+du jeu de pong dont l'intelligence artificielle et la sécurité sont formellement prouvées.
+
+Ce document présente l'aspect théorique de notre travail. Des détails concernant la
+compilation et l'utilisation du compilateur sont dans le fichier README.md
+
 
 ## Les différents stades de la compilation
 
@@ -201,7 +219,7 @@ predicate spec (a:stream int) (b:stream int) (c:stream int) (d:stream int) =
   d = (sfby 0 c)
 ```
 
-##### Preuve sémantique
+#### Preuve sémantique
 
 On cherche ensuite à prouver que notre code séquentiel est une abstraction de cette
 spécification. Formellement, cela revient à définir par induction des flots et à
@@ -246,18 +264,96 @@ Cela laisse tout de même les
 `merge`, les `fby`, les appels de nœuds, un sous ensemble complet d'opérations
 arithmétiques et booléennes.
 
+#### Vérification de code Lustre
 
-### Sémantique
+Nous avons implémenté de quoi faire de la vérification de code Lustre à l'aide de
+Why3. Plus précisément, nous avons de quoi vérifier des propriétés inductives (et donc
+pas la généralisation k-inductive, bien que ça ne présente à priori pas de difficulté
+d'implémentation majeure additionnelle).
 
-**TODO**
+On adopte une approche qui permet une vérification modulaire, i.e. on peut choisir de
+spécifier les nœuds un par un, ce qui dans un contexte industriel pourrait permettre
+de passer à l'échelle.
 
-### post-conditions
+Pour spécifier les programmes nous suivons l'approche décrite dans l'article de [ref].
+Plutôt que d'introduire une nouvelle syntaxe pour les préconditions et les
+postconditions, on utilise une variable spéciale appelée `ok` et on essaye de prouver
+par induction qu'elle est toujours égale à `true`.
 
-**TODO**
+Afin de le garantir, on génère deux obligations de preuve Why3 sous la forme de deux
+lemmes à prouver par nœuds (les preuves correspondantes pouvant utiliser les lemmes des nœuds
+précédents), un pour l'étape d'initialisation, l'autre pour la récurrence.
 
-### Analyses d'inits
+Par exemple pour le nœud suivant, qui compte le nombre de A, B, C reçus en entrée :
 
-**TODO**
+```why3
+type abc = A + B + C
+
+node count(x : abc) = (nb_a, nb_b, nb_c : int)
+with
+  nb_a = 0 fby (merge x (A -> nb_a + 1 when A(x))
+                        (B -> nb_a     when B(x))
+                        (C -> nb_a     when C(x))) ;
+  nb_b = 0 fby (merge x (A -> nb_b     when A(x))
+                        (B -> nb_b + 1 when B(x))
+                        (C -> nb_b     when C(x))) ;
+  nb_c = 0 fby (merge x (A -> nb_c     when A(x))
+                        (B -> nb_c     when B(x))
+                        (C -> nb_c + 1 when C(x)))
+
+node check(x : abc) = (ok : bool)
+with var nb_a, nb_b, nb_c : int ;
+         cpt : int ;
+         ok : bool in
+  cpt = 0 fby (cpt + 1) ;
+  (nb_a, nb_b, nb_c) = count(x) ;
+  ok = (nb_a + nb_b + nb_c = cpt)
+```
+
+L'extraction nous donne un prédicat `step_fonct` qui caractérise la fonction
+séquentielle exécutable. On génère en plus un prédicat `step_fonct_ok` dans lequel on demande que `ok = true` et que les `ok` des nœuds appelés soient aussi égaux à `true`.
+Ainsi, pour prouver que `ok = true` dans notre système synchrone, il suffit que les deux
+lemmes suivants soient satisfaits :
+
+```why3
+lemme prop_init: forall x__1,  ok__1, _s2.
+  (step_fonct x__1 ok__1 reset_state _s2-> step_fonct_ok x__1
+  ok__1 reset_state _s2)
+
+lemme prop_ind: forall x__1, x__2,
+  ok__1, ok__2, _s, _s2, _s3.
+  (step_fonct_ok x__1 ok__1 _s _s2 /\ step_fonct x__2
+  ok__2 _s2 _s3)
+  -> step_fonct_ok x__2 ok__2 _s2 _s3
+```
+
+#### Analyses des valeurs non initialisées
+
+Nous avons implémenté une analyse des nils basique en passant par la génération de code
+Why3. En effet, si on s'interdit les `pre` imbriqués, il suffit de vérifier que la
+valeur des variables de sorties et de l'état est indépendantes des valeurs mises par
+défaut (nécessaire à la compilation en Rust et à Why3). On peut le formuler avec le
+lemme suivant :
+
+```why3
+lemma nil_analysis:
+  forall (* états de sortie *) s1, s2,
+         (* entrées *) a,  b, …
+         (* sorties pour les deux cas *) c1_1, c1_2, …
+         (* valeurs pour le type nil *) v1, ….
+  let reset_state_nil = { reset_state with var1 = v1; … } in
+  step_fonct a b c1_1 reset_state s1 ->
+  step_fonct a b c1_2 reset_state_nil s2 ->
+  s1 = s2 /\ c1_1 = c1_2
+```
+
+L'option `-nils` permet de générer ce lemme puis, en passant par Why3, de demander à
+Z3 de le prouver. Si Z3 en donne une preuve, cela prouve qu'il n'y a pas de problème
+d'initialisation. À l'inverse, si ce n'est pas le cas, on ne peut pas conclure : le
+solveur SMT a pu échoué à prouver quelque chose prouvable, ou bien l'analyse des nils
+peut ne pas être assez fine (dès qu'on a des `pre` imbriqués).
+Bien que cette analyse ait été très rapide à implémenter une fois que l'extraction vers
+Why3 fonctionnait, elle ne permet pas d'expliciter l'erreur si elle échoue.
 
 ## Extension avec les automates hiérarchiques
 
