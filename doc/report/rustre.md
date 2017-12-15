@@ -3,8 +3,11 @@ title: "De lustre à Rust : Rustre"
 subtitle: "Un compilateur vérifiable, vérifié et vérifiant"
 ---
 
+![Pong](pong.png)
+\
+
 Nous avons réalisé un compilateur de minilustre vers Rust. Nous avons d'abord suivi
-l'architecture proposée dans [^ref1], mais nous nous sommes attachés à produire un
+l'architecture proposée dans l'article donné en référence[^ref1], mais nous nous sommes attachés à produire un
 compilateur vérifiable. Il est modulaire, il s'organise en plusieurs passes
 distinctes disposant souvent de leur propre type d'AST : parsing, typage, clocking,
 normalisation, ordonnancement, optimisation et production de code objet. Pour la plupart
@@ -17,7 +20,7 @@ Puis, tout un second volet de notre travail a été consacré à une extraction 
 Cette extraction permet, outre l'utilisation d'un langage particulièrement sûr, de
 produire, sur un noyau du langage, une preuve de correction sémantique pour chaque
 extraction.
-Au contraire d'un compilateur formellement vérifié [^ref2], la
+Au contraire d'un compilateur formellement vérifié[^ref2], la
 correction sémantique doit être ici prouvée lors de chaque extraction.
 Cela permet de considérer que notre compilateur est formellement prouvé pour **ce noyau** : il
 suffit de faire confiance à la première phase de traduction vers une spécification de
@@ -35,7 +38,7 @@ compilation et l'utilisation du compilateur sont dans le fichier `README.md`.
 
 ### Syntaxe concrète
 
-Nous avons essayé de nous rapprocher au plus de la syntaxe concrète décrite dans [^ref1].
+Nous avons essayé de nous rapprocher au plus de la syntaxe concrète décrite dans l'article de Biernacki et al.[^ref1]
 En particulier, la condition du `if` et du `merge` ainsi que le terme de droite dans la
 construction `when` doivent être des variables et non des expressions arbitraires.
 De nouveaux types de données peuvent être déclarés avec la syntaxe `type direction = Right + Left` par exemple.
@@ -106,7 +109,7 @@ Nous avons implémenté cette optimisation ce qui réduit le nombre de brancheme
 Le code généré contient pour
 cette raison un nombre important de `case` constants de la forme `case false { ... }`.
 Bien qu'on puisse attendre du compilateur du langage cible de
-simplifier ce code là automatiquement, nous avons implémenté cette
+simplifier ce code automatiquement, nous avons implémenté cette
 optimisation afin de générer du code plus lisible.
 
 ### Traduction dans le langage objet
@@ -140,25 +143,28 @@ processus de compilation. Actuellement, seul un noyau du langage est
 supporté pour cette partie. Enfin, on peut utiliser Why3 pour faire de la
 vérification de propriétés sur nos programmes.
 
+Pour Why3, on ne se préoccupe pas des flottants, leur axiomatisation est bien
+plus complexe que celle des entiers.
+
 
 L'extraction vers Why3 peut être séparée en trois parties : la
 production de code exécutable séquentiel, la spécification de ce code
 (via des postconditions), puis la traduction du nœud Lustre initial en
 une spécification de haut niveau.
 
-**Code exécutable séquentiel:** La production de ce code est semblable
+**Code exécutable séquentiel :** La production de ce code est semblable
 à l'extraction vers Rust. Il s'agit d'un code séquentiel qui met à
-jour en place des record pour modifier l'état mémoire d'un nœud.  Ce code peut ensuite
+jour en place des records pour modifier l'état mémoire d'un nœud.  Ce code peut ensuite
 être extrait vers OCaml et donne donc du code efficace.
 
 
-**Spécification logique:** Le code séquentiel qu'on a produit l'a été
+**Spécification logique :** Le code séquentiel qu'on a produit l'a été
 dans le langage de programmation WhyML. Il n'est pas pur car il agit
 par effet de bord sur l'état.  Pour pouvoir raisonner dessus, il faut
 exprimer une spécification dans le langage logique, qui consiste en
 des postconditions.
 
-**Spécification abstraite:** Indépendamment, on effectue une
+**Spécification abstraite :** Indépendamment, on effectue une
 traduction très simple (et donc dans laquelle on peut avoir confiance)
 d'un nœud Lustre vers une spécification abstraite dans Why3 en terme
 de flots.
@@ -224,12 +230,12 @@ lemma valid:
 ```
 
 On note qu'on a besoin de supposer l'existence d'un flot supplémentaire pour l'état,
-qui n'apparaît pourtant pas dans `spec_abs`. Ce lemme définie bien des flots valides :
+qui n'apparaît pourtant pas dans `spec_abs`. Ce lemme définit bien des flots valides :
 ils sont définissables par récurrence car le code exécutable satisfait `spec_log`.
 
 Prouver ce lemme s'est avéré être particulièrement difficile. Nous pensions que sur des
 exemples simples les solveurs automatiques SMT ou ATP devaient pouvoir fournir des
-preuves. Ce n'est pas le cas, nous avons donc choisi de faire un tactique Coq (que nous
+preuves. Ce n'est pas le cas, nous avons donc choisi de faire une tactique Coq (que nous
 croyons complète pour les preuves nécessaires, mais nous n'avons pas fait la preuve) pour
 faire ces preuves automatiquement. Expérimentalement, sur tous nos exemples qui sont
 dans ce noyau, la tactique Coq permet de faire la preuve de correspondance.
@@ -255,13 +261,13 @@ d'implémentation majeure additionnelle).
 On adopte une approche qui permet une vérification modulaire : on peut choisir de
 spécifier les nœuds un par un, ce qui dans un contexte industriel pourrait permettre
 de passer à l'échelle.
-Pour spécifier les programmes nous suivons l'approche décrite dans l'article de [todo: ref].
+Pour spécifier les programmes nous suivons l'approche décrite dans l'article de [^ref3].
 Plutôt que d'introduire une nouvelle syntaxe pour les préconditions et les
 postconditions, on utilise une variable spéciale appelée `ok` et on essaye de prouver
 par induction qu'elle est toujours égale à `true`.
 
 Afin de garantir ce résultat, on génère deux obligations de preuve Why3 sous la forme de deux
-lemmes à prouver par nœuds (les preuves correspondantes pouvant utiliser les lemmes des nœuds
+lemmes à prouver par nœud (les preuves correspondantes pouvant utiliser les lemmes des nœuds
 précédents), un pour l'étape d'initialisation, l'autre pour la récurrence.
 
 Par exemple pour le nœud suivant, qui compte le nombre de A, B, C reçus en entrée :
@@ -305,7 +311,7 @@ lemme prop_ind: forall x__1, x__2, ok__1, ok__2, _s, _s2, _s3.
 #### Analyses des valeurs non initialisées
 
 Nous avons implémenté une analyse des `nil`s basique en passant par la génération de code
-Why3. En effet, si on s'interdit les `pre` imbriqués, il suffit de vérifier que la
+Why3. En effet, si l'on s'interdit les `pre` imbriqués, il suffit de vérifier que la
 valeur des variables de sorties et de l'état est indépendantes des valeurs mises par
 défaut (nécessaire à la compilation en Rust et à Why3). On peut le formuler avec le
 lemme suivant :
@@ -334,20 +340,22 @@ Why3 fonctionnait, elle ne permet pas d'expliciter l'erreur si elle échoue.
 ## Extension avec les automates hiérarchiques
 
 Nous avons essayé d'étendre le langage avec les constructions `reset`, `match` et
-`automata` décrites dans [^ref4] emsoft05b].
+`automata` décrites dans l'article de Colaço, Pagano et Pouzet[^ref4].
 Le manque de temps nous a obligé à traiter ces constructions directement sur
 l'AST de parsing, au détriment d'une gestion correcte des erreurs. Les
 constructions `match` et `reset` sont implémentées, mais pas encore les
 automates.
+
 L'approche utilisée consiste en une passe par construction, plutôt qu'une
 transformation générale comme dans l'article. On élimine d'abord les
 constructions `automata` en les transformant en programmes utilisant
 uniquement `match` et `reset`, puis on élimine successivement les `match` et
 les `reset`.
+
 Par rapport à l'article sont également ajoutées les déclaration des variables
 partagées avec le mot-clé `shared`, ainsi qu'une valeur initiale optionnelle
 pour celles-ci (permettant que `last x` soit bien définie au premier instant).
-Pour être compatible avec le langage de base, nous nous sommes un peu éloigné
+Pour être compatible avec le langage de base, nous nous sommes un peu éloignés
 de la syntaxe proposée dans l'article : les déclarations de variables
 locales sont limitées, et les horloges ne sont pas explicitement déclarées.
 
@@ -355,18 +363,19 @@ locales sont limitées, et les horloges ne sont pas explicitement déclarées.
 
 Comme exemple d'application, nous avons implémenté une version simple de pong
 en minilustre qui peut être compilée en un binaire exécutable via Rust ou via
-why3 et l'extraction OCaml.
+Why3 et l'extraction OCaml.
 
 Le pong consiste en une arène rectangulaire dans laquelle rebondit un balle. Trois
 des côtés du rectangle sont des murs et sur le quatrième côté une intelligence
-artificielle joue contre le mur et essaie de garder son score à 0.
+artificielle joue contre le mur et essaie toujours rattraper la balle, pour garder
+son score à 0.
 
 Le nœud principal attend un entrée qui n'est pas utilisée et qui sert à donner
 l'horloge de base, la sortie indique la position de la balle, la position de la
 raquette de l'IA et le score. Un interface graphique écrite en OCaml permet de
 visualiser la partie.
 
-Nous avons voulu prouver des propriété sur le pong à l'aide de why3, en particulier
+Nous avons voulu prouver des propriété sur le pong à l'aide de Why3, en particulier
 deux invariants :
 
 1. La balle ne sort pas du cadre
@@ -374,22 +383,21 @@ deux invariants :
 
 La première propriété a été plus difficile à prouver que nous l'espérions. Il a
 fallu trouver les bons invariants à mettre sur les nœuds qui calculent la position
-pour aider why3 à faire la preuve.
+pour aider Why3 à faire la preuve.
 
 Nous avons échoué dans un premier temps à prouver la seconde propriété car notre IA
 était trop sophistiquée : elle calculait à l'avance la position d'arrivée de la balle
 et se plaçait directement à la bonne position. Bien que cela permette à l'IA de gagner
 même quand sa vitesse est faible, nous n'avons pas réussi à trouver une propriété inductive
-à donner à why3, propriété qui serait de toute façon non linéaire et par conséquent difficile.
+à donner à Why3, propriété qui serait de toute façon non linéaire et par conséquent difficile.
 
 Nous avons donc simplifié l'IA qui désormais s'aligne avec la balle et reste en face de
-celle ci tout le long de la partie. Dans cette configuration, why3 parvient à prouver
+celle ci tout au long de la partie. Dans cette configuration, Why3 parvient à prouver
 que le score reste à 0 à condition que la raquette de l'IA puisse aller assez vite. On
-constate que la preuve échoue lorsqu'on baisse la vitesse de la raquette ce qui est
-attendu.
+constate que la preuve échoue lorsqu'on baisse la vitesse de la raquette est insuffisante.
 
 
-[^ref1]: Darek Biernacki and Jean-Louis Colaco and Grégoire Hamon and
+[^ref1]: Darek Biernacki and Jean-Louis Colaço and Grégoire Hamon and
 Marc Pouzet.  Clock-directed Modular Code Generation of Synchronous
 Data-flow Languages.  ACM International Conference on Languages,
 Compilers, and Tools for Embedded Systems (LCTES). 2008.
@@ -398,6 +406,10 @@ Compilers, and Tools for Embedded Systems (LCTES). 2008.
     L. Rieg. A verified compiler for Lustre. Proceedings of the 38th
     ACM SIGPLAN Conference on Programming Language Design and
     Implementation, 586–601, Barcelona, Spain, 18–23 June 2017.
+
+[^ref3]: Raymond, Pascal. "Synchronous program verification with
+    lustre/lesar." Modeling and Verification of Real-Time Systems
+    (2008): 7.
 
 [^ref4]: Jean-Louis Colaço, Bruno Pagano, Marc Pouzet. A conservative
 extension of synchronous data-flow with state machines. EMSOFT 2005:

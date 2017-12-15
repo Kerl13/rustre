@@ -83,29 +83,29 @@ let () =
 
     let file =
       if ext then begin
-          let file = Parser_ext.file Lexer_ext.token lb in
-          close_in c;
-          Format.fprintf format "=== Parsed file =====\n" ;
-          Format.fprintf format "%a\n@." Ast_ext.pp_file file ;
+        let file = Parser_ext.file Lexer_ext.token lb in
+        close_in c;
+        Format.fprintf format "=== Parsed file =====\n" ;
+        Format.fprintf format "%a\n@." Ast_ext.pp_file file ;
 
-          let file = Match.tr_file file in
+        let file = Match.tr_file file in
 
-          let file = Reset.tr_file file in
+        let file = Reset.tr_file file in
 
-          let trans = Ext_to_base.tr_file file in
-          Format.fprintf format "=== Translated file =====\n" ;
-          Format.fprintf format "%a\n@." Ast_parsing.pp_file trans ;
-          trans
-        end
+        let trans = Ext_to_base.tr_file file in
+        Format.fprintf format "=== Translated file =====\n" ;
+        Format.fprintf format "%a\n@." Ast_parsing.pp_file trans ;
+        trans
+      end
 
       else begin
-          let file = Parser.file Lexer.token lb in
-          close_in c;
+        let file = Parser.file Lexer.token lb in
+        close_in c;
 
-          Format.fprintf format "=== Parsed file =====\n" ;
-          Format.fprintf format "%a\n@." Ast_parsing.pp_file file ;
-          file
-        end in
+        Format.fprintf format "=== Parsed file =====\n" ;
+        Format.fprintf format "%a\n@." Ast_parsing.pp_file file ;
+        file
+      end in
 
 
     Format.fprintf format "Typing… @?";
@@ -176,7 +176,10 @@ let () =
 
         Format.printf "Spec:@\n%a@." Specifications.spec_file (states, file);
         Format.fprintf (Format.formatter_of_out_channel (open_out "spec.mlw")) "%a@." Specifications.spec_file (states, file);
-        Format.printf "Coq proof:@\n%a@." Semantic_proof.spec_file (states, file, obc);
+        try
+          Format.printf "Coq proof:@\n%a@." Semantic_proof.spec_file (states, file, obc);
+        with
+        | Sys_error _ -> Format.printf "Session Why3 non créée, voir le README@."
       end;
 
 
@@ -213,6 +216,6 @@ let () =
     Format.eprintf "%s@." message;
     exit 1
   | Checkclocking.Error (loc, message) ->
-     report_loc loc;
-     Format.eprintf "Clocking internal error: %s@." message;
-     exit 1
+    report_loc loc;
+    Format.eprintf "Clocking internal error: %s@." message;
+    exit 1

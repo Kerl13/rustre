@@ -24,7 +24,7 @@ let id_to_var_decl vars id =
     let (l, d, _) = VarMap.split id vars in
     match d with
     | Some t -> t
-    | None -> let (_, t) = VarMap.max_binding l in t (* take the type of the biggest prefix we know *)
+    | None -> let (_, t) = VarMap.max_binding l in t (* take the type of the biggest known prefix *)
   in
   {
     v_name = id ;
@@ -34,6 +34,7 @@ let id_to_var_decl vars id =
     v_loc = dummy_loc
   }
 
+(* create equation id = e *)
 let mk_eq id e pos = {eq_desc = EEq ({pat_desc = PIdent id ; pat_loc = (pos, pos)}, e) ; eq_loc = (pos, pos)}
 
 let rec split3 = function
@@ -58,12 +59,12 @@ let get_def_pat pat =
 
 
 (* substitute x -> x_suf
- *            last x -> (pre x when ck)
+ *            last x -> (pre x when suf(ck) )
  *
  *            ndef : shared variables with no defining equation in the considered handler,
- *            we need to add a definition y_suf = (y_init fby y) when ck
+ *            we need to add a definition x_suf = (x_init fby x) when suf(ck)
  *
- *            fv : free variables, we need to add an equation x_suf = x when ck
+ *            fv : free variables, we need to add an equation x_suf = x when suf(ck)
  *)
 
 let rec subst_expr shared ck def suf e =
@@ -121,6 +122,8 @@ and subst_eqs shared ck def suf eqs =
   let eqs, ndefl, fvl = split3 (List.map (subst_eq shared ck def suf) eqs) in
   eqs, flatt_set ndefl, flatt_set fvl
 
+(* apply substitutions and return equations for newly defined variables *)
+
 let subst_match shared ck def h =
   let (eqs, ndef, fv) = subst_eqs shared ck def h.m_name h.m_eqs in
   let proj id =
@@ -145,25 +148,24 @@ let rec tr_eq shared eq = match eq.eq_desc with
   | EReset (eqs, e) -> let eqs', fresh, def, shared = (tr_eqs shared) eqs in
     [{eq with eq_desc = EReset (eqs', e)}], fresh, def, shared
   | EMatch (id, hs) ->
-    let hs, fresh, def, shared = tr_match shared hs in
+    let hs, fresh, def, shared = tr_match shared hs in (* first transform recursive matchs *)
 
-    let eqsl, freshl = List.split (List.map (subst_match shared id def) hs) in
+    let eqsl, freshl = List.split (List.map (subst_match shared id def) hs) in (* apply substitutions recursively *)
     let eqs = List.flatten eqsl in
     let new_fresh = SSet.union fresh (flatt_set freshl) in
 
+    (* add equations y = merge id (C1 -> y_C1) ... (Cn -> y_Cn) for all y in def(eqs) *)
     let mk_merge y =
       let l = List.map (fun h -> (h.m_name, {expr_desc = EIdent(y^h.m_name) ; expr_loc = dummy_loc} ) ) hs in
       let e = {expr_desc = EMerge(id, l) ; expr_loc = dummy_loc}  in
       {eq_desc = EEq({pat_desc = PIdent y ; pat_loc = dummy_loc}, e) ; eq_loc = dummy_loc}
     in
-    let merges = List.map mk_merge (SSet.elements def) in (* TODO *)
+    let merges = List.map mk_merge (SSet.elements def) in 
 
     let def_list = SSet.elements def in
     let rec get_new_vars def' shared' = function
       | [] -> def', shared'
-      | h :: q -> (*let fresh' = List.fold_left (fun l id ->
-          (id^h.m_name, try fst (VarMap.find id shared)
-                          with Not_found -> raise (NotShared (dummy_loc, id)) ) :: l ) fresh' def_list in*)
+      | h :: q ->  
         let def' = List.fold_left (fun s id -> SSet.add (id^h.m_name) s) def' def_list in
         let shared' = List.fold_left ( fun m id ->
             (try VarMap.add (id^h.m_name) (VarMap.find id shared) m

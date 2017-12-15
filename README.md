@@ -3,7 +3,7 @@
 ## Dépendences
 
 Pour compiler le binaire `rustre`, il faut :
-- une version d'ocaml (testé en version 4.04.0, 4.05.x)
+- une version d'ocaml (testé en version 4.05.x)
 - menhir (testé en version 20171206)
 
 Il est aussi recommandé d'avoir installé :
@@ -37,11 +37,20 @@ sur la sortie standard. Utiliser `-o` pour écrire le code dans un fichier.
 - `-v` affiche toutes les représentations intermédiaires sur la sortie standard.
 - `-opt` effectue des passes d'optimisation sur l'AST objet (voir le rapport).
 - `-spec` et `-nils` sont deux analyses automatisées en Why3 (voir le rapport). À utiliser uniquement
-  avec `-extract why3`.
+  avec `-extract why3` et `-opt`.
 - Si l'argument `-ext` est passé, la syntaxe concrète est étendue avec des automates (voir le rapport).
 
 ### Why3
-**todo**
+L'extraction Why3 génère un fichier .mlw avec le code séquentiel et les spécifications. Il est très recommandé d'utiliser `-opt` pour supprimer les merge inutiles qui alourdissent le contexte des prouveurs.
+
+### Génération de la preuve sémantique
+
+Why3 ne semble pas disposer d'une commande pour générer les obligations de preuve Coq sans passer par l'IDE, il faut donc le faire en 2 temps. Cela demande donc quelques manipulations :
+* supprimer la session Why3 correspondant au fichier spec.mlw (donc le dossier spec)
+* appeler rustre avec les option `-spec -o test.mlw -extract why3 -opt` (le nom de fichier est test.mlw est important)
+* ouvrir l'ide Why3 et générer les obligations de preuve (cliquer sur `Coq` puis `Edit`), fermer l'ide en sauvegardant la session
+* relancer rustre avec les mêmes options
+* les preuves Coq sont complétés.
 
 ### Rust
 L'extraction Rust génère un fichier standalone qui peut être compilé avec la commande `rustc <file>`.
