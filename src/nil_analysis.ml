@@ -47,7 +47,7 @@ let rec ostatement_get_nils: ostatement -> ident list = function
 
 let do_analysis filename node_names =
   List.iter (fun n ->
-      let ch = Unix.open_process_in (Format.sprintf "why3 prove %s -T Node%s -G nil_analysis -P Alt-Ergo" filename n)
+      let ch = Unix.open_process_in (Format.sprintf "why3 prove %s -T Node%s -t 2 -G nil_analysis -P Z3" filename n)
       in
         let ok = ref true in
       begin
@@ -56,7 +56,7 @@ let do_analysis filename node_names =
             let s = input_line ch in
             try
             let i = String.index s ':' in
-            if String.contains_from s i 'U' then
+            if String.contains_from s i 'U' || String.contains_from s i 'T' then
               ok := false
             else if not (String.contains_from s i 'V') then
               raise Not_found

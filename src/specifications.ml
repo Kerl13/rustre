@@ -14,10 +14,12 @@ let spec_const ppf c =
 let spec_op ppf o =
   match o with
   | OpAdd -> fprintf ppf "splus"
+  | OpNot -> fprintf ppf "snot"
   | OpSub -> fprintf ppf "ssub"
   | OpAnd -> fprintf ppf "sand"
   | OpOr -> fprintf ppf "sor"
   | OpEq -> fprintf ppf "seq"
+  | OpGt -> fprintf ppf "sgt"
   | _ -> assert false
 
 let rec spec_expr ppf expr =
@@ -28,8 +30,14 @@ let rec spec_expr ppf expr =
   | Ast_parsing.EFby (c, e) -> fprintf ppf "(sfby %a %a)" spec_const c spec_expr e
   | Ast_parsing.EOp (op, l) -> fprintf ppf "(%a %a)" spec_op op (pp_list " " spec_expr) l
   | Ast_parsing.EApp (_,_,_) -> assert false
-  | Ast_parsing.EWhen (_,_,_) -> assert false
-  | Ast_parsing.EMerge (_,_) -> assert false
+  | Ast_parsing.EWhen (a,b,c) -> fprintf ppf "(swhen %s %a)" c spec_expr a
+  | Ast_parsing.EMerge (i,l) ->
+    let a, b = match l with
+      | ["True", a; "False", b] -> a, b
+      | ["False", b; "True", a] -> a, b
+      | _ -> Format.eprintf "Non Boolean merges are not supported in the semantic proof@\n"; assert false
+    in
+    fprintf ppf "(smerge %s %a %a)" i spec_expr a spec_expr b
 
 let rec spec_pat_desc ppf pat =
   match pat with
@@ -81,13 +89,19 @@ let var_pp_flat sep f = (pp_list_brk sep (fun ppf (i, _) ->
 
 let rec spec_print_state pref f states ppf s =
   let st = List.assoc s states in
-  fprintf ppf "@[<2>{ %a }@]" (pp_list_brk "" (fun ppf sc ->
-      match sc with
-      | Ast_object.State_var(i, _) -> fprintf ppf "Node%s.%s = %s;" s i (f (pref ^ i))
-      | Ast_object.Mach_var (i, target) -> fprintf ppf "%s = %a;" i (spec_print_state (pref ^ i) f states) target)) st
+  if st = [] then
+    fprintf ppf "()"
+  else
+    fprintf ppf "@[<2>{ %a }@]" (pp_list_brk "" (fun ppf sc ->
+        match sc with
+        | Ast_object.State_var(i, _) -> fprintf ppf "Node%s.%s = %s;" s i (f (pref ^ i))
+        | Ast_object.Mach_var (i, target) -> fprintf ppf "%s = %a;" i (spec_print_state (pref ^ i) f states) target)) st
 
 let rec spec_print_state_flat pref states ppf s =
   let st = List.assoc s states in
+  let st = List.filter (function
+      | Ast_object.Mach_var (_, target) -> List.assoc target states <> []
+      | _ -> true) st in
   fprintf ppf "%a" (pp_list_brk ", " (fun ppf sc ->
       match sc with
       | Ast_object.State_var(i, ty) -> fprintf ppf "%s%s: stream %a" pref i pp_ty ty
@@ -96,16 +110,16 @@ let rec spec_print_state_flat pref states ppf s =
 
 let spec_proof_node ppf (states, node) =
   fprintf ppf "@[<2>lemma valid:@\nforall (* in and out vars *) %a%a (* state *) %a.  @\n"
-    var_pp (node.n_input @ node.n_output @ node.n_local)
+    var_pp (node.n_input @ node.n_local @ node.n_output)
     (fun ppf () ->
        if List.assoc node.n_name states <> [] then fprintf ppf ", ") ()
     (spec_print_state_flat "s" states) node.n_name;
-  fprintf ppf "(* definition by recurrence *)@\n(%a = reset_state /\\@\n@[<2>forall n: nat.@ ((%a), %a) =@ @[<2>step_fonct %a %a@])@]@\n"
-    (spec_print_state "s" (fun s -> "get " ^ s ^ " O") states) node.n_name
-    (var_pp_flat ", " (fun ppf s -> fprintf ppf "(get %s n)" s)) (node.n_output @ node.n_local)
-    (spec_print_state "s" (fun s -> "get " ^ s ^ " (S n)") states) node.n_name
+  fprintf ppf "(* definition by recurrence *)@\n(%a = reset_state /\\@\n"
+    (spec_print_state "s" (fun s -> "get " ^ s ^ " O") states) node.n_name;
+  fprintf ppf "@[<2>forall n: nat.@ @[<2>step_fonct %a %a %a@])@]@\n"
+    (var_pp_flat " " (fun ppf s -> fprintf ppf "(get %s n)" s)) (node.n_input @ node.n_output)
     (spec_print_state "s" (fun s -> "get " ^ s ^ " n") states) node.n_name
-    (var_pp_flat " " (fun ppf s -> fprintf ppf "(get %s n)" s)) node.n_input;
+    (spec_print_state "s" (fun s -> "get " ^ s ^ " (S n)") states) node.n_name;
   fprintf ppf "(* correction *)@\n-> spec %a %a@]"
     (var_pp_flat " " (fun ppf -> fprintf ppf "%s")) node.n_input
     (var_pp_flat " " (fun ppf -> fprintf ppf "%s")) node.n_output
