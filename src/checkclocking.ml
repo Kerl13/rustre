@@ -158,16 +158,12 @@ module CheckW = struct
       raise (Error (expr.texpr_loc, Format.sprintf "check_clock_eq"))
     else
       check_clock_expr node_env ck_map expr
-    (* else if not (check_clock_expr node_env ck_map expr) then
-     *   raise (Error (Format.sprintf "check_clock_eq2")) *)
 
 
   let check_var_list_eq l1 l2 =
     Ast_typed_utils.var_list_fold2 (fun acc x1 x2 -> acc && (x1 = x2)) true l1 l2
 
   let check_clock_node main node_env (Ast_typed.Node node_in) (Node node_out) =
-    (* todo: currently, we do not check that the equations are the same before / after *)
-    (* we would need to add something like:    && in_eqs = (List.map (fun Equ (pat, cexpr) -> Ast_typed.Equ (pat, x) out_eqs) *)
     let Ast_typed.Tagged(_, _, node_in_name) = node_in.Ast_typed.n_name in
     let Ast_typed.Tagged(_, _, node_out_name) = node_out.n_name in
     assert(node_in_name = node_out_name);
@@ -177,7 +173,6 @@ module CheckW = struct
     let out_output = node_out.n_output in
     let in_loc = node_in.Ast_typed.n_loc in
     let out_loc = node_out.n_loc in
-    (* let in_eqs = node_in.Ast_typed.n_eqs in *)
     let out_eqs = node_out.n_eqs in
     let Ast_typed.NodeLocal in_local = node_in.Ast_typed.n_local in
     let Ast_typed.NodeLocal out_local = node_out.n_local in

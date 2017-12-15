@@ -32,8 +32,6 @@ type _ expr_or_app =
 let rec normalize_eqs (a, b) (Ast_clocked.Equ (pat, expr)) =
   let a, b, _ = normalize_expr a b (Some pat) expr in a, b
 
-(* So the main problem with this function is that we cannot always return a
-   `a nexpr`, sometimes that type is not inhabitated. Let's return Cnil instead ?? *)
 and normalize_expr: type a. Ast_normalized.nequation list -> Ast_typed.node_local -> a Ast_typed.pattern option -> a Ast_clocked.cexpr ->
   Ast_normalized.nequation list * Ast_typed.node_local * a expr_or_app = fun a b pat
   (Ast_clocked.{ texpr_desc; texpr_type; texpr_clock; texpr_loc } as expr) ->
