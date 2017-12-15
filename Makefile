@@ -38,6 +38,7 @@ dist: doc clean-all
 	@echo "Making dist... Please use only on a fresh, cloned directory"
 	mkdir $(NAME)
 	cp -r $(FILES) $(NAME)
+	mv $(NAME)/rustre.pdf $(NAME)/rustre_report.pdf
 	tar -cvzf $(NAME).tgz $(NAME)/
 	rm -r $(NAME)
 	@echo "End of make dist... Please use only on a fresh, cloned directory"
