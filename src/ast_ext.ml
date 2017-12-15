@@ -49,7 +49,7 @@ and var_decl = {
 
 and eq_desc = 
   | EEq of pattern * expr
-  | EMatch of expr * match_handler list
+  | EMatch of ident * match_handler list
   | EReset of equation list * expr
   | EAutomaton of state_handler list
 
@@ -97,7 +97,7 @@ let rec visit_expr f state e =
 and visit_eq f state {eq_desc ; _ } =
   match eq_desc with
   | EEq (_, e) -> visit_expr f state e
-  | EMatch (e, ms) -> List.fold_left (visit_match f) (visit_expr f state e)  ms
+  | EMatch (e, ms) -> List.fold_left (visit_match f) state  ms
   | EReset (eqs, e) -> List.fold_left (visit_eq f) (visit_expr f state e) eqs
   | EAutomaton sts -> List.fold_left (visit_state f) state sts
 
@@ -182,7 +182,7 @@ let rec pp_equation ind ppf {eq_desc ; _} =
   let pp_list = Pp_utils.pp_list in
   let pp ppf = function
   | EEq (pat, e) -> fprintf ppf "%a = %a" pp_pat pat pp_expr e
-  | EMatch (e, hl) -> fprintf ppf "match %a with\n%a" pp_expr e (pp_list "\n" (pp_match ind)) hl
+  | EMatch (x, hl) -> fprintf ppf "match %s with\n%a" x (pp_list "\n" (pp_match ind)) hl
   | EReset (el, e) -> fprintf ppf "reset\n%a\n%severy %a" (pp_list ";\n" (pp_equation (ind^"  "))) el ind pp_expr e
   | EAutomaton hl -> fprintf ppf "automaton\n%a\n%send" (pp_list "\n" (pp_state (ind^"  "))) hl ind
   in fprintf ppf "%s%a" ind pp eq_desc

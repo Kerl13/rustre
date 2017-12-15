@@ -14,7 +14,6 @@
         "continue", CONTINUE;
         "const", CONST;
         "do", DO;
-        "done", DONE;
         "else", ELSE;
         "every", EVERY;
         "end", END;
