@@ -1,6 +1,6 @@
 BIN = rustre
 TARGET = byte
-FILES = coq_tactic_facto Makefile _tags src/ pong/ tests/ doc/report/rustre.pdf
+FILES = README.md coq_tactic_facto Makefile _tags src/ pong/ tests/ doc/report/rustre.pdf why3/
 NAME = baudin_pepin_monat_olivry
 
 .PHONY: all
