@@ -134,7 +134,7 @@ module W = struct
     | CLNil -> cts
     | CLSing e -> e.texpr_clock :: cts
     | CLCons (e, es) -> cts_from_expr_list (e.texpr_clock :: cts) es
-  let cts_from_expr_list es = cts_from_expr_list [] es
+  let cts_from_expr_list es = cts_from_expr_list [] es |> List.rev
 
   let rec clock_expr : type a. Env.t -> a Ast_typed.expr -> a cexpr
     = fun env expr ->
@@ -212,8 +212,7 @@ module W = struct
     let expr = clock_expr env expr in
     let loc = expr.texpr_loc in
     let unify_ct ct x = match ct with
-      | ck :: ct ->
-        unify loc ck (Env.find_expr loc x env) ;
+      | ck :: ct -> unify loc ck (Env.find_expr loc x env) ;
         ct
       | _ -> assert false (* should not happen *)
     in
@@ -225,6 +224,7 @@ module W = struct
 
   let ct_from_varlist loc env v_list =
     Ast_typed_utils.var_list_fold (fun ct x -> Env.find_expr loc x env :: ct) [] v_list
+    |> List.rev
 
   let env_from_varlist new_clock env v_list =
     Ast_typed_utils.var_list_fold
