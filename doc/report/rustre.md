@@ -356,7 +356,8 @@ Par rapport à l'article sont également ajoutées les déclaration des variable
 partagées avec le mot-clé `shared`, ainsi qu'une valeur initiale optionnelle
 pour celles-ci (permettant que `last x` soit bien définie au premier instant).
 Pour être compatible avec le langage de base, nous nous sommes un peu éloignés
-de la syntaxe proposée dans l'article : les déclarations de variables
+de la syntaxe proposée dans l'article : il n'y a pas de distinction entre
+fonctions combinatoires et nœuds avec effets, les déclarations de variables
 locales sont limitées, et les horloges ne sont pas explicitement déclarées.
 
 ## Un exemple pratique : Pong
