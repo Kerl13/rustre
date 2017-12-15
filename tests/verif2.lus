@@ -1,3 +1,6 @@
+/* main = incr */
+/* Do not remove the line above */
+
 node incr (tic: bool) = (out:bool)
 with var ok: bool; cpt : int; pl: int in
   pl = if tic then 1 else 0;

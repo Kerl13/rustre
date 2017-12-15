@@ -83,9 +83,8 @@ let () =
           let file = Parser_ext.file Lexer_ext.token lb in
           close_in c;
 
-          Format.fprintf format "=== Parsed file =====\n" ;
-          Format.fprintf format "%a\n@." Ast_ext.pp_file file ;
-
+          let file = Match.tr_file file in
+          
           let file = Reset.tr_file file in
 
           let trans = Ext_to_base.tr_file file in
@@ -173,7 +172,8 @@ let () =
 
     exit 0
   with
-  | Lexer.Error s ->
+  | Lexer.Error s
+  | Lexer_ext.Error s ->
     report_loc (lexeme_start_p lb, lexeme_end_p lb);
     Format.eprintf "lexical error: %s\n@." s;
     exit 1
@@ -181,9 +181,14 @@ let () =
     report_loc (lexeme_start_p lb, lexeme_end_p lb);
     Format.eprintf "syntax error: %s\n@." s;
     exit 1
-  | Parser.Error ->
+  | Parser.Error
+  | Parser_ext.Error ->
     report_loc (lexeme_start_p lb, lexeme_end_p lb);
     Format.eprintf "syntax error\n@.";
+    exit 1
+  | Match.Error (loc, message) ->
+    report_loc loc;
+    Format.eprintf "%s@." message ;
     exit 1
   | Typing.Error (loc, message) ->
     report_loc loc;

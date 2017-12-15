@@ -2,7 +2,7 @@
   open Lexing
   open Parser_ext
 
-  exception Lexical_error of string
+  exception Error of string
 
   let id_or_keyword =
     let h = Hashtbl.create 17 in
@@ -14,7 +14,6 @@
         "continue", CONTINUE;
         "const", CONST;
         "do", DO;
-        "done", DONE;
         "else", ELSE;
         "every", EVERY;
         "end", END;
@@ -97,11 +96,11 @@ rule token = parse
   | "="                     { EQUAL }
   | ","                     { COMMA }
   | "|"                     { PIPE }
-  | _ as c                  { raise (Lexical_error (Format.sprintf "%c" c)) }
+  | _ as c                  { raise (Error (Format.sprintf "%c" c)) }
   | eof                     { EOF }
 
 and comment = parse
   | "*/" { () }
   | '\n' { newline lexbuf; comment lexbuf }
   | _    { comment lexbuf }
-  | eof  { raise (Lexical_error "unterminated comment") }
+  | eof  { raise (Error "unterminated comment") }

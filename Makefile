@@ -1,5 +1,7 @@
 BIN = rustre
 TARGET = byte
+FILES = .merlin README.md coq_tactic_facto Makefile _tags src/ pong/ tests/ doc/report/rustre.pdf why3/
+NAME = baudin_pepin_monat_olivry
 
 .PHONY: all
 all: compile
@@ -23,6 +25,22 @@ clean:
 	rm -f *.byte *.native
 	rm -f $(BIN)
 
+.PHONY: clean-all
+clean-all: clean
+	make -C pong/ clean
+
+.PHONY: doc
+doc: 
+	make -C doc/report
+
+.PHONY: dist
+dist: doc clean-all
+	@echo "Making dist... Please use only on a fresh, cloned directory"
+	mkdir $(NAME)
+	cp -r $(FILES) $(NAME)
+	tar -cvzf $(NAME).tgz $(NAME)/
+	rm -r $(NAME)
+	@echo "End of make dist... Please use only on a fresh, cloned directory"
 ############## Examples ######################################################
 
 .PHONY: pong

@@ -6,7 +6,7 @@ intro
 - vérification sémantique partielle et fonctions de vérification
 - extraction vers why3 permet aussi de faire de la vérification
 - exemple : pong
-- court manuel à la fin
+- manuel dans README.md
 
 ## Les différents stades de la compilation
 
@@ -107,15 +107,15 @@ simplement que l'AST objet est aussi réalisé avec des GADT, ce qui donne certa
 L'extraction vers Rust se fait en un parcours linéaire sur l'AST objet.
 
 
-Chaque noeud est encapsulé dans un module, où est décrit :
+Chaque nœud est encapsulé dans un module, où est décrit :
 
-- une `struct Machine`, décrivant la mémoire et les instances du noeud courant. En utilisant `#[derive(Default)]` avant la déclaration de `struct Machine`, le compilateur Rust génère automatiquement une procédure d'initialisation pour la structure.
+- une `struct Machine`, décrivant la mémoire et les instances du nœud courant. En utilisant `#[derive(Default)]` avant la déclaration de `struct Machine`, le compilateur Rust génère automatiquement une procédure d'initialisation pour la structure.
 - une méthode `step` fonctionnant sur `Machine`, qui est définie de manière similaire au langage objet. Grâce aux transformations effectuées précédemment, toutes les variables locales de cette méthode sont immuables.
-- une méthode `reset` opérant sur `Machine`, réinitialisant la mémoire et les instances du noeud.
+- une méthode `reset` opérant sur `Machine`, réinitialisant la mémoire et les instances du nœud.
 
 
 Ensuite, l'extraction définit une fonction `parse_args` qui demande à l'utilisateur les arguments nécessaires à l'exécution d'une étape de `main_node`.
-La fonction `main` est une boucle infinie. Celle-ci appelle `parse_args`, envoie le résultat au nœud principal `main_node`, affiche le résultat du noeud principal et recommence.
+La fonction `main` est une boucle infinie. Celle-ci appelle `parse_args`, envoie le résultat au nœud principal `main_node`, affiche le résultat du nœud principal et recommence.
 
 ## Extraction vers Why3 : preuve de la compilation et vérification de code Lustre
 
@@ -230,7 +230,7 @@ ils sont définissables par récurrence car le code exécutable satisfait `step_
 
 Prouver ce lemme s'est avéré être particulièrement difficile. Je pensais que sur des
 exemples simples les solveurs automatiques SMT ou ATP devait pouvoir fournir des
-preuves. Ce n'est pas le cas, 
+preuves. Ce n'est pas le cas,
 
 
 
@@ -259,45 +259,24 @@ arithmétiques et booléennes.
 
 **TODO**
 
+## Extension avec les automates hiérarchiques
 
+Nous avons essayé d'étendre le langage avec les constructions `reset`, `match` et
+`automata` décrites dans emsoft05b.
+Le manque de temps nous a obligé à traiter ces constructions directement sur
+l'AST de parsing, au détriment d'une gestion correcte des erreurs. Les
+constructions `match` et `reset` sont implémentées, mais pas encore les
+automates.
 
-## Utilisation
+L'approche utilisée consiste en une passe par construction, plutôt qu'une
+transformation générale comme dans l'article. On élimine d'abord les
+constructions `automata` en les transformant en programmes utilisant
+uniquement `match` et `reset`, puis on élimine successivement les `match` et
+les `reset`.
 
-### Compiler le binaire
-
-Le binaire `rustre` peut être compilé à l'aide de la commande `make` lancée à la racine du projet. La compilation a été testée avec ocaml 4.05.0 et menhir 20171206.
-
-La commande `./rustre -help` devrait donner quelque chose comme :
-
-```
-usage: ./rustre [options] file.lus main
-  -extract {why3|rust}Extract to why3 or rust
-  -o File to write the generated code.
-  -v Verbose output
-  -opt Optimize object code
-  -spec Prove compilation
-  -nils Prove that nils are not used
-  -ext Use automata extension
-  -help  Display this list of options
-  --help  Display this list of options
-```
-
-- Par défaut, `./rustre file.lus main_node` affiche le résultat de la compilation (code séquentiel)
-sur la sortie standard. Utiliser `-o` pour écrire le code dans un fichier.
-- Il est possible de générer du code Rust et Why3 (Rust par défaut)
-- `-v` affiche toutes les représentations intermédiaires sur la sortie standard.
-- `-opt` effectue des passes d'optimisation sur l'AST objet (voir plus bas).
-- `-spec` et `-nils` sont deux analyses automatisées en Why3 (voir plus bas). À utiliser uniquement
-  avec `-extract why3`.
-- Si l'argument `-ext` est passé, la syntaxe concrète est étendue avec des automates (voir plus bas).
-
-**TODO: versions de why3 ?**
-
-L'extraction Rust génère un fichier standalone qui peut être compilé avec la commande `rustc <file>`.
-La compilation Rust a été testée avec rustc 1.22.1.
-
-### Tester
-
-Une série de fichiers d'exemples se trouve sous le dossier `tests`.
-Des exemples de programmes non valides sont présents dans le dossier `tests/bad`.
-Taper la commande `make test` à la racine du projet lance la compilation de ces fichiers automatiquement et vérifie qu'elle a lieu avec succès sur les programmes valides, et qu'elle échoue sur les programmes non valides.
+Par rapport à l'article sont également ajoutées les déclaration des variables
+partagées avec le mot-clé `shared`, ainsi qu'une valeur initiale optionnelle
+pour celles-ci (permettant que `last x` soit bien définie au premier instant).
+Pour être compatible avec le langage de base, nous nous sommes un peu éloigné
+de la syntaxe proposée dans l'article : les déclarations de variables
+locales sont limitées, et les horloges ne sont pas explicitement déclarées.

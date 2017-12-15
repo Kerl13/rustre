@@ -1,13 +1,13 @@
 /* From Heptagon manual */
 
-node updown() = y:int
+node updown() = (y:int)
 with var shared x:int in
   y = x;
   automaton
     state Up
       do x = last x + 1
-      until x >= 10 then Down
+      unless last x >= 10 then Down
     state Down
       do x = last x - 1
-      until x <= 0 then Up
+      unless last x <= 0 then Up
   end

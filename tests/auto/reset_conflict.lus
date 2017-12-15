@@ -1,9 +1,12 @@
+/* main = ex_reset */
+/* Do not remove the line above */
+
 node f(a : int) = (b : int) with
   b = 0 fby a
 
 node ex_reset(v:int) = (o: int)
 with var t : int in
-  reset 
+  reset
     t = 0 fby t + v;
     o = t + f(t) every o > 13
   every o > 42
