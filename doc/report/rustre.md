@@ -101,8 +101,9 @@ Elles peuvent être déclenchées à l'aide de l'option `-opt`.
 En revanche le langage cible ne peut pas nécessairement voir cette propriété et ne peut donc pas effectuer la fusion.
 Nous avons implémenté cette optimisation ce qui réduit le nombre de branchements, notamment dans les deux exemples `tests/emsoft03.lus` et `tests/emsoft05.lus`.
 
-**Simplification des merges triviaux:** Un appel de nœud `f(x0, x1, ...)` non suivi de la construction `every` dans la syntaxe
-concrète est du sucre pour `f(x0, x1, ...) every False`. Le code généré contient pour
+**Simplification des merges triviaux:** Un appel de nœud `f(x0, x1, ...)` non suivi de la construction
+`every` dans la syntaxe concrète est du sucre syntaxique pour `f(x0, x1, ...) every False`.
+Le code généré contient pour
 cette raison un nombre important de `case` constants de la forme `case false { ... }`.
 Bien qu'on puisse attendre du compilateur du langage cible de
 simplifier ce code là automatiquement, nous avons implémenté cette
