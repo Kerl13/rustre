@@ -65,10 +65,8 @@ infère).
 
 ### Normalisation
 
-**TODO** Lucas
-**TODO** Si je ne me trompe pas, on a un nouvel ast qui force la normalisation, donc il n'y a pas besoin d'une passe de validation/vérification ?
-
-La normalisation est telle que décrite dans l'article.
+La normalisation est telle que décrite dans l'article. On utilise un nouveau
+type d'AST. L'AST après cette passe est donc nécessairement en forme normale.
 
 ### Ordonnancement
 
@@ -78,10 +76,6 @@ déclare les nœuds dans l'ordre où il les utilise et on effectue un tri sur l'
 Une deuxième passe, de vérification, parcourt linéairement l'AST
 pour vérifier que toutes les variables utilisées on été calculées
 au préalable.
-
-### Traduction dans le langage objet
-
-**TODO** Lucas
 
 ### Optimisations
 
@@ -102,6 +96,11 @@ concrète est du sucre pour `f(x0, x1, …) every False`. Le code généré cont
 cette raison un nombre important de `case` constants de la forme `case false { … }`.
 
 Bien qu'on puisse attendre du compilateur du langage cible de simplifier ce code là automatiquement, nous avons implémenté cette optimisation afin de générer du code plus lisible.
+
+### Traduction dans le langage objet
+
+La traduction vers le langage objet est réalisée comme décrit dans l'article. On notera
+simplement que l'AST objet est aussi réalisé avec des GADT, ce qui donne certaines garanties sur le typage.
 
 ## Extraction vers Rust
 
