@@ -1,7 +1,10 @@
-# Rustre, un compilateur vérifiable, vérifié et vérifiant de minilustre vers Rust
+---
+title: "De lustre à Rust : Rustre"
+subtitle: "Un compilateur vérifiable, vérifié et vérifiant"
+---
 
 ![Pong](pong.png)
-\ 
+\
 
 Nous avons réalisé un compilateur de minilustre vers Rust. Nous avons d'abord suivi
 l'architecture proposée dans l'article donné en référence[^ref1], mais nous nous sommes attachés à produire un
@@ -101,9 +104,10 @@ Elles peuvent être déclenchées à l'aide de l'option `-opt`.
 En revanche le langage cible ne peut pas nécessairement voir cette propriété et ne peut donc pas effectuer la fusion.
 Nous avons implémenté cette optimisation ce qui réduit le nombre de branchements, notamment dans les deux exemples `tests/emsoft03.lus` et `tests/emsoft05.lus`.
 
-**Simplification des merges triviaux:** Un appel de nœud `f(x0, x1, …)` non suivi de la construction `every` dans la syntaxe
-concrète est du sucre syntaxique pour `f(x0, x1, …) every False`. Le code généré contient pour
-cette raison un nombre important de `case` constants de la forme `case false { … }`.
+**Simplification des merges triviaux:** Un appel de nœud `f(x0, x1, ...)` non suivi de la construction
+`every` dans la syntaxe concrète est du sucre syntaxique pour `f(x0, x1, ...) every False`.
+Le code généré contient pour
+cette raison un nombre important de `case` constants de la forme `case false { ... }`.
 Bien qu'on puisse attendre du compilateur du langage cible de
 simplifier ce code automatiquement, nous avons implémenté cette
 optimisation afin de générer du code plus lisible.
@@ -168,14 +172,14 @@ de flots.
 Nous avons axiomatisé ces flots dans une bibliothèque Why3. Un flot est un élément du
 type `stream 'a` avec une fonction d'accès `get` :
 
-```why3
+~~~why3
 type stream 'a
 type nat = O | S nat
 function get (stream 'a) nat: 'a
-(* axiome d'extensionnalité *)
+(* axiome d'extensionnalite *)
 axiom sext: forall a, b: stream 'a.
     (forall n: nat. get a n = get b n) -> a = b
-```
+~~~
 
 Ensuite, on définit toutes les opérations possibles, par exemple la somme de deux
 flots ou le fby via des règles de réécriture (le reste est dans `why3/stream.mlw`) :
@@ -231,7 +235,7 @@ ils sont définissables par récurrence car le code exécutable satisfait `spec_
 
 Prouver ce lemme s'est avéré être particulièrement difficile. Nous pensions que sur des
 exemples simples les solveurs automatiques SMT ou ATP devaient pouvoir fournir des
-preuves. Ce n'est pas le cas, nous avons donc choisi de faire une tactique Coq (que nous 
+preuves. Ce n'est pas le cas, nous avons donc choisi de faire une tactique Coq (que nous
 croyons complète pour les preuves nécessaires, mais nous n'avons pas fait la preuve) pour
 faire ces preuves automatiquement. Expérimentalement, sur tous nos exemples qui sont
 dans ce noyau, la tactique Coq permet de faire la preuve de correspondance.
@@ -257,7 +261,7 @@ d'implémentation majeure additionnelle).
 On adopte une approche qui permet une vérification modulaire : on peut choisir de
 spécifier les nœuds un par un, ce qui dans un contexte industriel pourrait permettre
 de passer à l'échelle.
-Pour spécifier les programmes nous suivons l'approche décrite dans l'article de [todo: ref].
+Pour spécifier les programmes nous suivons l'approche décrite dans l'article de [^ref3].
 Plutôt que d'introduire une nouvelle syntaxe pour les préconditions et les
 postconditions, on utilise une variable spéciale appelée `ok` et on essaye de prouver
 par induction qu'elle est toujours égale à `true`.
@@ -314,11 +318,11 @@ lemme suivant :
 
 ```why3
 lemma nil_analysis:
-  forall (* états de sortie *) s1, s2,
-         (* entrées *) a,  b, …
-         (* sorties pour les deux cas *) c1_1, c1_2, …
-         (* valeurs pour le type nil *) v1, ….
-  let reset_state_nil = { reset_state with var1 = v1; … } in
+  forall (* etats de sortie *) s1, s2,
+         (* entrees *) a,  b, ...
+         (* sorties pour les deux cas *) c1_1, c1_2, ...
+         (* valeurs pour le type nil *) v1, ....
+  let reset_state_nil = { reset_state with var1 = v1; ... } in
   step_fonct a b c1_1 reset_state s1 ->
   step_fonct a b c1_2 reset_state_nil s2 ->
   s1 = s2 /\ c1_1 = c1_2
@@ -402,6 +406,10 @@ Compilers, and Tools for Embedded Systems (LCTES). 2008.
     L. Rieg. A verified compiler for Lustre. Proceedings of the 38th
     ACM SIGPLAN Conference on Programming Language Design and
     Implementation, 586–601, Barcelona, Spain, 18–23 June 2017.
+
+[^ref3]: Raymond, Pascal. "Synchronous program verification with
+    lustre/lesar." Modeling and Verification of Real-Time Systems
+    (2008): 7.
 
 [^ref4]: Jean-Louis Colaço, Bruno Pagano, Marc Pouzet. A conservative
 extension of synchronous data-flow with state machines. EMSOFT 2005:
