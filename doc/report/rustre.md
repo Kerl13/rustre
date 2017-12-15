@@ -257,7 +257,7 @@ d'implémentation majeure additionnelle).
 On adopte une approche qui permet une vérification modulaire : on peut choisir de
 spécifier les nœuds un par un, ce qui dans un contexte industriel pourrait permettre
 de passer à l'échelle.
-Pour spécifier les programmes nous suivons l'approche décrite dans l'article de [todo: ref].
+Pour spécifier les programmes nous suivons l'approche décrite dans l'article de [^ref3].
 Plutôt que d'introduire une nouvelle syntaxe pour les préconditions et les
 postconditions, on utilise une variable spéciale appelée `ok` et on essaye de prouver
 par induction qu'elle est toujours égale à `true`.
@@ -402,6 +402,10 @@ Compilers, and Tools for Embedded Systems (LCTES). 2008.
     L. Rieg. A verified compiler for Lustre. Proceedings of the 38th
     ACM SIGPLAN Conference on Programming Language Design and
     Implementation, 586–601, Barcelona, Spain, 18–23 June 2017.
+
+[^ref3]: Raymond, Pascal. "Synchronous program verification with
+    lustre/lesar." Modeling and Verification of Real-Time Systems
+    (2008): 7.
 
 [^ref4]: Jean-Louis Colaço, Bruno Pagano, Marc Pouzet. A conservative
 extension of synchronous data-flow with state machines. EMSOFT 2005:
