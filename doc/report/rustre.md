@@ -43,9 +43,10 @@ Des exemples de programmes non valides sont présents dans le dossier `tests/bad
 Taper la commande `make test` à la racine du projet lance la compilation de ces fichiers automatiquement et vérifie qu'elle a lieu avec succès sur les programmes valides, et qu'elle échoue sur les programmes non valides.
 
 
-## Les différentes stades de la compilation
+## Les différents stades de la compilation
 
-**TODO** mentionner quelque part : un AST par passe en gros.
+Le processus de compilation est décomposé en plusieurs passes : le code est parsé, puis typé, puis les horloges sont inférées, et ensuite le code est normalisé, ordonnancé, transformé vers le langage objet, puis extrait vers Rust ou Why3. 
+Lors de la plupart des passes, les AST d'entrée et de sortie sont différents.
 
 ### Syntaxe concrète
 
