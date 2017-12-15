@@ -6,6 +6,6 @@ with var n1, n2: int in
   b = 0
 
 node check2 (x: bool) = (ok: bool)
-with var n1, n2: int; b: bool in
+with var n1, n2: int in
   (n1, n2) = check(x);
   ok = (n1 + 1) = n2
