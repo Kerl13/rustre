@@ -13,7 +13,7 @@ const INITIAL_DY = 3
 
 /* The paddle's spec */
 const PADDLE_SIZE = 30
-const PADDLE_SPEED = 4
+const PADDLE_SPEED = 3
 
 
 /* Simple utilities */
@@ -56,7 +56,7 @@ with var r_overflow, l_overflow, goal_, ok : bool ; dx : int in
        else if l_overflow then  -(x + dx)
        else                     x + dx ;
   ok = (dx = DX or dx = -DX) and ((0 <= x and x < WIDTH) =>
-  (-1 < x2 and x2 < WIDTH))
+  (0 <= x2 and x2 < WIDTH))
 
 node vert_move(y : int) = (y2, dy : int)
 with var overflow_top, overflow_bot, overflow : bool ; ok : bool in
