@@ -130,16 +130,10 @@ in
   length = dist_to_goal(x, dir) ;
   delta_y = (length * abs(dy)) / DX ;
   ok =
-  (0 <= x and x < WIDTH) and
-  (-1 < xx and xx < WIDTH) and
-(0 <= y and y < HEIGHT) and
-       (-(HEIGHT-1) <= dy and dy <= HEIGHT) and (0 <= y2 and y2 < HEIGHT) and
-       abs(y2 - y) <= PADDLE_SPEED and
-       (paddle = y) and (paddle2 = y2) and
-       score = 0 and goal_ = true and score = 0
-
-       /*and (x mod DX = 0)*/
-/*    (PADDLE_SPEED * dist_to_goal(x, dir) >= abs(paddle - target) * DX)
-    and (y >= target - delta_y and y <= target + delta_y)
-    and (x mod DX = 0)*/
-    /* and (score = 0) certainly difficult */
+    (0 <= x and x < WIDTH) and
+    (-1 < xx and xx < WIDTH) and
+    (0 <= y and y < HEIGHT) and
+    (-(HEIGHT-1) <= dy and dy <= HEIGHT) and (0 <= y2 and y2 < HEIGHT) and
+    abs(y2 - y) <= PADDLE_SPEED and
+    (paddle = y) and (paddle2 = y2) and
+    score = 0 and goal_ = true
