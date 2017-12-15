@@ -1,7 +1,6 @@
 %{
   open Ast_parsing
 
-
   let dummy_loc e pos = { expr_desc = e ; expr_loc = (pos, pos) }
   let pat_descs patterns = List.map (fun p -> p.pat_desc) patterns
   let zero = dummy_loc (EConst (CInt 0)) Lexing.dummy_pos
@@ -136,7 +135,8 @@ typ:
 | BOOL       { TyBool }
 | INT        { TyInt }
 | REAL       { TyReal }
-| t = ident  { TyEnum (t, Hashtbl.find data_constructors t) }
+| t = ident  { TyEnum (t, try Hashtbl.find data_constructors t
+                          with Not_found -> raise (Ast_parsing.MError ("unknown type `" ^ t ^ "`"))) }
 
 
 file:

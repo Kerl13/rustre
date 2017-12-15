@@ -109,6 +109,7 @@ let rec spec_print_state_flat pref states ppf s =
 
 
 let spec_proof_node ppf (states, node) =
+  if node.n_local <> [] then (Format.eprintf "could not prove semantics when there are local variables@."; assert false);
   fprintf ppf "@[<2>lemma valid:@\nforall (* in and out vars *) %a%a (* state *) %a.  @\n"
     var_pp (node.n_input @ node.n_local @ node.n_output)
     (fun ppf () ->

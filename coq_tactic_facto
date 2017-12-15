@@ -104,12 +104,12 @@ Ltac simpl_pairs := repeat match goal with
 | [ H: pair _ _ = pair _ _ |- _ ] => inversion H; clear H
 end.
 
-Ltac solve step_fonct1 h2 sinst1a sinst1b sc sd se := simpl_all step_fonct_full; repeat (repeat (s h2 sinst1a sinst1b sc sd se); simpl_pairs; try congruence; unfold_eq).
+Ltac solve u1 h2 sinst1a sinst1b sc sd se := simpl_all u1; repeat (repeat (s h2 sinst1a sinst1b sc sd se); simpl_pairs; try congruence; unfold_eq).
 
 
 inversion h1.
 
-solve step_fonct h2 sinst1a sinst1b sc sd se.
+solve step_fonct_sem_full h2 sinst1a sinst1b sc sd se.
 
 
 
