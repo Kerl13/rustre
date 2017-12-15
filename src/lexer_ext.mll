@@ -32,6 +32,7 @@
         "pre", PRE;
         "real", REAL;
         "reset", RESET;
+        "revery", REVERY;
         "shared", SHARED;
         "state", STATE;
         "then", THEN;

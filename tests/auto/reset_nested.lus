@@ -7,5 +7,5 @@ with var t : int in
     reset
       t = 0 fby t + v;
       o = 0 fby o + t
-    every o > 43
-  every o > 42
+    revery o > 43
+  revery o > 42
