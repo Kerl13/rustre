@@ -239,7 +239,7 @@ lemma valid:
     step_fonct (get a n)  (get b n)  (get c n)
       (get d n) { Nodeadd.d = get sd n; } { Nodeadd.d = get sd (S n); })
   (* correction *)
-  -> spec a  b c  d
+  -> spec a  b c d
 ```
 
 On note qu'on a besoin de supposer l'existence d'un flot supplémentaire pour l'état,
@@ -248,7 +248,10 @@ ils sont définissables par récurrence car le code exécutable satisfait `step_
 
 Prouver ce lemme s'est avéré être particulièrement difficile. Je pensais que sur des
 exemples simples les solveurs automatiques SMT ou ATP devait pouvoir fournir des
-preuves. Ce n'est pas le cas,
+preuves. Ce n'est pas le cas, j'ai donc choisi de faire une tactique Coq (que je crois
+complète pour les preuves nécessaires, mais je n'en ai pas fait la preuve) pour
+faire ces preuves automatiquement. Expérimentalement, sur tous nos exemples qui sont
+dans ce noyau, la tactique Coq permet de faire la preuve de correspondance.
 
 
 
