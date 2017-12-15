@@ -30,7 +30,7 @@ let rec spec_expr ppf expr =
   | Ast_parsing.EFby (c, e) -> fprintf ppf "(sfby %a %a)" spec_const c spec_expr e
   | Ast_parsing.EOp (op, l) -> fprintf ppf "(%a %a)" spec_op op (pp_list " " spec_expr) l
   | Ast_parsing.EApp (_,_,_) -> assert false
-  | Ast_parsing.EWhen (a,b,c) -> fprintf ppf "(swhen %s %a)" c spec_expr a
+  | Ast_parsing.EWhen (a,_,c) -> fprintf ppf "(swhen %s %a)" c spec_expr a
   | Ast_parsing.EMerge (i,l) ->
     let a, b = match l with
       | ["True", a; "False", b] -> a, b
