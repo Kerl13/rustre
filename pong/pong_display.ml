@@ -1,7 +1,7 @@
 open Graphics
 
 
-let width = 1200
+let width = 1000
 let height = 400
 let paddle_length = 30
 let ball_radius = 8
