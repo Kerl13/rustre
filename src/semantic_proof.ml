@@ -74,6 +74,8 @@ let spec_node states f_obj ppf node =
     apply sext
   | [ |-  _ = swhen ?A ?B] =>
     apply sext
+  | [ |-  _ = sconst _] =>
+    apply sext
   | [ |-  _ = smerge _ _ _] =>
     apply sext
   | [ |- forall n:nat, ?C] =>

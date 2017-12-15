@@ -6,7 +6,10 @@ with
 
 
 node check(x: int; b: bool) = (ok: bool)
-with var y, z: int; b1, b2: bool; x1: int; x2:int in
+with
+  ok = true
+/*
+ var y, z: int; b1, b2: bool; x1: int; x2:int in
   -- b2 and z are only defined at even steps on the base clock
   b1 = true fby (not b1);
   b2 = b when True(b1);
