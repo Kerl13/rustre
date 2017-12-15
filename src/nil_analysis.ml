@@ -18,7 +18,7 @@ let rec analyze_defs ?(fonct=false) = function
     else
       (State ("state_" ^ i)) :: res
   | SCase(_, b) ->
-    List.map snd b |> List.map (analyze_defs ~fonct) |> List.concat |> List.sort_uniq compare (* XXX alea jacta est *)
+    List.map snd b |> List.map (analyze_defs ~fonct) |> List.concat |> List.sort_uniq compare 
 
 let rec expr_has_nil: type a. a oexpr -> bool = function
   | EVar _ -> false

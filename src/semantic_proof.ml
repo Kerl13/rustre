@@ -197,7 +197,7 @@ solve step_fonct_full%a h_rec %a.@\n"
   node_ind := (node.n_name, !spec_count)::!node_ind;
   incr spec_count
 
-(* record winning hack *)
+(* award winning hack *)
 let find_offset f =
   let a = open_in f in
   let lo0 = ref 0 in
