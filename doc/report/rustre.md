@@ -21,7 +21,7 @@ d'AST utilisé après la normalisation garantie aussi la bonne formation des AST
 
 Puis, tout un second volet de notre travail a été consacré à une extraction vers Why3.
 Cette extraction permet, outre l'utilisation d'un langage particulièrement sûr, de
-produire, sur un noyau du langage, une preuve de correction sémantique pour chaque
+produire, sur un noyau de minilustre, une preuve de correction sémantique pour chaque
 extraction.
 Au contraire d'un compilateur formellement vérifié[^ref2], la
 correction sémantique doit être ici prouvée lors de chaque extraction.
@@ -62,7 +62,7 @@ Nulle fonction de vérification n'est donc nécessaire, les AST typés étant n�
 ### Analyse des horloges
 
 Nous avons implémenté un clocking à la Hindley-Milner à l'aide de l'algorithme W.
-Un nœud peut donc être polymorphe en termes d'horloge et peut donc être utilisé
+Un nœud peut donc être polymorphe en terme d'horloge et peut donc être utilisé
 plusieurs fois sur des horloges différentes. Par exemple, le code suivant a pour
 horloge `('a, 'a) -> 'a`:
 
@@ -103,11 +103,11 @@ au préalable.
 En plus de la traduction vers le langage objet décrit dans l'article, nous avons implémenté deux optimisations dans ce dernier langage : la fusion des merges et la simplification des merges triviaux.
 Elles peuvent être déclenchées à l'aide de l'option `-opt`.
 
-**Fusion des merges:** Dans le langage objet, lorsque deux `case` successifs sur la même variable sont générés, nous savons qu'aucun effet de bord n'empêche de fusionner les branches du `case` deux à deux.
+**Fusion des merges :** Dans le langage objet, lorsque deux `case` successifs sur la même variable sont générés, nous savons qu'aucun effet de bord n'empêche de fusionner les branches du `case` deux à deux.
 En revanche le langage cible ne peut pas nécessairement voir cette propriété et ne peut donc pas effectuer la fusion.
 Nous avons implémenté cette optimisation ce qui réduit le nombre de branchements, notamment dans les deux exemples `tests/emsoft03.lus` et `tests/emsoft05.lus`.
 
-**Simplification des merges triviaux:** Un appel de nœud `f(x0, x1, ...)` non suivi de la construction
+**Simplification des merges triviaux :** Un appel de nœud `f(x0, x1, ...)` non suivi de la construction
 `every` dans la syntaxe concrète est du sucre syntaxique pour `f(x0, x1, ...) every False`.
 Le code généré contient pour
 cette raison un nombre important de `case` constants de la forme `case false { ... }`.
@@ -390,7 +390,7 @@ fallu trouver les bons invariants à mettre sur les nœuds qui calculent la posi
 pour aider Why3 à faire la preuve.
 
 Nous avons échoué dans un premier temps à prouver la seconde propriété car notre IA
-était trop sophistiquée : elle calculait à l'avance la position d'arrivée de la balle
+était trop sophistiquée : elle calculait à l'avance la position d'arrivée de la balle
 et se plaçait directement à la bonne position. Bien que cela permette à l'IA de gagner
 même quand sa vitesse est faible, nous n'avons pas réussi à trouver une propriété inductive
 à donner à Why3, propriété qui serait de toute façon non linéaire et par conséquent difficile.
