@@ -1,6 +1,6 @@
 /* From Heptagon manual */
 
-type modes = Up | Down
+type modes = Up + Down
 
 node two(m:modes; v:int) = (o:int)
 with var shared x:int = 0 in
@@ -9,4 +9,3 @@ with var shared x:int = 0 in
   | Up do x = last x + v
   | Down do x = last x - v
   end
-tel

@@ -193,7 +193,7 @@ pattern:
     {{ pat_desc = PTuple (pat_descs pats) ; pat_loc = ($startpos, $endpos) }}
 
 match_handler:
-  c = dcident DO eqs = separated_nonempty_list(SEMICOL, equation) DONE
+  c = dcident DO eqs = separated_nonempty_list(SEMICOL, equation) 
   {{ m_name = c ; m_eqs = eqs }}
 
 state_handler: 
