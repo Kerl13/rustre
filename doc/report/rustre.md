@@ -107,15 +107,15 @@ simplement que l'AST objet est aussi réalisé avec des GADT, ce qui donne certa
 L'extraction vers Rust se fait en un parcours linéaire sur l'AST objet.
 
 
-Chaque noeud est encapsulé dans un module, où est décrit :
+Chaque nœud est encapsulé dans un module, où est décrit :
 
-- une `struct Machine`, décrivant la mémoire et les instances du noeud courant. En utilisant `#[derive(Default)]` avant la déclaration de `struct Machine`, le compilateur Rust génère automatiquement une procédure d'initialisation pour la structure.
+- une `struct Machine`, décrivant la mémoire et les instances du nœud courant. En utilisant `#[derive(Default)]` avant la déclaration de `struct Machine`, le compilateur Rust génère automatiquement une procédure d'initialisation pour la structure.
 - une méthode `step` fonctionnant sur `Machine`, qui est définie de manière similaire au langage objet. Grâce aux transformations effectuées précédemment, toutes les variables locales de cette méthode sont immuables.
-- une méthode `reset` opérant sur `Machine`, réinitialisant la mémoire et les instances du noeud.
+- une méthode `reset` opérant sur `Machine`, réinitialisant la mémoire et les instances du nœud.
 
 
 Ensuite, l'extraction définit une fonction `parse_args` qui demande à l'utilisateur les arguments nécessaires à l'exécution d'une étape de `main_node`.
-La fonction `main` est une boucle infinie. Celle-ci appelle `parse_args`, envoie le résultat au noeud principal `main_node`, affiche le résultat du noeud principal et recommence.
+La fonction `main` est une boucle infinie. Celle-ci appelle `parse_args`, envoie le résultat au nœud principal `main_node`, affiche le résultat du nœud principal et recommence.
 
 ## Extraction vers Why3 et preuves
 
@@ -130,3 +130,25 @@ La fonction `main` est une boucle infinie. Celle-ci appelle `parse_args`, envoie
 ### Analyses d'inits
 
 **TODO**
+
+## Extension avec les automates hiérarchiques 
+
+Nous avons essayé d'étendre le langage avec les constructions `reset`, `match` et 
+`automata` décrites dans emsoft05b.
+Le manque de temps nous a obligé à traiter ces constructions directement sur
+l'AST de parsing, au détriment d'une gestion correcte des erreurs. Les
+constructions `match` et `reset` sont implémentées, mais pas encore les
+automates.
+
+L'approche utilisée consiste en une passe par construction, plutôt qu'une
+transformation générale comme dans l'article. On élimine d'abord les
+constructions `automata` en les transformant en programmes utilisant
+uniquement `match` et `reset`, puis on élimine successivement les `match` et
+les `reset`.
+
+Par rapport à l'article sont également ajoutées les déclaration des variables
+partagées avec le mot-clé `shared`, ainsi qu'une valeur initiale optionnelle
+pour celles-ci (permettant que `last x` soit bien définie au premier instant).
+Pour être compatible avec le langage de base, nous nous sommes un peu éloigné
+de la syntaxe proposée dans l'article : les déclarations de variables
+locales sont limitées, et les horloges ne sont pas explicitement déclarées.
