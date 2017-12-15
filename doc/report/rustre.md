@@ -115,9 +115,137 @@ Chaque noeud est encapsulé dans un module, où est décrit :
 
 
 Ensuite, l'extraction définit une fonction `parse_args` qui demande à l'utilisateur les arguments nécessaires à l'exécution d'une étape de `main_node`.
-La fonction `main` est une boucle infinie. Celle-ci appelle `parse_args`, envoie le résultat au noeud principal `main_node`, affiche le résultat du noeud principal et recommence.
+La fonction `main` est une boucle infinie. Celle-ci appelle `parse_args`, envoie le résultat au nœud principal `main_node`, affiche le résultat du noeud principal et recommence.
 
-## Extraction vers Why3 et preuves
+## Extraction vers Why3 : preuve de la compilation et vérification de code Lustre
+
+Why3 est une plateforme de vérification déductive comportant deux langages : un
+langage de programmation, WhyML, proche de OCaml et un langage logique qui permet
+de raisonner sur les programmes.
+
+Notre extraction vers Why3 a plusieurs buts : d'abord, on extrait vers un langage
+particulièrement sûr. Ensuite, elle permet d'établir une preuve d'abstraction
+entre le code séquentiel et le nœud Lustre originel, prouvant ainsi tout le
+processus de compilation. (Par manque de temps, seul un noyau du langage est
+supporté pour cette partie.) Enfin, on peut utiliser Why3 pour faire de la
+vérification sur nos programmes.
+
+
+L'extraction vers Why3 peut être séparée en trois parties  : la production de
+code exécutable séquentiel, la spécification de ce code, puis la traduction du
+nœud Lustre initial en une spécification de haut niveau.
+
+##### Code exécutable séquentiel
+
+La production de ce code est semblable à l'extraction vers Rust. Il s'agit
+d'un code séquentiel qui met à jour en place des record pour modifier l'état.
+Ce code peut ensuite être extrait vers OCaml et donne donc du code efficace.
+
+
+##### Spécification logique
+
+Le code séquentiel qu'on a produit l'a été dans le langage de programmation
+WhyML. Il n'est pas pur car il agit par effet de bord sur l'état.
+Pour pouvoir raisonner dessus, il faut exprimer une spécification dans le
+langage logique.
+
+##### Spécification abstraite
+
+Indépendamment, on effectue une traduction très simple (et donc dans laquelle on
+peut avoir confiance) d'un nœud Lustre vers une spécification abstraite dans
+Why3 en terme de flots.
+
+Nous avons axiomatisé ces flots dans une bibliothèque Why3. Un flot est un élément du
+type `stream 'a` avec une fonction d'accès `get` :
+
+```why3
+type stream 'a
+type nat = O | S nat
+function get (stream 'a) nat: 'a
+(* axiome d'extensionnalité *)
+axiom sext: forall a, b: stream 'a.
+    (forall n: nat. get a n = get b n) -> a = b
+```
+
+Ensuite, on définit toutes les opérations possibles, par exemple la somme de deux
+flots ou le fby via des règles de réécriture (le reste est dans why3/stream.mlw) :
+
+```why3
+function sfby 'a (stream 'a): stream 'a
+function splus (stream int) (stream int): stream int
+axiom sfby_rw_s: forall a:'a, b:stream 'a, n. get (sfby a b) (S n) = get b n
+axiom sfby_rw_o: forall a:'a, b:stream 'a. get (sfby a b) O = a
+axiom splus_rw: forall a, b, n. get (splus a b) n = get a n + get b n
+```
+
+La traduction est très simple, il s'agit de traduire les équations en une conjonction
+d'égalités logiques.
+
+On note que cette traduction est réalisée depuis le premier AST, ainsi on n'a
+pas besoin de faire confiance aux autres passes de compilation.
+
+Par exemple, le nœud suivant :
+
+```lustre
+node add(a, b: int) = (c, d: int)
+with
+  c = a + b ;
+  d = 0 fby c
+```
+
+est traduit par la spécification Why3 suivante :
+
+```why3
+predicate spec (a:stream int) (b:stream int) (c:stream int) (d:stream int) =
+  c = (splus a b)   /\
+  d = (sfby 0 c)
+```
+
+##### Preuve sémantique
+
+On cherche ensuite à prouver que notre code séquentiel est une abstraction de cette
+spécification. Formellement, cela revient à définir par induction des flots et à
+montrer qu'il satisfont le prédicat `spec`.
+
+On appelle `spec_fonct` la contrainte fonctionnelle du code séquentiel, qui est
+une postcondition du code exécutable.
+
+Ainsi dans l'exemple précédent, le lemme qu'on cherche à montrer est le suivant :
+```why3
+lemma valid:
+  forall (* in and out vars *) a:stream int,  b:stream int,  c:stream int,
+  d:stream int,  (* state *) sd: stream int.  
+  (* definition by recurrence *)
+  ({ Nodeadd.d = get sd O; } = reset_state /\
+  forall n: nat.
+    step_fonct (get a n)  (get b n)  (get c n)
+      (get d n) { Nodeadd.d = get sd n; } { Nodeadd.d = get sd (S n); })
+  (* correction *)
+  -> spec a  b c  d
+```
+
+On note qu'on a besoin de supposer l'existence d'un flot supplémentaire pour l'état,
+qui n'apparaît pourtant pas dans `spec`. Ce lemme définie bien des flots valides :
+ils sont définissables par récurrence car le code exécutable satisfait `step_fonct`.
+
+Prouver ce lemme s'est avéré être particulièrement difficile. Je pensais que sur des
+exemples simples les solveurs automatiques SMT ou ATP devait pouvoir fournir des
+preuves. Ce n'est pas le cas, 
+
+
+
+##### Limitation de la preuve sémantique
+
+Nous n'avons réalisé ce travail de preuve que sur un sous-ensemble de minilustre qu'on
+a veillé à garder assez expressif. Ainsi, la syntaxe `every`, les types sommes (autre
+que booléens), les nils (difficiles à axiomatiser) et les variables locales (qui ne sont
+fondamentalement pas une grande difficulté mais s'exprime avec des quantificateurs
+existentiels ce qui rend l'exercice assez technique).
+
+Cela laisse tout de même les
+`merge`, les `fby`, les appels de nœuds, un sous ensemble complet d'opérations
+arithmétiques et booléennes.
+
 
 ### Sémantique
 
