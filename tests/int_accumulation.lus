@@ -2,9 +2,10 @@
 /* Do not remove the line above */
 
 node accumulation(v: int) = (tot: int)
-with var foo: int in
+with
   tot = (0 fby (tot + v)) + v
 
-node switcher(b: bool; v: int) = (tot: int)
-with var foo: int in
-  tot = if b then accumulation(v) else 0
+node switcher(b: bool; v: int) = (tot: int; v2: int)
+with
+  v2 = accumulation(v);
+  tot = if b then v2 else 0
