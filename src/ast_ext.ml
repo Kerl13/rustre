@@ -47,7 +47,7 @@ and var_decl = {
   v_loc : location
 }
 
-and eq_desc = 
+and eq_desc =
   | EEq of pattern * expr
   | EMatch of ident * match_handler list
   | EReset of equation list * expr
@@ -97,7 +97,7 @@ let rec visit_expr f state e =
 and visit_eq f state {eq_desc ; _ } =
   match eq_desc with
   | EEq (_, e) -> visit_expr f state e
-  | EMatch (e, ms) -> List.fold_left (visit_match f) state  ms
+  | EMatch (_, ms) -> List.fold_left (visit_match f) state  ms
   | EReset (eqs, e) -> List.fold_left (visit_eq f) (visit_expr f state e) eqs
   | EAutomaton sts -> List.fold_left (visit_state f) state sts
 
@@ -110,7 +110,6 @@ and visit_state f state {s_eqs ; s_until ; s_unless ; _} =
   let state = visit_escs state s_unless in
   List.fold_left (visit_eq f) state s_eqs
 
-  
 
 (**
  * Pretty printer
@@ -173,12 +172,12 @@ let pp_ty ppf = function
   | TyReal -> fprintf ppf "real"
   | TyEnum (name, _) -> fprintf ppf "%s" name
 
-let pp_var_decl ppf {v_name ; v_type ; v_shared ; v_init ; _} = 
+let pp_var_decl ppf {v_name ; v_type ; v_shared ; v_init ; _} =
   fprintf ppf "%s%s: %a%a" (if v_shared then "shared " else "") v_name
-    pp_ty v_type (fun ppf i -> match i with None -> fprintf ppf "" 
+    pp_ty v_type (fun ppf i -> match i with None -> fprintf ppf ""
                                | Some e -> fprintf ppf " = %a" pp_const e) v_init
 
-let rec pp_equation ind ppf {eq_desc ; _} = 
+let rec pp_equation ind ppf {eq_desc ; _} =
   let pp_list = Pp_utils.pp_list in
   let pp ppf = function
   | EEq (pat, e) -> fprintf ppf "%a = %a" pp_pat pat pp_expr e
@@ -199,7 +198,7 @@ and pp_state ind ppf { s_name ; s_local ; s_eqs ; s_until ; s_unless } =
     (pp_list "\n" (pp_escape "until" ind)) s_until
     (pp_list "\n" (pp_escape "unless" ind)) s_unless
 
-and pp_escape s ind ppf {e_cond ; e_reset ; e_next} = 
+and pp_escape s ind ppf {e_cond ; e_reset ; e_next} =
   fprintf ppf "%s%s %a %s %s" ind s pp_expr e_cond (if e_reset then "then" else "continue") e_next
 
 

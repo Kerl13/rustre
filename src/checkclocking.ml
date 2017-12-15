@@ -8,7 +8,6 @@ module type Checkclocking = sig
 end
 
 module CheckW = struct
-  open Pp_utils
   exception Error of location * string
 
   module Vmap = Map.Make(struct
@@ -19,11 +18,6 @@ module CheckW = struct
   let rec head = function
     | CVar { id = _ ; def = Some c } -> head c
     | c -> c
-
-  let rec canon c = match head c with
-    | CBase -> CBase
-    | COn (c, dc, x) -> COn (canon c, dc, x)
-    | CVar v -> CVar v
 
   let rec ck_eq ck1 ck2 = match head ck1, head ck2 with
     | CBase, CBase -> true
@@ -75,7 +69,7 @@ module CheckW = struct
          check_clock_expr node_env ck_map e1
     | CApp (f, arg, every) ->
        let Ast_typed.Tagged (_, _, f_id) = f in
-       let (f_name, f_in_ct, f_out_ct) = List.find (fun (x, _, _) -> x = f_id) node_env in
+       let (_, f_in_ct, f_out_ct) = List.find (fun (x, _, _) -> x = f_id) node_env in
        let arg_cts = cts_of_cexpr_list arg in
        let subst_map =
          let rec inst m ck' ck = match head ck', head ck with

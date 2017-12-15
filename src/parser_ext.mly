@@ -14,7 +14,7 @@
 
   let mk_local ids init = match init with
     | None -> List.map (fun id -> (id, None)) ids
-    | Some l -> List.map2 (fun id ini -> (id, Some ini) ) ids l 
+    | Some l -> List.map2 (fun id ini -> (id, Some ini) ) ids l
 
   (** Define _TfbyF when it is required *)
 
@@ -68,9 +68,9 @@
 %token EOF
 %token PIPE
 
-%token AUTOMATON STATE DO DONE END
+%token AUTOMATON STATE DO END
 %token UNTIL UNLESS CONTINUE
-%token RESET MATCH
+%token RESET REVERY MATCH
 %token SHARED LAST
 
 
@@ -168,10 +168,10 @@ local_list:
   { List.flatten ps }
 
 local:
-  sh = boption(SHARED) ids = nclist(ident) COLON t = typ 
+  sh = boption(SHARED) ids = nclist(ident) COLON t = typ
   i = option(preceded(EQUAL,nclist(const)))
   { let li = mk_local ids i in
-   List.map (fun (id, ini) -> 
+   List.map (fun (id, ini) ->
    {v_name = id ; v_type = t ; v_shared = sh ;
     v_init = ini ; v_loc = ($startpos, $endpos)} ) li
   }
@@ -181,7 +181,7 @@ equation:
   {{ eq_desc = EEq (p, e) ; eq_loc = ($startpos, $endpos) }}
 | MATCH x = ident WITH PIPE? hl = separated_nonempty_list(PIPE, match_handler) END
   {{ eq_desc = EMatch (x, hl); eq_loc = ($startpos, $endpos) }}
-| RESET eqs = separated_nonempty_list(SEMICOL, equation) EVERY e = located(expr)
+| RESET eqs = separated_nonempty_list(SEMICOL, equation) REVERY e = located(expr)
   {{ eq_desc = EReset (eqs, e) ; eq_loc = ($startpos, $endpos) }}
 | AUTOMATON states = nonempty_list(state_handler) END
   {{ eq_desc = EAutomaton states; eq_loc = ($startpos, $endpos) }}
@@ -193,10 +193,10 @@ pattern:
     {{ pat_desc = PTuple (pat_descs pats) ; pat_loc = ($startpos, $endpos) }}
 
 match_handler:
-  c = dcident DO eqs = separated_nonempty_list(SEMICOL, equation) 
+  c = dcident DO eqs = separated_nonempty_list(SEMICOL, equation)
   {{ m_name = c ; m_eqs = eqs }}
 
-state_handler: 
+state_handler:
   STATE s = dcident
   loc_decl = loption(delimited(VAR, local_list, IN))
   DO eqs = separated_list(SEMICOL, equation)
