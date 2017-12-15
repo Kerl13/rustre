@@ -175,7 +175,7 @@ module E = struct
 
   let print_ask_input ppf vars_in =
     fprintf ppf "if@ !silent@ {println!(\"Input: %a\")};@\n"
-      (pp_list ", " (fun ppf (var, sty) ->
+      (pp_list " " (fun ppf (var, sty) ->
            fprintf ppf "%s:%a" var print_sty sty)) vars_in
 
   let print_parse_type ppf (n, Sty ty) =
