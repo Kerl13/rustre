@@ -3,7 +3,7 @@
 ## Dépendences
 
 Pour compiler le binaire `rustre`, il faut :
-- une version d'ocaml (testé en version 4.04.0, 4.05.x)
+- une version d'ocaml (testé en version 4.05.x)
 - menhir (testé en version 20171206)
 
 Il est aussi recommandé d'avoir installé :
