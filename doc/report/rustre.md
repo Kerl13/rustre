@@ -134,6 +134,20 @@ cette raison un nombre important de `case` constants de la forme `case false { �
 
 Bien qu'on puisse attendre du compilateur du langage cible de simplifier ce code là automatiquement, nous avons implémenté cette optimisation afin de générer du code plus lisible.
 
+## Extraction vers Rust
+
+L'extraction vers Rust se fait en un parcours linéaire sur l'AST objet. 
+
+
+Chaque noeud est encapsulé dans un module, où est décrit :
+
+- une `struct Machine`, décrivant la mémoire et les instances du noeud courant. En utilisant `#[derive(Default)]` avant la déclaration de `struct Machine`, le compilateur Rust génère automatiquement une procédure d'initialisation pour la structure.
+- une méthode `step` fonctionnant sur `Machine`, qui est définie de manière similaire au langage objet. Grâce aux transformations effectuées précédemment, toutes les variables locales de cette méthode sont immuables.
+- une méthode `reset` opérant sur `Machine`, réinitialisant la mémoire et les instances du noeud.
+
+
+Ensuite, l'extraction définit une fonction `parse_args` qui demande à l'utilisateur les arguments nécessaires à l'exécution d'une étape de `main_node`. 
+La fonction `main` est une boucle infinie. Celle-ci appelle `parse_args`, envoie le résultat au noeud principal `main_node`, affiche le résultat du noeud principal et recommence.
 
 ## Extraction vers Why3 et preuves
 
