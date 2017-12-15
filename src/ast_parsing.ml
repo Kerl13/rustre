@@ -4,6 +4,10 @@
 
 include Common_defs
 
+exception MError of string
+
+
+      
 (** Expressions *)
 type expr = {
   expr_desc  : expr_desc ;
