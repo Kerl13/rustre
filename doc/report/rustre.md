@@ -44,8 +44,8 @@ dans l'article.
 
 ### Typage
 
-Le typage est assez standard. 
-Il est presque explicite (à l'exception des constantes ou des opérations arithmétiques qui demandent un peu d'inférence). 
+Le typage est assez standard.
+Il est presque explicite (à l'exception des constantes ou des opérations arithmétiques qui demandent un peu d'inférence).
 Le typage se rapproche donc d'une passe de vérification.
 Pour augmenter la confiance que nous avions en cette phase (et dans une moindre mesure en toutes les autres passes qui suivent), nous avons décidé d'implémenter l'AST typé par un GADT OCaml.
 Nulle fonction de vérification n'est donc nécessaire, les AST typés étant nécessairement correct vis à vis des types par construction.
@@ -54,7 +54,7 @@ Nulle fonction de vérification n'est donc nécessaire, les AST typés étant n�
 
 Nous avons implémenté un clocking à la Hindley-Milner à l'aide de l'algorithme W.
 Un nœud peut donc être polymorphe en termes d'horloge et peut donc être utilisé
-plusieurs fois sur des horloges différentes. Par exemple, le code suivant a pour 
+plusieurs fois sur des horloges différentes. Par exemple, le code suivant a pour
 horloge `('a, 'a) -> 'a`:
 
 ```lustre
@@ -225,7 +225,7 @@ ils sont définissables par récurrence car le code exécutable satisfait `spec_
 
 Prouver ce lemme s'est avéré être particulièrement difficile. Nous pensions que sur des
 exemples simples les solveurs automatiques SMT ou ATP devaient pouvoir fournir des
-preuves. Ce n'est pas le cas, nous avons donc choisi de faire un tactique Coq (que nous 
+preuves. Ce n'est pas le cas, nous avons donc choisi de faire un tactique Coq (que nous
 croyons complète pour les preuves nécessaires, mais nous n'avons pas fait la preuve) pour
 faire ces preuves automatiquement. Expérimentalement, sur tous nos exemples qui sont
 dans ce noyau, la tactique Coq permet de faire la preuve de correspondance.
@@ -238,7 +238,7 @@ a veillé à garder assez expressif. Ainsi, la syntaxe `every`, les types sommes
 que les booléens), les nils (difficiles à axiomatiser) et les variables locales (qui ne sont
 fondamentalement pas une grande difficulté mais qui s'expriment avec des quantificateurs
 existentiels ce qui rend l'exercice assez technique) ne sont pas supportées.
-Cela laisse tout de même les `merge`, les `fby`, les appels de nœuds, et les opérations 
+Cela laisse tout de même les `merge`, les `fby`, les appels de nœuds, et les opérations
 arithmétiques et booléennes.
 
 #### Vérification de code Lustre
@@ -352,8 +352,35 @@ locales sont limitées, et les horloges ne sont pas explicitement déclarées.
 
 Comme exemple d'application, nous avons implémenté une version simple de pong
 en minilustre qui peut être compilée en un binaire executable via Rust ou via
-why3 et l'extraction OCaml.
+why3 et l'extraction OCaml. Le code se trouve dans le fichier `tests/pong.lus`.
 
 Le pong consiste en une arène rectangulaire dans laquelle rebondit un balle. Trois
 des côtés du rectangle sont des murs et sur le quatrième côté une intelligence
 artificielle joue contre le mur et essaie de garder son score à 0.
+
+Le nœud principal attend un entrée qui n'est pas utilisée et qui sert à donner
+l'horloge de base, la sortie indique la position de la balle, la position de la
+raquette de l'IA et le score. Un interface graphique écrite en OCaml permet de
+visualiser la partie.
+
+Nous avons voulu prouver des propriété sur le pong à l'aide de why3, en particulier
+deux invariants :
+
+1. La balle ne sort pas du cadre
+2. Le score reste à 0.
+
+La première propriété a été plus difficile à prouver que nous l'espérions. Il a
+fallu trouver les bons invariants à mettre sur les nœuds qui calculent la position
+pour aider why3 à faire la preuve.
+
+Nous avons échoué dans un premier temps à prouver la seconde propriété car notre IA
+était trop sophistiquée : elle calculait à l'avance la position d'arrivée de la balle
+et se plaçait directement à la bonne position. Bien que cela permette à l'IA de gagner
+même quand sa vitesse est faible, nous n'avons pas réussi à trouver une propriété inductive
+à donner à why3, propriété qui serait de toute façon non linéaire et par conséquent difficile.
+
+Nous avons donc simplifié l'IA qui désormais s'aligne avec la balle et reste en face de
+celle ci tout le long de la partie. Dans cette configuration, why3 parvient à prouver
+que le score reste à 0 à condition que la raquette de l'IA puisse aller assez vite. On
+constate que la preuve échoue lorsqu'on baisse la vitesse de la raquette ce qui est
+attendu.
