@@ -1,20 +1,22 @@
 # Rustre, un compilateur vérifiable, vérifié et vérifiant de minilustre vers Rust
 
 Nous avons réalisé un compilateur de minilustre vers Rust. Nous avons d'abord suivi
-l'architecture proposée dans [ref], mais nous sommes attachés à produire un
+l'architecture proposée dans [ref], mais nous nous sommes attachés à produire un
 compilateur vérifiable. Il est modulaire, il s'organise en plusieurs passes
 distinctes disposant souvent de leur propre type d'AST : parsing, typage, clocking,
 normalisation, ordonnancement, optimisation et production de code objet. Pour la plupart
 de ces passes, nous avons des arguments pour garantir une certaine correction. Pour le
-typage, nous utilisons des GADT, donnant des AST bien typés par constructions. Pour d'autres,
+typage, nous utilisons des GADTs, donnant des ASTs bien typés par constructions. Pour d'autres,
 comme l'ordonnancement et le clocking, nous avons des fonctions de vérification. Le type
-d'AST utilisé après la normalisation garantie aussi la bonne formation des AST.
+d'AST utilisé après la normalisation garantie aussi la bonne formation des ASTs.
 
 Puis, tout un second volet de notre travail a été consacré à une extraction vers Why3.
 Cette extraction permet, outre l'utilisation d'un langage particulièrement sûr, de
 produire, sur un noyau du langage, une preuve de correction sémantique pour chaque
 extraction.
-Cela permet de considérer que notre compilateur est **formellement prouvé pour ce noyau** : il
+Au contraire d'un compilateur formellement vérifié [ref PLDI2017], la
+correction sémantique doit être ici prouvée lors de chaque extraction.
+Cela permet de considérer que notre compilateur est formellement prouvé pour **ce noyau** : il
 suffit de faire confiance à la première phase de traduction vers une spécification de
 haut niveau, qui est succincte.
 
@@ -23,50 +25,42 @@ Lustre et nous présentons ce qui est, à notre connaissance, la première impl�
 du jeu de pong dont l'intelligence artificielle et la sécurité sont formellement prouvées.
 
 Ce document présente l'aspect théorique de notre travail. Des détails concernant la
-compilation et l'utilisation du compilateur sont dans le fichier README.md
+compilation et l'utilisation du compilateur sont dans le fichier `README.md`.
 
 
 ## Les différents stades de la compilation
 
-Le processus de compilation est décomposé en plusieurs passes : le code est parsé, puis typé, puis les horloges sont inférées, et ensuite le code est normalisé, ordonnancé, transformé vers le langage objet, puis extrait vers Rust ou Why3.
-Lors de la plupart des passes, les AST d'entrée et de sortie sont différents.
-
 ### Syntaxe concrète
 
-Nous avons essayé de nous rapprocher au plus de la syntaxe concrète décrite dans lctes08a.
+Nous avons essayé de nous rapprocher au plus de la syntaxe concrète décrite dans [ref lctes08a].
 En particulier, la condition du `if` et du `merge` ainsi que le terme de droite dans la
 construction `when` doivent être des variables et non des expressions arbitraires.
-
 De nouveaux types de données peuvent être déclarés avec la syntaxe `type direction = Right + Left` par exemple.
-
 Des variables globales peuvent être déclarées en début de fichier après les définitions de types
 et avant le premier nœud avec la syntaxe `const SOMETHING = 42`. Ces constantes sont substituées
 dans le code dès le parsing à la manière des `#DEFINE` de C.
-
 Les constructions `if`, `->` et `pre` sont traitées comme du sucre syntaxique dès le parsing tel que décrit
 dans l'article.
 
 ### Typage
 
-Le typage est assez standard. Il est presque explicite (à l'exception des constantes ou des opérations arithmétiques qui demandent un peu d'inférence). Le typage se rapproche donc d'une passe de vérification assez stable.
-
+Le typage est assez standard. 
+Il est presque explicite (à l'exception des constantes ou des opérations arithmétiques qui demandent un peu d'inférence). 
+Le typage se rapproche donc d'une passe de vérification.
 Pour augmenter la confiance que nous avions en cette phase (et dans une moindre mesure en toutes les autres passes qui suivent), nous avons décidé d'implémenter l'AST typé par un GADT OCaml.
-
 Nulle fonction de vérification n'est donc nécessaire, les AST typés étant nécessairement correct vis à vis des types par construction.
 
 ### Analyse des horloges
 
 Nous avons implémenté un clocking à la Hindley-Milner à l'aide de l'algorithme W.
 Un nœud peut donc être polymorphe en termes d'horloge et peut donc être utilisé
-plusieurs fois sur des horloges différentes. Par exemple :
+plusieurs fois sur des horloges différentes. Par exemple, le code suivant a pour 
+horloge `('a, 'a) -> 'a`:
 
 ```lustre
 node add2(a, b: int) = (c: int)
-with
-  c = a + b ;
+with c = a + b ;
 ```
-
-a pour horloge `('a, 'a) -> 'a`.
 
 L'analogie avec ML est la suivante :
 
@@ -88,47 +82,41 @@ type d'AST. L'AST après cette passe est donc nécessairement en forme normale.
 
 ### Ordonnancement
 
-L'ordonnancement est classique, on attend du programmeur qu'il
-déclare les nœuds dans l'ordre où il les utilise et on effectue un tri sur l'arbre des dépendances à l'intérieur de chaque nœud.
-
+L'ordonnancement est classique, on attend du programmeur qu'il déclare
+les nœuds dans l'ordre où il les utilise et on effectue un tri
+topologique sur l'arbre des dépendances à l'intérieur de chaque nœud.
 Une deuxième passe, de vérification, parcourt linéairement l'AST
-pour vérifier que toutes les variables utilisées on été calculées
+pour vérifier que toutes les variables utilisées ont été calculées
 au préalable.
 
 ### Optimisations
 
-En plus de la traduction vers le langage objet décrit dans l'article, nous avons implémenté deux optimisations dans ce dernier langage.
+En plus de la traduction vers le langage objet décrit dans l'article, nous avons implémenté deux optimisations dans ce dernier langage : la fusion des merges et la simplification des merges triviaux.
 Elles peuvent être déclenchées à l'aide de l'option `-opt`.
 
-#### Fusion des merges
-
-Dans le langage objet, lorsque deux `case` successifs sur la même variable sont générés, nous savons qu'aucun effet de bord n'empêche de fusionner les branches du `case` deux à deux.
+**Fusion des merges:** Dans le langage objet, lorsque deux `case` successifs sur la même variable sont générés, nous savons qu'aucun effet de bord n'empêche de fusionner les branches du `case` deux à deux.
 En revanche le langage cible ne peut pas nécessairement voir cette propriété et ne peut donc pas effectuer la fusion.
-
 Nous avons implémenté cette optimisation ce qui réduit le nombre de branchements, notamment dans les deux exemples `tests/emsoft03.lus` et `tests/emsoft05.lus`.
 
-#### Simplification des merges triviaux
-
-Un appel de nœud `f(x0, x1, …)` non suivi de la construction `every` dans la syntaxe
+**Simplification des merges triviaux:** Un appel de nœud `f(x0, x1, …)` non suivi de la construction `every` dans la syntaxe
 concrète est du sucre pour `f(x0, x1, …) every False`. Le code généré contient pour
 cette raison un nombre important de `case` constants de la forme `case false { … }`.
-
-Bien qu'on puisse attendre du compilateur du langage cible de simplifier ce code là automatiquement, nous avons implémenté cette optimisation afin de générer du code plus lisible.
+Bien qu'on puisse attendre du compilateur du langage cible de
+simplifier ce code là automatiquement, nous avons implémenté cette
+optimisation afin de générer du code plus lisible.
 
 ### Traduction dans le langage objet
 
 La traduction vers le langage objet est réalisée comme décrit dans l'article. On notera
-simplement que l'AST objet est aussi réalisé avec des GADT, ce qui donne certaines garanties sur le typage.
+simplement que l'AST objet est aussi réalisé avec des GADTs, ce qui donne certaines garanties sur le typage.
 
 ## Extraction vers Rust
 
 L'extraction vers Rust se fait en un parcours linéaire sur l'AST objet.
-
-
 Chaque nœud est encapsulé dans un module, où est décrit :
 
 - une `struct Machine`, décrivant la mémoire et les instances du nœud courant. En utilisant `#[derive(Default)]` avant la déclaration de `struct Machine`, le compilateur Rust génère automatiquement une procédure d'initialisation pour la structure.
-- une méthode `step` fonctionnant sur `Machine`, qui est définie de manière similaire au langage objet. Grâce aux transformations effectuées précédemment, toutes les variables locales de cette méthode sont immuables.
+- une méthode `step` fonctionnant sur `Machine`, définie quasi-comme qui est définie de manière similaire au langage objet. Grâce aux transformations effectuées précédemment, toutes les variables locales de cette méthode sont immuables.
 - une méthode `reset` opérant sur `Machine`, réinitialisant la mémoire et les instances du nœud.
 
 
@@ -143,35 +131,33 @@ de raisonner sur les programmes.
 
 Notre extraction vers Why3 a plusieurs buts : d'abord, on extrait vers un langage
 particulièrement sûr. Ensuite, elle permet d'établir une preuve d'abstraction
-entre le code séquentiel et le nœud Lustre originel, prouvant ainsi tout le
-processus de compilation. (Par manque de temps, seul un noyau du langage est
-supporté pour cette partie.) Enfin, on peut utiliser Why3 pour faire de la
-vérification sur nos programmes.
+entre le code séquentiel généré et le nœud Lustre en entrée, prouvant ainsi tout le
+processus de compilation. Actuellement, seul un noyau du langage est
+supporté pour cette partie. Enfin, on peut utiliser Why3 pour faire de la
+vérification de propriétés sur nos programmes.
 
 
-L'extraction vers Why3 peut être séparée en trois parties  : la production de
-code exécutable séquentiel, la spécification de ce code, puis la traduction du
-nœud Lustre initial en une spécification de haut niveau.
+L'extraction vers Why3 peut être séparée en trois parties : la
+production de code exécutable séquentiel, la spécification de ce code
+(via des postconditions), puis la traduction du nœud Lustre initial en
+une spécification de haut niveau.
 
-##### Code exécutable séquentiel
+**Code exécutable séquentiel:** La production de ce code est semblable
+à l'extraction vers Rust. Il s'agit d'un code séquentiel qui met à
+jour en place des record pour modifier l'état mémoire d'un nœud.  Ce code peut ensuite
+être extrait vers OCaml et donne donc du code efficace.
 
-La production de ce code est semblable à l'extraction vers Rust. Il s'agit
-d'un code séquentiel qui met à jour en place des record pour modifier l'état.
-Ce code peut ensuite être extrait vers OCaml et donne donc du code efficace.
 
+**Spécification logique:** Le code séquentiel qu'on a produit l'a été
+dans le langage de programmation WhyML. Il n'est pas pur car il agit
+par effet de bord sur l'état.  Pour pouvoir raisonner dessus, il faut
+exprimer une spécification dans le langage logique, qui consiste en
+des postconditions.
 
-##### Spécification logique
-
-Le code séquentiel qu'on a produit l'a été dans le langage de programmation
-WhyML. Il n'est pas pur car il agit par effet de bord sur l'état.
-Pour pouvoir raisonner dessus, il faut exprimer une spécification dans le
-langage logique.
-
-##### Spécification abstraite
-
-Indépendamment, on effectue une traduction très simple (et donc dans laquelle on
-peut avoir confiance) d'un nœud Lustre vers une spécification abstraite dans
-Why3 en terme de flots.
+**Spécification abstraite:** Indépendamment, on effectue une
+traduction très simple (et donc dans laquelle on peut avoir confiance)
+d'un nœud Lustre vers une spécification abstraite dans Why3 en terme
+de flots.
 
 Nous avons axiomatisé ces flots dans une bibliothèque Why3. Un flot est un élément du
 type `stream 'a` avec une fonction d'accès `get` :
@@ -186,7 +172,7 @@ axiom sext: forall a, b: stream 'a.
 ```
 
 Ensuite, on définit toutes les opérations possibles, par exemple la somme de deux
-flots ou le fby via des règles de réécriture (le reste est dans why3/stream.mlw) :
+flots ou le fby via des règles de réécriture (le reste est dans `why3/stream.mlw`) :
 
 ```why3
 function sfby 'a (stream 'a): stream 'a
@@ -198,36 +184,28 @@ axiom splus_rw: forall a, b, n. get (splus a b) n = get a n + get b n
 
 La traduction est très simple, il s'agit de traduire les équations en une conjonction
 d'égalités logiques.
-
 On note que cette traduction est réalisée depuis le premier AST, ainsi on n'a
 pas besoin de faire confiance aux autres passes de compilation.
-
 Par exemple, le nœud suivant :
 
 ```lustre
 node add(a, b: int) = (c, d: int)
-with
-  c = a + b ;
-  d = 0 fby c
+with c = a + b ; d = 0 fby c
 ```
 
 est traduit par la spécification Why3 suivante :
 
 ```why3
 predicate spec (a:stream int) (b:stream int) (c:stream int) (d:stream int) =
-  c = (splus a b)   /\
-  d = (sfby 0 c)
+  c = (splus a b) /\ d = (sfby 0 c)
 ```
 
 #### Preuve sémantique
 
-On cherche ensuite à prouver que notre code séquentiel est une abstraction de cette
-spécification. Formellement, cela revient à définir par induction des flots et à
-montrer qu'il satisfont le prédicat `spec`.
-
-On appelle `spec_fonct` la contrainte fonctionnelle du code séquentiel, qui est
-une postcondition du code exécutable.
-
+On cherche ensuite à prouver que notre code séquentiel est une abstraction de la
+spécification abstraite. Formellement, cela revient à définir par induction des flots et à
+montrer qu'ils satisfont le prédicat `spec`.
+On appelle `spec_log` la postcondition du code exécutable, et `spec_abs` la spécification abstraite.
 Ainsi dans l'exemple précédent, le lemme qu'on cherche à montrer est le suivant :
 ```why3
 lemma valid:
@@ -236,54 +214,49 @@ lemma valid:
   (* definition by recurrence *)
   ({ Nodeadd.d = get sd O; } = reset_state /\
   forall n: nat.
-    step_fonct (get a n)  (get b n)  (get c n)
+    spec_log (get a n) (get b n) (get c n)
       (get d n) { Nodeadd.d = get sd n; } { Nodeadd.d = get sd (S n); })
-  (* correction *)
-  -> spec a  b c d
+  (* correction *) -> spec_abs a b c d
 ```
 
 On note qu'on a besoin de supposer l'existence d'un flot supplémentaire pour l'état,
-qui n'apparaît pourtant pas dans `spec`. Ce lemme définie bien des flots valides :
-ils sont définissables par récurrence car le code exécutable satisfait `step_fonct`.
+qui n'apparaît pourtant pas dans `spec_abs`. Ce lemme définie bien des flots valides :
+ils sont définissables par récurrence car le code exécutable satisfait `spec_log`.
 
-Prouver ce lemme s'est avéré être particulièrement difficile. Je pensais que sur des
-exemples simples les solveurs automatiques SMT ou ATP devait pouvoir fournir des
-preuves. Ce n'est pas le cas, j'ai donc choisi de faire une tactique Coq (que je crois
-complète pour les preuves nécessaires, mais je n'en ai pas fait la preuve) pour
+Prouver ce lemme s'est avéré être particulièrement difficile. Nous pensions que sur des
+exemples simples les solveurs automatiques SMT ou ATP devaient pouvoir fournir des
+preuves. Ce n'est pas le cas, nous avons donc choisi de faire un tactique Coq (que nous 
+croyons complète pour les preuves nécessaires, mais nous n'avons pas fait la preuve) pour
 faire ces preuves automatiquement. Expérimentalement, sur tous nos exemples qui sont
 dans ce noyau, la tactique Coq permet de faire la preuve de correspondance.
 
 
-
 ##### Limitation de la preuve sémantique
 
-Nous n'avons réalisé ce travail de preuve que sur un sous-ensemble de minilustre qu'on
+Nous n'avons réalisé ce travail de preuve que sur un sous-ensemble de minilustre que l'on
 a veillé à garder assez expressif. Ainsi, la syntaxe `every`, les types sommes (autre
-que booléens), les nils (difficiles à axiomatiser) et les variables locales (qui ne sont
-fondamentalement pas une grande difficulté mais s'exprime avec des quantificateurs
-existentiels ce qui rend l'exercice assez technique).
-
-Cela laisse tout de même les
-`merge`, les `fby`, les appels de nœuds, un sous ensemble complet d'opérations
+que les booléens), les nils (difficiles à axiomatiser) et les variables locales (qui ne sont
+fondamentalement pas une grande difficulté mais qui s'expriment avec des quantificateurs
+existentiels ce qui rend l'exercice assez technique) ne sont pas supportées.
+Cela laisse tout de même les `merge`, les `fby`, les appels de nœuds, et les opérations 
 arithmétiques et booléennes.
 
 #### Vérification de code Lustre
 
 Nous avons implémenté de quoi faire de la vérification de code Lustre à l'aide de
 Why3. Plus précisément, nous avons de quoi vérifier des propriétés inductives (et donc
-pas la généralisation k-inductive, bien que ça ne présente à priori pas de difficulté
+pas la généralisation k-inductive, bien que cela ne présente a priori pas de difficulté
 d'implémentation majeure additionnelle).
 
-On adopte une approche qui permet une vérification modulaire, i.e. on peut choisir de
+On adopte une approche qui permet une vérification modulaire : on peut choisir de
 spécifier les nœuds un par un, ce qui dans un contexte industriel pourrait permettre
 de passer à l'échelle.
-
 Pour spécifier les programmes nous suivons l'approche décrite dans l'article de [ref].
 Plutôt que d'introduire une nouvelle syntaxe pour les préconditions et les
 postconditions, on utilise une variable spéciale appelée `ok` et on essaye de prouver
 par induction qu'elle est toujours égale à `true`.
 
-Afin de le garantir, on génère deux obligations de preuve Why3 sous la forme de deux
+Afin de garantir ce résultat, on génère deux obligations de preuve Why3 sous la forme de deux
 lemmes à prouver par nœuds (les preuves correspondantes pouvant utiliser les lemmes des nœuds
 précédents), un pour l'étape d'initialisation, l'autre pour la récurrence.
 
@@ -305,9 +278,7 @@ with
                         (C -> nb_c + 1 when C(x)))
 
 node check(x : abc) = (ok : bool)
-with var nb_a, nb_b, nb_c : int ;
-         cpt : int ;
-         ok : bool in
+with var nb_a, nb_b, nb_c, cpt : int ; ok : bool in
   cpt = 0 fby (cpt + 1) ;
   (nb_a, nb_b, nb_c) = count(x) ;
   ok = (nb_a + nb_b + nb_c = cpt)
@@ -319,20 +290,17 @@ Ainsi, pour prouver que `ok = true` dans notre système synchrone, il suffit que
 lemmes suivants soient satisfaits :
 
 ```why3
-lemme prop_init: forall x__1,  ok__1, _s2.
-  (step_fonct x__1 ok__1 reset_state _s2-> step_fonct_ok x__1
-  ok__1 reset_state _s2)
+lemme prop_init: forall x__1, ok__1, _s2.
+  (step_fonct x__1 ok__1 reset_state _s2 -> step_fonct_ok x__1 ok__1 reset_state _s2)
 
-lemme prop_ind: forall x__1, x__2,
-  ok__1, ok__2, _s, _s2, _s3.
-  (step_fonct_ok x__1 ok__1 _s _s2 /\ step_fonct x__2
-  ok__2 _s2 _s3)
-  -> step_fonct_ok x__2 ok__2 _s2 _s3
+lemme prop_ind: forall x__1, x__2, ok__1, ok__2, _s, _s2, _s3.
+  (step_fonct_ok x__1 ok__1 _s _s2 /\ step_fonct x__2 ok__2 _s2 _s3) ->
+  step_fonct_ok x__2 ok__2 _s2 _s3
 ```
 
 #### Analyses des valeurs non initialisées
 
-Nous avons implémenté une analyse des nils basique en passant par la génération de code
+Nous avons implémenté une analyse des `nil`s basique en passant par la génération de code
 Why3. En effet, si on s'interdit les `pre` imbriqués, il suffit de vérifier que la
 valeur des variables de sorties et de l'état est indépendantes des valeurs mises par
 défaut (nécessaire à la compilation en Rust et à Why3). On peut le formuler avec le
@@ -353,7 +321,7 @@ lemma nil_analysis:
 L'option `-nils` permet de générer ce lemme puis, en passant par Why3, de demander à
 Z3 de le prouver. Si Z3 en donne une preuve, cela prouve qu'il n'y a pas de problème
 d'initialisation. À l'inverse, si ce n'est pas le cas, on ne peut pas conclure : le
-solveur SMT a pu échoué à prouver quelque chose prouvable, ou bien l'analyse des nils
+solveur SMT a pu échouer à prouver quelque chose prouvable, ou bien l'analyse des nils
 peut ne pas être assez fine (dès qu'on a des `pre` imbriqués).
 Bien que cette analyse ait été très rapide à implémenter une fois que l'extraction vers
 Why3 fonctionnait, elle ne permet pas d'expliciter l'erreur si elle échoue.
@@ -361,18 +329,16 @@ Why3 fonctionnait, elle ne permet pas d'expliciter l'erreur si elle échoue.
 ## Extension avec les automates hiérarchiques
 
 Nous avons essayé d'étendre le langage avec les constructions `reset`, `match` et
-`automata` décrites dans emsoft05b.
+`automata` décrites dans [ref emsoft05b].
 Le manque de temps nous a obligé à traiter ces constructions directement sur
 l'AST de parsing, au détriment d'une gestion correcte des erreurs. Les
 constructions `match` et `reset` sont implémentées, mais pas encore les
 automates.
-
 L'approche utilisée consiste en une passe par construction, plutôt qu'une
 transformation générale comme dans l'article. On élimine d'abord les
 constructions `automata` en les transformant en programmes utilisant
 uniquement `match` et `reset`, puis on élimine successivement les `match` et
 les `reset`.
-
 Par rapport à l'article sont également ajoutées les déclaration des variables
 partagées avec le mot-clé `shared`, ainsi qu'une valeur initiale optionnelle
 pour celles-ci (permettant que `last x` soit bien définie au premier instant).

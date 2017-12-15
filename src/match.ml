@@ -20,9 +20,9 @@ module VarMap = Map.Make(struct
   end)
 
 let id_to_var_decl vars id =
-  let ty = 
+  let ty =
     let (l, d, _) = VarMap.split id vars in
-    match d with 
+    match d with
     | Some t -> t
     | None -> let (_, t) = VarMap.max_binding l in t (* take the type of the biggest prefix we know *)
   in
@@ -58,7 +58,7 @@ let get_def_pat pat =
 
 
 (* substitute x -> x_suf
- *            last x -> (pre x when ck) 
+ *            last x -> (pre x when ck)
  *
  *            ndef : shared variables with no defining equation in the considered handler,
  *            we need to add a definition y_suf = (y_init fby y) when ck
@@ -66,16 +66,16 @@ let get_def_pat pat =
  *            fv : free variables, we need to add an equation x_suf = x when ck
  *)
 
-let rec subst_expr shared ck def suf e = 
-  let subst_id x = 
+let rec subst_expr shared ck def suf e =
+  let subst_id x =
     (if SSet.mem x def then
-     try let _ = VarMap.find x shared in () 
+     try let _ = VarMap.find x shared in ()
      with Not_found -> raise (NotShared (e.expr_loc, x) )) ;
     x^suf, SSet.singleton x in
 
   let subst_expr = subst_expr shared ck def suf in
 
-  let subst_exprs el = 
+  let subst_exprs el =
     let el, fvl = List.split (List.map subst_expr el) in
     el, flatt_set fvl in
 
@@ -83,7 +83,7 @@ let rec subst_expr shared ck def suf e =
   | EConst c -> EConst c, SSet.empty
   | EIdent x -> let x, fv = subst_id x in EIdent x, fv
   | ELast x -> (try let (_, init) = VarMap.find x shared in
-      let init = match init with 
+      let init = match init with
       | None -> CNil
       | Some c -> c in
       EWhen({expr_desc = EFby(init, {expr_desc = EIdent x; expr_loc = e.expr_loc}); expr_loc = e.expr_loc}, suf, ck), SSet.singleton x
@@ -107,7 +107,7 @@ let subst_pat suf pat =
     | PIdent id -> PIdent (id^suf)
     | PTuple l -> PTuple (List.map g l)
   in {pat with pat_desc = g pat.pat_desc}
- 
+
 let rec subst_eq shared ck def suf eq = match eq.eq_desc with
   | EEq (pat, e) -> let ndef = SSet.diff def (get_def_pat pat) in
     let e, fv = subst_expr shared ck def suf e in
@@ -121,7 +121,7 @@ and subst_eqs shared ck def suf eqs =
   let eqs, ndefl, fvl = split3 (List.map (subst_eq shared ck def suf) eqs) in
   eqs, flatt_set ndefl, flatt_set fvl
 
-let subst_match shared ck def h = 
+let subst_match shared ck def h =
   let (eqs, ndef, fv) = subst_eqs shared ck def h.m_name h.m_eqs in
   let proj id =
     let init = try (
@@ -140,11 +140,11 @@ let subst_match shared ck def h =
 
 
 (* returns (new_eqs, fresh_names, def(eq)) *)
-let rec tr_eq shared eq = match eq.eq_desc with 
+let rec tr_eq shared eq = match eq.eq_desc with
   | EEq (pat, _) -> [eq], SSet.empty, get_def_pat pat, shared
   | EReset (eqs, e) -> let eqs', fresh, def, shared = (tr_eqs shared) eqs in
     [{eq with eq_desc = EReset (eqs', e)}], fresh, def, shared
-  | EMatch (id, hs) -> 
+  | EMatch (id, hs) ->
     let hs, fresh, def, shared = tr_match shared hs in
 
     let eqsl, freshl = List.split (List.map (subst_match shared id def) hs) in
@@ -154,19 +154,19 @@ let rec tr_eq shared eq = match eq.eq_desc with
     let mk_merge y =
       let l = List.map (fun h -> (h.m_name, {expr_desc = EIdent(y^h.m_name) ; expr_loc = dummy_loc} ) ) hs in
       let e = {expr_desc = EMerge(id, l) ; expr_loc = dummy_loc}  in
-      {eq_desc = EEq({pat_desc = PIdent y ; pat_loc = dummy_loc}, e) ; eq_loc = dummy_loc} 
+      {eq_desc = EEq({pat_desc = PIdent y ; pat_loc = dummy_loc}, e) ; eq_loc = dummy_loc}
     in
     let merges = List.map mk_merge (SSet.elements def) in (* TODO *)
 
     let def_list = SSet.elements def in
     let rec get_new_vars def' shared' = function
       | [] -> def', shared'
-      | h :: q -> (*let fresh' = List.fold_left (fun l id -> 
+      | h :: q -> (*let fresh' = List.fold_left (fun l id ->
           (id^h.m_name, try fst (VarMap.find id shared)
                           with Not_found -> raise (NotShared (dummy_loc, id)) ) :: l ) fresh' def_list in*)
         let def' = List.fold_left (fun s id -> SSet.add (id^h.m_name) s) def' def_list in
-        let shared' = List.fold_left ( fun m id -> 
-            (try VarMap.add (id^h.m_name) (VarMap.find id shared) m  
+        let shared' = List.fold_left ( fun m id ->
+            (try VarMap.add (id^h.m_name) (VarMap.find id shared) m
              with Not_found -> raise (NotShared (dummy_loc, id)) ) ) shared' def_list in
         get_new_vars def' shared' q
     in
@@ -181,12 +181,12 @@ and tr_match shared hs =
   let (hs', fresh, def, shared) = split4 (List.map tr_h hs) in
   (hs', flatt_set fresh, flatt_set def, flatt_map shared)
 
-and tr_eqs shared eqs = 
+and tr_eqs shared eqs =
   let (eqs, fresh, def, shared) = split4 (List.map (tr_eq shared) eqs) in
   (List.flatten eqs, flatt_set fresh, flatt_set def, flatt_map shared)
 
-let tr_node n = 
-  let shared = List.fold_left 
+let tr_node n =
+  let shared = List.fold_left
                  (fun m vd -> if vd.v_shared then VarMap.add vd.v_name (vd.v_type, vd.v_init) m else m)
                  VarMap.empty n.n_local in (* contains shared variables mapped to their optional initial value *)
   let (eqs, fresh, _, _) = tr_eqs shared n.n_eqs in
@@ -195,6 +195,6 @@ let tr_node n =
   let defs = List.map (id_to_var_decl vars) (SSet.elements fresh) in
   { n with n_eqs = eqs ; n_local = defs @ n.n_local}
 
-let tr_file f = try 
-    { f with f_nodes = List.map tr_node f.f_nodes }
+let tr_file f =
+  try { f with f_nodes = List.map tr_node f.f_nodes }
   with NotShared (loc, id) -> raise (Error (loc, ("Variable "^id^" should be shared")))
