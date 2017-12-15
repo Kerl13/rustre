@@ -166,6 +166,9 @@ let () =
 
     if verif then
       begin
+        if output = "" || extractor <> Why3 then
+          (Format.printf "Error: must extract to Why3 and write to a file to do verification (options -extract why3 -o <file>.mlw)"; exit 1);
+
         Verification.do_init output (List.map (fun n -> n.Ast_parsing.n_name) file.Ast_parsing.f_nodes)
       end;
 
