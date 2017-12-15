@@ -1,6 +1,6 @@
 /* From Colaço, Pagano, Pouzet 2005 */
 
-node chrono (StSt: bool; rst: bool) = (disp_1: int; disp_2: int)
+node chrono (stSt: bool; rst: bool) = (disp_1: int; disp_2: int)
 with var shared m, s: int; shared run: bool  in
   automaton
     state CHRONO
@@ -9,19 +9,21 @@ with var shared m, s: int; shared run: bool  in
           do s = 0 -> last s;
             m = 0 -> last m;
             run = false
-            unless StSt continue START
+            unless stSt continue START
         state START
-          with var d: int in
-          do
+          var d: int; c1, c2: bool in
+          do 
             d = 0 -> (pre d + 1) mod 100;
-            s = 0 -> if d < pre d
+            c1 = d < pre d;
+            s = 0 -> if c1
                 then (last s + 1) mod 60
                 else last s;
-            m = if s < last s
+            c2 = s < last s;
+            m = if c2
                 then (last m + 1) mod 60
                 else last m;
             run = true
-            unless StSt continue STOP
+            unless stSt continue STOP
        end
        until rst and not run then CHRONO
   end;
@@ -32,4 +34,4 @@ with var shared m, s: int; shared run: bool  in
         until rst and run then LAP
     state LAP
       do until rst then TIME
-  end
+end
