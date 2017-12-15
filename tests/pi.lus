@@ -9,7 +9,7 @@ with var sign, threep, oddn:real in
 
 node main(b:bool) = (pi:real)
 with var sqrttwelve:real in
-     sqrttwelve = 3.464101615137754587054892683011744733885610507620761256111;
+     sqrttwelve = 3.46410161513775439;
      pi = sqrttwelve -> (pre pi + sqrttwelve * series(b))
 
 
