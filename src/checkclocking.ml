@@ -40,11 +40,11 @@ module CheckW = struct
     let cexpr_clock = cexpr.texpr_clock in
     let loc = cexpr.texpr_loc in
     match cexpr.texpr_desc with
-    | CConst c -> ()
+    | CConst _ -> ()
     | CIdent x ->
        if not (ct_eq [(Smap.find x ck_map)] cexpr_clock) then
          raise (Error (loc, Format.sprintf "check_clock_expr, Ident %s" x))
-    | CFby (c, e) ->
+    | CFby (_, e) ->
        let clock_e = e.texpr_clock in
        if not (ct_eq cexpr_clock clock_e) then
          raise (Error (loc, Format.sprintf "check_clock_expr, Fby"))
@@ -64,7 +64,7 @@ module CheckW = struct
          check_clock_expr node_env ck_map e1
     | CApp (f, arg, every) ->
        let Ast_typed.Tagged (_, _, f_id) = f in
-       let (f_vars, f_in_ct, f_out_ct) = List.find (fun (x, _, _) -> x = f_id) node_env in
+       let (_, f_in_ct, f_out_ct) = List.find (fun (x, _, _) -> x = f_id) node_env in
        let arg_cts = cts_of_cexpr_list arg in
        if not (ct_eq cexpr_clock f_out_ct) then
          raise (Error (loc, Format.sprintf "check_clock_expr, App, cexpr_clock <> f_out_ct"))
@@ -85,14 +85,14 @@ module CheckW = struct
           check_clock_expr node_env ck_map e
     | CMerge (x, cases) ->
        let ck_x = Smap.find x ck_map in
-       let _ = check_clock_match_cases node_env ck_map ck_x x cases in
+       let _ = check_clock_match_cases ck_x x cases in
        if not (ct_eq cexpr_clock [ck_x]) then
          let _ = raise (Error (loc, Format.sprintf "check_clock_expr, CMerge, cexpr_clock <> [ck_x]")) in ()
        else
-         let _ = List.map (fun (i, c) -> check_clock_expr node_env ck_map c) cases in ()
+         let _ = List.map (fun (_, c) -> check_clock_expr node_env ck_map c) cases in ()
 
-  and check_clock_match_cases : type a. (string * Ast_clocked.ct * Ast_clocked.ct) list -> Ast_clocked.ck Ast_clocked.Smap.t -> ck -> string -> (string * a cexpr) list -> unit =
-    fun node_env ck_map ck x cases ->
+  and check_clock_match_cases : type a. ck -> string -> (string * a cexpr) list -> unit =
+    fun ck x cases ->
     let _ = List.map (fun (dc, e) -> if not (ct_eq e.texpr_clock [COn(ck, dc, x)]) then
                                raise (Error (e.texpr_loc, Format.sprintf "check_clock_match_cases"))) cases in ()
 
