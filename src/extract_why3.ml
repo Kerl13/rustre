@@ -264,6 +264,35 @@ module E = struct
         end) true ppf mach
 
 
+  (*let print_step_sem ppf (mach, var_def_loc) =
+    let var_def_loc_u = List.map (fun (s, sty) -> ("_" ^ s, sty)) var_def_loc in
+    let var_in, var_loc, var_out, stat = mach.step in
+    let result_vars = get_result_var stat in
+    let var_loc = List.filter (fun (s, _) -> List.mem s result_vars) var_loc in
+    let var_loc = List.filter (fun s -> List.mem s var_def_loc) var_loc in
+    fprintf ppf "@[<2>predicate step_fonct_sem_full %a (state:state) (state2:state) =@\n"
+      (pp_list_brk " " (fun ppf (var, sty) ->
+           fprintf ppf "(%s: %a)" var  print_sty sty)) (var_in @ var_out @ var_def_loc_u @ var_loc);
+    fprintf ppf "%a@\n"
+      (print_statement ~ok:false ~prop:true ~loc:(fun s' -> List.exists (fun (s,_) -> s = s') (var_in @ var_out)) ~fonct:true) stat;
+    if var_def_loc <> [] then
+      fprintf ppf "%a@\n" (pp_list_brk " /\\ " (fun ppf (s, _) ->
+          fprintf ppf "%s = _%s" s s)) var_def_loc
+    else
+      fprintf ppf "true";
+    fprintf ppf "@]@\n";
+    fprintf ppf "@[<2>predicate step_fonct_sem %a (state:state) (state2:state) =@\n"
+      (pp_list_brk " " (fun ppf (var, sty) ->
+           fprintf ppf "(%s: %a)" var  print_sty sty)) (var_in @ var_out @ var_def_loc_u);
+    if var_loc <> [] then
+      fprintf ppf "exists %a.@\n"
+        (pp_list_brk ", " (fun ppf (var, _) ->
+             fprintf ppf "%s" var)) var_loc;
+    fprintf ppf "step_fonct_sem_full %a state state2"
+      (pp_list_brk "" (fun ppf (var, _) ->
+           fprintf ppf "%s" var)) (var_in @ var_out @ var_def_loc_u @ var_loc);
+    fprintf ppf "@]@\n"*)
+
   let print_reset_fonct ppf mach =
     fprintf ppf "@[<2>function reset_state : state =@\n%a@\n%a@]"
       (print_statement ~ok:false ~loc:(fun s -> false) ~prop:false ~fonct:true) mach.reset
@@ -362,6 +391,8 @@ module E = struct
       print_reset_fonct mach;
     fprintf ppf "@\n%a"
       (print_step ~fonct:true) (mach, var_loc);
+    (*fprintf ppf "@\n%a"
+      (print_step_sem) (mach, var_loc);*)
     fprintf ppf "@\n@\n%a"
       (print_reset ~fonct:true) mach;
     fprintf ppf "@\n%a"
