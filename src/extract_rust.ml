@@ -1,4 +1,3 @@
-(* todo: clean (functions with tuples...) *)
 open Ast_object
 open Nil_analysis
 
@@ -101,8 +100,6 @@ module E = struct
     | Ast_object.SReset (_m, i) ->
        fprintf ppf "self.%s.reset();" i
     | Ast_object.SCase (a, b) ->
-       (* todo: pourquoi on ne prend pas les state ? *)
-       (* todo: copie propre / merge avec le truc de Lucas *)
        let vars = analyze_defs s
                   |> filter_map (function
                          | State _ -> None
