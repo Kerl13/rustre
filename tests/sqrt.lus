@@ -1,0 +1,10 @@
+/* main = main */
+
+node sqrt (s:real) = (res:real)
+with var x:bool in
+     res = 1 -> (0.5 * (pre res + (s / pre res)))
+
+node main (s:real) = (res:real)
+with
+     res = sqrt(s) every (s <> pre s)
+
