@@ -8,7 +8,7 @@ Pour compiler le binaire `rustre`, il faut :
 
 Il est aussi recommandé d'avoir installé :
 - rustc (testé en version 1.22.1)
-- ocamlgraphics (pour pong)
+- ocamlgraphics (pour notre exemple pong)
 - Why3 0.88.1, Alt-Ergo 1.30, Z3 4.4.2
 
 
@@ -51,3 +51,10 @@ L'extraction Rust génère un fichier standalone qui peut être compilé avec la
 Une série de fichiers d'exemples se trouve sous le dossier `tests`.
 Des exemples de programmes non valides sont présents dans le dossier `tests/bad`.
 Taper la commande `make test` à la racine du projet lance la compilation de ces fichiers automatiquement et vérifie qu'elle a lieu avec succès sur les programmes valides, et qu'elle échoue sur les programmes non valides.
+
+## Exemples
+
+- Nous avons écrit un pong ainsi qu'une intelligence artificielle (il suffit de faire `make` dans `pong/`). Plus de détails sont présents dans le rapport.
+- Les horloges inférées sont polymorphes. Un exemple est présenté dans `tests/poly_clock.lus`.
+- Un programme calculant des racines carrées utilisant la méthode de Newton est présent dans `tests/sqrt.lus`. L'utilisateur doit demander à chaque fois la valeur dont il veut calculer la valeur approchée. S'il demande de manière répétée la racine carrée de la même valeur, des approximations successives sont calculées. Lorsque la valeur change, le calcul est réinitialisé.
+- Un programme calculant des valeurs approchées de π, présent dans `test/pi.lus`.
