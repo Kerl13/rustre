@@ -1,8 +1,20 @@
 # Utilisation
 
+## Dépendences
+
+Pour compiler le binaire `rustre`, il faut:
+- une version d'ocaml (testé en version 4.04.0)
+- menhir (testé en version 20171206)
+
+Il est aussi recommandé d'avoir installé:
+- rustc (testé en version 1.22.1)
+- **TODO** ocamlgraphics? (pour pong)
+- **TODO** why3, alt-ergo, z3?
+
+
 ## Compiler le binaire
 
-Le binaire `rustre` peut être compilé à l'aide de la commande `make` lancée à la racine du projet. La compilation a été testée avec ocaml 4.05.0 et menhir 20171206.
+Le binaire `rustre` peut être compilé à l'aide de la commande `make` lancée à la racine du projet. 
 
 La commande `./rustre -help` devrait donner quelque chose comme :
 
@@ -31,7 +43,6 @@ sur la sortie standard. Utiliser `-o` pour écrire le code dans un fichier.
 **TODO: versions de why3 ?**
 
 L'extraction Rust génère un fichier standalone qui peut être compilé avec la commande `rustc <file>`.
-La compilation Rust a été testée avec rustc 1.22.1.
 
 ## Tester
 
