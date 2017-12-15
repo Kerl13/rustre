@@ -67,7 +67,7 @@ open Pp_utils
 
 let pp_oconst: type a. 'b -> a oconst -> unit = fun ppf -> function
   | CInt n -> fprintf ppf "%d" n
-  | CReal f -> fprintf ppf "%f" f
+  | CReal f -> fprintf ppf "%.16g" f
   | CBool b -> fprintf ppf "%B" b
   | CDataCons dc -> fprintf ppf "%s" dc
   | CNil _ -> fprintf ppf "nil"

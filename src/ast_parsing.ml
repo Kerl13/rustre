@@ -79,7 +79,7 @@ let fprintf = Format.fprintf
 let pp_const ppf = function
   | CNil -> fprintf ppf "nil"
   | CInt n -> fprintf ppf "%d" n
-  | CReal f -> fprintf ppf "%f" f
+  | CReal f -> fprintf ppf "%.16g" f
   | CBool b -> fprintf ppf "%B" b
   | CDataCons dc -> fprintf ppf "%s" dc
 

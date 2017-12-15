@@ -67,7 +67,7 @@ module E = struct
     | EVar (State s) -> fprintf ppf "self.%s" s
     | EConst (CBool b) -> fprintf ppf "%B" b
     | EConst (CInt i) -> fprintf ppf "%d" i
-    | EConst (CReal f) -> fprintf ppf "%f" f
+    | EConst (CReal f) -> fprintf ppf "%.16f" f
     | EConst (CDataCons dc) -> print_datacons ppf dc
     | EConst (CNil ty) -> begin match ty with
         | Ast_typed.TyBool -> fprintf ppf "%B" true
