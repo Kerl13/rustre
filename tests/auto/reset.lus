@@ -4,6 +4,6 @@
 node ex_reset(v:int) = (o: int)
 with var t : int in
   reset
-    t = 0 fby t + v;
-    o = 0 fby o + t
-  revery o > 42
+    t = 0 fby (t + v);
+    o = 0 fby (o + t)
+  revery (False fby (0 > 42))
