@@ -1,5 +1,3 @@
-TODO: gérer les refs
-TODO: lemma valid
 # Rustre, un compilateur vérifiable, vérifié et vérifiant de minilustre vers Rust
 
 Nous avons réalisé un compilateur de minilustre vers Rust. Nous avons d'abord suivi
@@ -207,8 +205,7 @@ predicate spec (a:stream int) (b:stream int) (c:stream int) (d:stream int) =
 On cherche ensuite à prouver que notre code séquentiel est une abstraction de la
 spécification abstraite. Formellement, cela revient à définir par induction des flots et à
 montrer qu'ils satisfont le prédicat `spec`.
-On appelle `spec_fonct` la contrainte fonctionnelle du code séquentiel, qui est
-une postcondition du code exécutable.
+On appelle `spec_log` la postcondition du code exécutable, et `spec_abs` la spécification abstraite.
 Ainsi dans l'exemple précédent, le lemme qu'on cherche à montrer est le suivant :
 ```why3
 lemma valid:
@@ -217,54 +214,49 @@ lemma valid:
   (* definition by recurrence *)
   ({ Nodeadd.d = get sd O; } = reset_state /\
   forall n: nat.
-    step_fonct (get a n)  (get b n)  (get c n)
+    spec_log (get a n) (get b n) (get c n)
       (get d n) { Nodeadd.d = get sd n; } { Nodeadd.d = get sd (S n); })
-  (* correction *)
-  -> spec a  b c d
+  (* correction *) -> spec_abs a b c d
 ```
 
 On note qu'on a besoin de supposer l'existence d'un flot supplémentaire pour l'état,
-qui n'apparaît pourtant pas dans `spec`. Ce lemme définie bien des flots valides :
-ils sont définissables par récurrence car le code exécutable satisfait `step_fonct`.
+qui n'apparaît pourtant pas dans `spec_abs`. Ce lemme définie bien des flots valides :
+ils sont définissables par récurrence car le code exécutable satisfait `spec_log`.
 
-Prouver ce lemme s'est avéré être particulièrement difficile. Je pensais que sur des
-exemples simples les solveurs automatiques SMT ou ATP devait pouvoir fournir des
-preuves. Ce n'est pas le cas, j'ai donc choisi de faire une tactique Coq (que je crois
-complète pour les preuves nécessaires, mais je n'en ai pas fait la preuve) pour
+Prouver ce lemme s'est avéré être particulièrement difficile. Nous pensions que sur des
+exemples simples les solveurs automatiques SMT ou ATP devaient pouvoir fournir des
+preuves. Ce n'est pas le cas, nous avons donc choisi de faire un tactique Coq (que nous 
+croyons complète pour les preuves nécessaires, mais nous n'avons pas fait la preuve) pour
 faire ces preuves automatiquement. Expérimentalement, sur tous nos exemples qui sont
 dans ce noyau, la tactique Coq permet de faire la preuve de correspondance.
 
 
-
 ##### Limitation de la preuve sémantique
 
-Nous n'avons réalisé ce travail de preuve que sur un sous-ensemble de minilustre qu'on
+Nous n'avons réalisé ce travail de preuve que sur un sous-ensemble de minilustre que l'on
 a veillé à garder assez expressif. Ainsi, la syntaxe `every`, les types sommes (autre
-que booléens), les nils (difficiles à axiomatiser) et les variables locales (qui ne sont
-fondamentalement pas une grande difficulté mais s'exprime avec des quantificateurs
-existentiels ce qui rend l'exercice assez technique).
-
-Cela laisse tout de même les
-`merge`, les `fby`, les appels de nœuds, un sous ensemble complet d'opérations
+que les booléens), les nils (difficiles à axiomatiser) et les variables locales (qui ne sont
+fondamentalement pas une grande difficulté mais qui s'expriment avec des quantificateurs
+existentiels ce qui rend l'exercice assez technique) ne sont pas supportées.
+Cela laisse tout de même les `merge`, les `fby`, les appels de nœuds, et les opérations 
 arithmétiques et booléennes.
 
 #### Vérification de code Lustre
 
 Nous avons implémenté de quoi faire de la vérification de code Lustre à l'aide de
 Why3. Plus précisément, nous avons de quoi vérifier des propriétés inductives (et donc
-pas la généralisation k-inductive, bien que ça ne présente à priori pas de difficulté
+pas la généralisation k-inductive, bien que cela ne présente a priori pas de difficulté
 d'implémentation majeure additionnelle).
 
-On adopte une approche qui permet une vérification modulaire, i.e. on peut choisir de
+On adopte une approche qui permet une vérification modulaire : on peut choisir de
 spécifier les nœuds un par un, ce qui dans un contexte industriel pourrait permettre
 de passer à l'échelle.
-
 Pour spécifier les programmes nous suivons l'approche décrite dans l'article de [ref].
 Plutôt que d'introduire une nouvelle syntaxe pour les préconditions et les
 postconditions, on utilise une variable spéciale appelée `ok` et on essaye de prouver
 par induction qu'elle est toujours égale à `true`.
 
-Afin de le garantir, on génère deux obligations de preuve Why3 sous la forme de deux
+Afin de garantir ce résultat, on génère deux obligations de preuve Why3 sous la forme de deux
 lemmes à prouver par nœuds (les preuves correspondantes pouvant utiliser les lemmes des nœuds
 précédents), un pour l'étape d'initialisation, l'autre pour la récurrence.
 
@@ -286,9 +278,7 @@ with
                         (C -> nb_c + 1 when C(x)))
 
 node check(x : abc) = (ok : bool)
-with var nb_a, nb_b, nb_c : int ;
-         cpt : int ;
-         ok : bool in
+with var nb_a, nb_b, nb_c, cpt : int ; ok : bool in
   cpt = 0 fby (cpt + 1) ;
   (nb_a, nb_b, nb_c) = count(x) ;
   ok = (nb_a + nb_b + nb_c = cpt)
@@ -300,20 +290,17 @@ Ainsi, pour prouver que `ok = true` dans notre système synchrone, il suffit que
 lemmes suivants soient satisfaits :
 
 ```why3
-lemme prop_init: forall x__1,  ok__1, _s2.
-  (step_fonct x__1 ok__1 reset_state _s2-> step_fonct_ok x__1
-  ok__1 reset_state _s2)
+lemme prop_init: forall x__1, ok__1, _s2.
+  (step_fonct x__1 ok__1 reset_state _s2 -> step_fonct_ok x__1 ok__1 reset_state _s2)
 
-lemme prop_ind: forall x__1, x__2,
-  ok__1, ok__2, _s, _s2, _s3.
-  (step_fonct_ok x__1 ok__1 _s _s2 /\ step_fonct x__2
-  ok__2 _s2 _s3)
-  -> step_fonct_ok x__2 ok__2 _s2 _s3
+lemme prop_ind: forall x__1, x__2, ok__1, ok__2, _s, _s2, _s3.
+  (step_fonct_ok x__1 ok__1 _s _s2 /\ step_fonct x__2 ok__2 _s2 _s3) ->
+  step_fonct_ok x__2 ok__2 _s2 _s3
 ```
 
 #### Analyses des valeurs non initialisées
 
-Nous avons implémenté une analyse des nils basique en passant par la génération de code
+Nous avons implémenté une analyse des `nil`s basique en passant par la génération de code
 Why3. En effet, si on s'interdit les `pre` imbriqués, il suffit de vérifier que la
 valeur des variables de sorties et de l'état est indépendantes des valeurs mises par
 défaut (nécessaire à la compilation en Rust et à Why3). On peut le formuler avec le
@@ -334,7 +321,7 @@ lemma nil_analysis:
 L'option `-nils` permet de générer ce lemme puis, en passant par Why3, de demander à
 Z3 de le prouver. Si Z3 en donne une preuve, cela prouve qu'il n'y a pas de problème
 d'initialisation. À l'inverse, si ce n'est pas le cas, on ne peut pas conclure : le
-solveur SMT a pu échoué à prouver quelque chose prouvable, ou bien l'analyse des nils
+solveur SMT a pu échouer à prouver quelque chose prouvable, ou bien l'analyse des nils
 peut ne pas être assez fine (dès qu'on a des `pre` imbriqués).
 Bien que cette analyse ait été très rapide à implémenter une fois que l'extraction vers
 Why3 fonctionnait, elle ne permet pas d'expliciter l'erreur si elle échoue.
@@ -342,18 +329,16 @@ Why3 fonctionnait, elle ne permet pas d'expliciter l'erreur si elle échoue.
 ## Extension avec les automates hiérarchiques
 
 Nous avons essayé d'étendre le langage avec les constructions `reset`, `match` et
-`automata` décrites dans emsoft05b.
+`automata` décrites dans [ref emsoft05b].
 Le manque de temps nous a obligé à traiter ces constructions directement sur
 l'AST de parsing, au détriment d'une gestion correcte des erreurs. Les
 constructions `match` et `reset` sont implémentées, mais pas encore les
 automates.
-
 L'approche utilisée consiste en une passe par construction, plutôt qu'une
 transformation générale comme dans l'article. On élimine d'abord les
 constructions `automata` en les transformant en programmes utilisant
 uniquement `match` et `reset`, puis on élimine successivement les `match` et
 les `reset`.
-
 Par rapport à l'article sont également ajoutées les déclaration des variables
 partagées avec le mot-clé `shared`, ainsi qu'une valeur initiale optionnelle
 pour celles-ci (permettant que `last x` soit bien définie au premier instant).
