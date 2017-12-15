@@ -1,5 +1,5 @@
-(** 
- * Translation from Ast_ext to Ast_parsing, assuming every extra feature 
+(**
+ * Translation from Ast_ext to Ast_parsing, assuming every extra feature
  * has been removed
  **)
 
@@ -24,10 +24,10 @@ and tr_expr e = {
 }
 
 and tr_expr_desc = function
-  | Ast_ext.EConst x -> EConst x 
+  | Ast_ext.EConst x -> EConst x
   | Ast_ext.EIdent x -> EIdent x
   | Ast_ext.ETuple l -> ETuple (List.map tr_expr l)
-  | Ast_ext.EFby (c, e) -> EFby (c, tr_expr e) 
+  | Ast_ext.EFby (c, e) -> EFby (c, tr_expr e)
   | Ast_ext.EOp (o, l) -> EOp (o, List.map tr_expr l)
   | Ast_ext.EApp (x, l, e) -> EApp (x, List.map tr_expr l, tr_expr e)
   | Ast_ext.EWhen (e, x, y) -> EWhen (tr_expr e, x, y)
@@ -47,6 +47,6 @@ let tr_node n = {
 }
 
 let tr_file f = {
-  f_typedefs = f.Ast_ext.f_typedefs ; 
+  f_typedefs = f.Ast_ext.f_typedefs ;
   f_nodes = List.map tr_node f.Ast_ext.f_nodes
 }
