@@ -1,6 +1,6 @@
 /* From Heptagon manual */
 
-node updown() = y:int
+node updown() = (y:int)
 with var shared x:int in
   y = x;
   automaton
