@@ -99,10 +99,10 @@ En revanche le langage cible ne peut pas nécessairement voir cette propriété 
 Nous avons implémenté cette optimisation ce qui réduit le nombre de branchements, notamment dans les deux exemples `tests/emsoft03.lus` et `tests/emsoft05.lus`.
 
 **Simplification des merges triviaux:** Un appel de nœud `f(x0, x1, …)` non suivi de la construction `every` dans la syntaxe
-concrète est du sucre pour `f(x0, x1, …) every False`. Le code généré contient pour
+concrète est du sucre syntaxique pour `f(x0, x1, …) every False`. Le code généré contient pour
 cette raison un nombre important de `case` constants de la forme `case false { … }`.
 Bien qu'on puisse attendre du compilateur du langage cible de
-simplifier ce code là automatiquement, nous avons implémenté cette
+simplifier ce code automatiquement, nous avons implémenté cette
 optimisation afin de générer du code plus lisible.
 
 ### Traduction dans le langage objet
@@ -147,7 +147,7 @@ une spécification de haut niveau.
 
 **Code exécutable séquentiel :** La production de ce code est semblable
 à l'extraction vers Rust. Il s'agit d'un code séquentiel qui met à
-jour en place des record pour modifier l'état mémoire d'un nœud.  Ce code peut ensuite
+jour en place des records pour modifier l'état mémoire d'un nœud.  Ce code peut ensuite
 être extrait vers OCaml et donne donc du code efficace.
 
 
@@ -223,12 +223,12 @@ lemma valid:
 ```
 
 On note qu'on a besoin de supposer l'existence d'un flot supplémentaire pour l'état,
-qui n'apparaît pourtant pas dans `spec_abs`. Ce lemme définie bien des flots valides :
+qui n'apparaît pourtant pas dans `spec_abs`. Ce lemme définit bien des flots valides :
 ils sont définissables par récurrence car le code exécutable satisfait `spec_log`.
 
 Prouver ce lemme s'est avéré être particulièrement difficile. Nous pensions que sur des
 exemples simples les solveurs automatiques SMT ou ATP devaient pouvoir fournir des
-preuves. Ce n'est pas le cas, nous avons donc choisi de faire un tactique Coq (que nous
+preuves. Ce n'est pas le cas, nous avons donc choisi de faire une tactique Coq (que nous 
 croyons complète pour les preuves nécessaires, mais nous n'avons pas fait la preuve) pour
 faire ces preuves automatiquement. Expérimentalement, sur tous nos exemples qui sont
 dans ce noyau, la tactique Coq permet de faire la preuve de correspondance.
@@ -260,7 +260,7 @@ postconditions, on utilise une variable spéciale appelée `ok` et on essaye de 
 par induction qu'elle est toujours égale à `true`.
 
 Afin de garantir ce résultat, on génère deux obligations de preuve Why3 sous la forme de deux
-lemmes à prouver par nœuds (les preuves correspondantes pouvant utiliser les lemmes des nœuds
+lemmes à prouver par nœud (les preuves correspondantes pouvant utiliser les lemmes des nœuds
 précédents), un pour l'étape d'initialisation, l'autre pour la récurrence.
 
 Par exemple pour le nœud suivant, qui compte le nombre de A, B, C reçus en entrée :
@@ -304,7 +304,7 @@ lemme prop_ind: forall x__1, x__2, ok__1, ok__2, _s, _s2, _s3.
 #### Analyses des valeurs non initialisées
 
 Nous avons implémenté une analyse des `nil`s basique en passant par la génération de code
-Why3. En effet, si on s'interdit les `pre` imbriqués, il suffit de vérifier que la
+Why3. En effet, si l'on s'interdit les `pre` imbriqués, il suffit de vérifier que la
 valeur des variables de sorties et de l'état est indépendantes des valeurs mises par
 défaut (nécessaire à la compilation en Rust et à Why3). On peut le formuler avec le
 lemme suivant :
@@ -338,15 +338,17 @@ Le manque de temps nous a obligé à traiter ces constructions directement sur
 l'AST de parsing, au détriment d'une gestion correcte des erreurs. Les
 constructions `match` et `reset` sont implémentées, mais pas encore les
 automates.
+
 L'approche utilisée consiste en une passe par construction, plutôt qu'une
 transformation générale comme dans l'article. On élimine d'abord les
 constructions `automata` en les transformant en programmes utilisant
 uniquement `match` et `reset`, puis on élimine successivement les `match` et
 les `reset`.
+
 Par rapport à l'article sont également ajoutées les déclaration des variables
 partagées avec le mot-clé `shared`, ainsi qu'une valeur initiale optionnelle
 pour celles-ci (permettant que `last x` soit bien définie au premier instant).
-Pour être compatible avec le langage de base, nous nous sommes un peu éloigné
+Pour être compatible avec le langage de base, nous nous sommes un peu éloignés
 de la syntaxe proposée dans l'article : les déclarations de variables
 locales sont limitées, et les horloges ne sont pas explicitement déclarées.
 
