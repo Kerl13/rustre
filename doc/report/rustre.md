@@ -232,7 +232,7 @@ Ainsi dans l'exemple précédent, le lemme qu'on cherche à montrer est le suiva
 ```why3
 lemma valid:
   forall (* in and out vars *) a:stream int,  b:stream int,  c:stream int,
-  d:stream int,  (* state *) sd: stream int.  
+  d:stream int,  (* state *) sd: stream int.
   (* definition by recurrence *)
   ({ Nodeadd.d = get sd O; } = reset_state /\
   forall n: nat.
@@ -358,6 +358,7 @@ peut ne pas être assez fine (dès qu'on a des `pre` imbriqués).
 Bien que cette analyse ait été très rapide à implémenter une fois que l'extraction vers
 Why3 fonctionnait, elle ne permet pas d'expliciter l'erreur si elle échoue.
 
+
 ## Extension avec les automates hiérarchiques
 
 Nous avons essayé d'étendre le langage avec les constructions `reset`, `match` et
@@ -379,3 +380,14 @@ pour celles-ci (permettant que `last x` soit bien définie au premier instant).
 Pour être compatible avec le langage de base, nous nous sommes un peu éloigné
 de la syntaxe proposée dans l'article : les déclarations de variables
 locales sont limitées, et les horloges ne sont pas explicitement déclarées.
+
+
+## Un exemple pratique : Pong
+
+Comme exemple d'application, nous avons implémenté une version simple de pong
+en minilustre qui peut être compilée en un binaire executable via Rust ou via
+why3 et l'extraction OCaml.
+
+Le pong consiste en une arène rectangulaire dans laquelle rebondit un balle. Trois
+des côtés du rectangle sont des murs et sur le quatrième côté une intelligence
+artificielle joue contre le mur et essaie de garder son score à 0.
