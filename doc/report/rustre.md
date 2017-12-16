@@ -397,9 +397,9 @@ même quand sa vitesse est faible, nous n'avons pas réussi à trouver une propr
 à donner à Why3, propriété qui serait de toute façon non linéaire et par conséquent difficile.
 
 Nous avons donc simplifié l'IA qui désormais s'aligne avec la balle et reste en face de
-celle ci tout au long de la partie. Dans cette configuration, Why3 parvient à prouver
+celle-ci tout au long de la partie. Dans cette configuration, Why3 parvient à prouver
 que le score reste à 0 à condition que la raquette de l'IA puisse aller assez vite. On
-constate que la preuve échoue lorsqu'on baisse la vitesse de la raquette est insuffisante.
+constate que la preuve échoue lorsque la vitesse de la raquette est insuffisante.
 
 
 [^ref1]: Darek Biernacki and Jean-Louis Colaço and Grégoire Hamon and
