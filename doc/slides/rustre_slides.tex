@@ -128,12 +128,41 @@
 
 
 \section{Introduction}
-\subsection{Lalalala}
+\subsection{Introduction}
 
+\begin{frame}{\null}
+  \begin{tikzpicture}[node distance=1cm, align=center]
+    \node (parsing)         [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm]                            {Parsing};
+    \node (typing)          [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, right = of parsing]        {Typing};
+    \node (clocking)        [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, right = of typing]         {Clocking};
+    \node (normalization)   [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, below = of clocking]       {Normalization};
+    \node (scheduling)      [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, left = of normalization]   {Scheduling};
+    \node (object)          [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, left = of scheduling]      {Object generation};
+    \node (extraction)      [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, below = of object]         {Code extraction};
+    \node (rust)            [right = of extraction] {\includegraphics[width=0.1\textwidth]{img/rust.png}};
+    \node (why3)            [below = of rust] {Why3};
+
+    \path[draw, ->, line width = .3mm] (parsing) -- (typing);
+    \path[draw, ->, line width = .3mm] (typing) -- (clocking);
+    \path[draw, ->, line width = .3mm] (clocking) -- (normalization);
+    \path[draw, ->, line width = .3mm] (normalization) -- %%node[yshift=.5cm] {\footnotesize Object AST}
+                    (scheduling);
+    \path[draw, ->, line width = .3mm] (scheduling) -- (object);
+    \path[draw, ->, line width = .3mm] (object) -- (extraction);
+    \path[draw, ->, line width = .3mm] (extraction) -- (rust);
+    \path[draw, ->, line width = .3mm] (extraction.south) |- (why3.west);
+  \end{tikzpicture}
+\end{frame}
+
+\section{Inférence des horloges}
+\subsection{Exemple d'horloge polymorphe}
 \begin{frame}[fragile]{\null}
-  \blfootnote{Ne pas oublier le [fragile] en cas d'utilisation de lstlisting.}
   \lstinputlisting[firstline=6]{../../tests/poly_clock.lus}
 \end{frame}
+
+
+\section{Extraction Rust}
+\subsection{Exemple d'extraction Rust}
 
 \section{Conclusion}
 \subsection{Conclusion}
