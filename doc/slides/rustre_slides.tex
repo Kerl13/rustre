@@ -75,7 +75,30 @@
   morestring=[b]""",%
 }[keywords,comments,strings]%
 
-  
+%% From https://github.com/RanaExMachina/beamer-template/blob/483c81e1ac1cabfe4b5f66cc174c5e0dca402944/listing-languages.tex
+\lstdefinelanguage{Rust}
+{
+  alsoletter={=>!&->},
+  morekeywords={
+          as, break, const, continue, crate, else, enum, extern, false, fn, for,
+          if, impl, in, let, loop, match, mod, move, mut, pub, ref, return,
+          Self, self, static, struct, super, trait, true, type, unsafe, use,
+          where, while,
+          abstract, alignof, become, box, do, final, macro, offsetof, override,
+          priv, proc, pure, sizeof, typeof, unsized, virtual, yield,
+          bool, char, i8, i16, i32, i65, u8, u16, u32, u64, isize, usize, f32,
+          f64, str, String
+          =>, &self, enum,
+  },
+  % macros
+  emph={println!,vec!,macro_rules!,assert_eq!},
+  sensitive=true, % keywords are case-sensitive
+  morecomment=[l]{//}, % l is for line comment
+  morecomment=[l]{///}, % l is for line comment
+  morecomment=[l]{//!}, % l is for line comment
+  morestring=[b]" % defines that strings are enclosed in double quotes
+}
+
 \definecolor{mygreen}{rgb}{0,0.6,0}
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}
 \definecolor{mymauve}{rgb}{0.58,0,0.82}
@@ -113,6 +136,8 @@
 %  breaklines=true
 %  literate={\#}{{/}}
 }
+
+
 
 \newcommand\blfootnote[1]{%
   \begingroup
@@ -163,6 +188,49 @@
 
 \section{Extraction Rust}
 \subsection{Exemple d'extraction Rust}
+
+\begin{frame}[fragile]{\null}
+  \begin{lstlisting}[language=minils]
+node sqrt (s:real) = (res:real)
+with var x:bool in
+  res = 0.5*(s+1) -> (0.5 * (pre res + (s / pre res)))
+
+node main (s:real) = (res:real)
+with
+  res = sqrt(s) every (s <> pre s)
+  \end{lstlisting}
+
+  \begin{tabular}{|c|ccccccc|}
+    \hline
+    Input  & 16   & 16   & 16   & 16   & 2   & 2    & 2   \\
+    \hline
+    Output & 8.5  & 5.19 & 4.14 & 4.00 & 1.5 & 1.42 & 1.41 \\
+    \hline                                                      
+\end{tabular}
+\end{frame}
+
+  \begin{frame}[fragile]{\null}
+  \begin{lstlisting}[language=Rust]
+mod node_main {
+  use node_sqrt;
+    
+  #[derive(Default)]
+  pub struct Machine { var3:f64, inst1:node_sqrt::Machine }
+  
+  impl Machine {
+    pub fn step(&mut self, s:f64) -> f64 {
+      // ...
+      let res = self.inst1.step(s);
+      // ...
+    }
+    
+    pub fn reset(&mut self) {
+      self.inst1.reset(); self.var3 = 0.0;
+    }
+  }
+}
+\end{lstlisting}
+\end{frame}
 
 \section{Conclusion}
 \subsection{Conclusion}
