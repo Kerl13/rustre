@@ -181,23 +181,32 @@ module Nodeclamp
   predicate step_fonct_full (bound: int)  (v: int)  (w: int)  (var6: int) 
     (var5: int)  (var4: int)  (var3: int) 
     (var2: int) (state:state) (state2:state) =
+    let state_inst5 = state.inst5 in
+    
+    let state_inst4 = state.inst4 in
+    
+    let state_inst3 = state.inst3 in
+    
+    let state_inst2 = state.inst2 in
+    
+    let state_inst1 = state.inst1 in
     
     
-    Nodeabs.step_fonct v var5 state.inst1 state2.inst1 && 
+    Nodeabs.step_fonct v var5 state_inst1 state2.inst1 && 
     
-    Nodemin.step_fonct v bound var3 state.inst2 state2.inst2 && 
+    Nodemin.step_fonct v bound var3 state_inst2 state2.inst2 && 
     let var1 = (0 - v) in
     
-    Nodemin.step_fonct var1 bound var2 state.inst3 state2.inst3 && 
+    Nodemin.step_fonct var1 bound var2 state_inst3 state2.inst3 && 
     let pos = (v >= 0) in
     match pos with
       | False -> w = (0 - var2) &&  true
       | True -> w = var3 &&  true
     end &&
     
-    Nodeabs.step_fonct w var6 state.inst4 state2.inst4 && 
+    Nodeabs.step_fonct w var6 state_inst4 state2.inst4 && 
     
-    Nodeabs.step_fonct w var4 state.inst5 state2.inst5 && 
+    Nodeabs.step_fonct w var4 state_inst5 state2.inst5 && 
     let ok = (((bound >= 0)) -> (((var4 <= var5) && (var6 <= bound)))) in
     true
   predicate step_fonct (bound: int)  (v: int) 
@@ -208,23 +217,32 @@ module Nodeclamp
   predicate step_fonct_ok_full (bound: int)  (v: int)  (w: int)  (var6: int) 
     (var5: int)  (var4: int)  (var3: int) 
     (var2: int) (state:state) (state2:state) =
+    let state_inst5 = state.inst5 in
+    
+    let state_inst4 = state.inst4 in
+    
+    let state_inst3 = state.inst3 in
+    
+    let state_inst2 = state.inst2 in
+    
+    let state_inst1 = state.inst1 in
     
     
-    Nodeabs.step_fonct_ok v var5 state.inst1 state2.inst1 && 
+    Nodeabs.step_fonct_ok v var5 state_inst1 state2.inst1 && 
     
-    Nodemin.step_fonct_ok v bound var3 state.inst2 state2.inst2 && 
+    Nodemin.step_fonct_ok v bound var3 state_inst2 state2.inst2 && 
     let var1 = (0 - v) in
     
-    Nodemin.step_fonct_ok var1 bound var2 state.inst3 state2.inst3 && 
+    Nodemin.step_fonct_ok var1 bound var2 state_inst3 state2.inst3 && 
     let pos = (v >= 0) in
     match pos with
       | False -> w = (0 - var2) &&  true
       | True -> w = var3 &&  true
     end &&
     
-    Nodeabs.step_fonct_ok w var6 state.inst4 state2.inst4 && 
+    Nodeabs.step_fonct_ok w var6 state_inst4 state2.inst4 && 
     
-    Nodeabs.step_fonct_ok w var4 state.inst5 state2.inst5 && 
+    Nodeabs.step_fonct_ok w var4 state_inst5 state2.inst5 && 
     let ok = (((bound >= 0)) -> (((var4 <= var5) && (var6 <= bound)))) in
     (((bound >= 0)) -> (((var4 <= var5) && (var6 <= bound))))
   predicate step_fonct_ok (bound: int)  (v: int) 
@@ -336,7 +354,7 @@ module Nodelat_move
       | False -> x2 = var10 &&  true
       | True -> x2 = ((((2 * 1000) - x) - dx) - 1) &&  true
     end &&
-    let ok = (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1000))) -> ((((0 - 1) < x2) && (x2 < 1000))))) in
+    let ok = (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1000))) -> (((0 <= x2) && (x2 < 1000))))) in
     let goal_ = (r_overflow && (not aligned)) in
     let (var9) = match goal_ with
       | False -> let var9 = score in (var9)
@@ -377,7 +395,7 @@ module Nodelat_move
       | False -> x2 = var10 &&  true
       | True -> x2 = ((((2 * 1000) - x) - dx) - 1) &&  true
     end &&
-    let ok = (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1000))) -> ((((0 - 1) < x2) && (x2 < 1000))))) in
+    let ok = (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1000))) -> (((0 <= x2) && (x2 < 1000))))) in
     let goal_ = (r_overflow && (not aligned)) in
     let (var9) = match goal_ with
       | False -> let var9 = score in (var9)
@@ -390,7 +408,7 @@ module Nodelat_move
     
     state2.score = var9 && 
     state2.dir = var8 && 
-    (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1000))) -> ((((0 - 1) < x2) && (x2 < 1000)))))
+    (((is_eq (dx) (2)) || (is_eq (dx) ((0 - 2)))) && ((((0 <= x) && (x < 1000))) -> (((0 <= x2) && (x2 < 1000)))))
   predicate step_fonct_ok (x: int)  (aligned: bool)  (x2: int) 
     (dir: Types.dir) 
     (score: int) (state:state) (state2:state) =
@@ -426,7 +444,7 @@ module Nodelat_move
       | False -> let x2 = var10 in (x2)
       | True -> let x2 = ((((2 * 1000) - x) - dx) - 1) in (x2)
     end in
-    let ok = (((dx = 2) || (dx = (0 - 2))) && ((not (((0 <= x) && (x < 1000)))) || ((((0 - 1) < x2) && (x2 < 1000))))) in
+    let ok = (((dx = 2) || (dx = (0 - 2))) && ((not (((0 <= x) && (x < 1000)))) || (((0 <= x2) && (x2 < 1000))))) in
     let goal_ = (r_overflow && (not aligned)) in
     let (var9) = match goal_ with
       | False -> let var9 = score in (var9)
@@ -617,16 +635,19 @@ module Nodepaddle_move
   predicate step_fonct_full (target: int)  (pos: int)  (next_pos: int) 
     (var17: int) 
     (var15: int) (state:state) (state2:state) =
+    let state_inst7 = state.inst7 in
+    
+    let state_inst6 = state.inst6 in
     
     let var16 = (target - pos) in
     
-    Nodeabs.step_fonct var16 var17 state.inst6 state2.inst6 && 
+    Nodeabs.step_fonct var16 var17 state_inst6 state2.inst6 && 
     let var14 = (target - pos) in
-    let var13 = 4 in
+    let var13 = 3 in
     
-    Nodeclamp.step_fonct var13 var14 var15 state.inst7 state2.inst7 && 
+    Nodeclamp.step_fonct var13 var14 var15 state_inst7 state2.inst7 && 
     next_pos = (pos + var15) && 
-    let ok = (((var17 <= 4)) -> ((is_eq (next_pos) (target)))) in
+    let ok = (((var17 <= 3)) -> ((is_eq (next_pos) (target)))) in
     true
   predicate step_fonct (target: int)  (pos: int) 
     (next_pos: int) (state:state) (state2:state) =
@@ -636,17 +657,20 @@ module Nodepaddle_move
   predicate step_fonct_ok_full (target: int)  (pos: int)  (next_pos: int) 
     (var17: int) 
     (var15: int) (state:state) (state2:state) =
+    let state_inst7 = state.inst7 in
+    
+    let state_inst6 = state.inst6 in
     
     let var16 = (target - pos) in
     
-    Nodeabs.step_fonct_ok var16 var17 state.inst6 state2.inst6 && 
+    Nodeabs.step_fonct_ok var16 var17 state_inst6 state2.inst6 && 
     let var14 = (target - pos) in
-    let var13 = 4 in
+    let var13 = 3 in
     
-    Nodeclamp.step_fonct_ok var13 var14 var15 state.inst7 state2.inst7 && 
+    Nodeclamp.step_fonct_ok var13 var14 var15 state_inst7 state2.inst7 && 
     next_pos = (pos + var15) && 
-    let ok = (((var17 <= 4)) -> ((is_eq (next_pos) (target)))) in
-    (((var17 <= 4)) -> ((is_eq (next_pos) (target))))
+    let ok = (((var17 <= 3)) -> ((is_eq (next_pos) (target)))) in
+    (((var17 <= 3)) -> ((is_eq (next_pos) (target))))
   predicate step_fonct_ok (target: int)  (pos: int) 
     (next_pos: int) (state:state) (state2:state) =
     exists var17,  var15.
@@ -668,11 +692,11 @@ module Nodepaddle_move
     
     let (var17) = Nodeabs.step state.inst6 var16 in 
     let var14 = (target - pos) in
-    let var13 = 4 in
+    let var13 = 3 in
     
     let (var15) = Nodeclamp.step state.inst7 var13 var14 in 
     let next_pos = (pos + var15) in
-    let ok = ((not ((var17 <= 4))) || ((next_pos = target))) in
+    let ok = ((not ((var17 <= 3))) || ((next_pos = target))) in
     assert { step_fonct_full target pos next_pos var17
     var15 (at state 'Init) state };
     (next_pos)
@@ -808,12 +832,15 @@ module Nodetarget
   predicate step_fonct_full (x: int)  (y: int)  (dir: Types.dir)  (dy: int) 
     (target: int)  (abs_virtual_y: int) 
     (length: int) (state:state) (state2:state) =
+    let state_inst9 = state.inst9 in
+    
+    let state_inst8 = state.inst8 in
     
     
-    Nodeclength.step_fonct dir x length state.inst8 state2.inst8 && 
+    Nodeclength.step_fonct dir x length state_inst8 state2.inst8 && 
     let virtual_y = (mod ((y + (div ((length * dy)) (2)))) (((400 * 2) - 1))) in
     
-    Nodeabs.step_fonct virtual_y abs_virtual_y state.inst9 state2.inst9 && 
+    Nodeabs.step_fonct virtual_y abs_virtual_y state_inst9 state2.inst9 && 
     let gt = (virtual_y >= 0) in
     let in_bounds = ((virtual_y < 400) && (virtual_y >= (1 - 400))) in
     match in_bounds with
@@ -830,12 +857,15 @@ module Nodetarget
   predicate step_fonct_ok_full (x: int)  (y: int)  (dir: Types.dir) 
     (dy: int)  (target: int)  (abs_virtual_y: int) 
     (length: int) (state:state) (state2:state) =
+    let state_inst9 = state.inst9 in
+    
+    let state_inst8 = state.inst8 in
     
     
-    Nodeclength.step_fonct_ok dir x length state.inst8 state2.inst8 && 
+    Nodeclength.step_fonct_ok dir x length state_inst8 state2.inst8 && 
     let virtual_y = (mod ((y + (div ((length * dy)) (2)))) (((400 * 2) - 1))) in
     
-    Nodeabs.step_fonct_ok virtual_y abs_virtual_y state.inst9 state2.inst9 && 
+    Nodeabs.step_fonct_ok virtual_y abs_virtual_y state_inst9 state2.inst9 && 
     let gt = (virtual_y >= 0) in
     let in_bounds = ((virtual_y < 400) && (virtual_y >= (1 - 400))) in
     match in_bounds with
@@ -1083,27 +1113,40 @@ module Nodepong
     (score: int)  (var20: int)  (var18: int)  (xx: int)  (y2: int) 
     (dy: int)  (paddle2: int)  (dir: Types.dir)  (length: int) 
     (goal_: bool) (state:state) (state2:state) =
+    let state_inst16 = state.inst16 in
+    
+    let state_inst15 = state.inst15 in
+    
+    let state_inst14 = state.inst14 in
+    
+    let state_inst13 = state.inst13 in
+    
+    let state_inst12 = state.inst12 in
+    
+    let state_inst11 = state.inst11 in
+    
+    let state_inst10 = state.inst10 in
     paddle = state.paddle && 
     y = state.y && 
     x = state.x && 
     
     
-    Nodevert_move.step_fonct y y2 dy state.inst10 state2.inst10 && 
+    Nodevert_move.step_fonct y y2 dy state_inst10 state2.inst10 && 
     let var19 = (y2 - y) in
     
-    Nodeabs.step_fonct var19 var20 state.inst11 state2.inst11 && 
+    Nodeabs.step_fonct var19 var20 state_inst11 state2.inst11 && 
     
-    Nodeabs.step_fonct dy var18 state.inst12 state2.inst12 && 
+    Nodeabs.step_fonct dy var18 state_inst12 state2.inst12 && 
     let target = y2 in
     
-    Nodepaddle_move.step_fonct target paddle paddle2 state.inst13 state2.inst13 && 
+    Nodepaddle_move.step_fonct target paddle paddle2 state_inst13 state2.inst13 && 
     
-    Nodealigned_with_paddle.step_fonct y paddle goal_ state.inst14 state2.inst14 && 
+    Nodealigned_with_paddle.step_fonct y paddle goal_ state_inst14 state2.inst14 && 
     
-    Nodelat_move.step_fonct x goal_ xx dir score state.inst15 state2.inst15 && 
-    let ok = (((0 <= x) && (x < 1000)) && ((((0 - 1) < xx) && (xx < 1000)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && ((is_eq (goal_) (true)) && (is_eq (score) (0)))))))))))) in
+    Nodelat_move.step_fonct x goal_ xx dir score state_inst15 state2.inst15 && 
+    let ok = (((0 <= x) && (x < 1000)) && ((((0 - 1) < xx) && (xx < 1000)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 3) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && (is_eq (goal_) (true))))))))))) in
     
-    Nodedist_to_goal.step_fonct x dir length state.inst16 state2.inst16 && 
+    Nodedist_to_goal.step_fonct x dir length state_inst16 state2.inst16 && 
     let delta_y = (div ((length * var18)) (2)) in
     
     state2.paddle = paddle2 && 
@@ -1121,33 +1164,46 @@ module Nodepong
     (paddle: int)  (score: int)  (var20: int)  (var18: int)  (xx: int) 
     (y2: int)  (dy: int)  (paddle2: int)  (dir: Types.dir)  (length: int) 
     (goal_: bool) (state:state) (state2:state) =
+    let state_inst16 = state.inst16 in
+    
+    let state_inst15 = state.inst15 in
+    
+    let state_inst14 = state.inst14 in
+    
+    let state_inst13 = state.inst13 in
+    
+    let state_inst12 = state.inst12 in
+    
+    let state_inst11 = state.inst11 in
+    
+    let state_inst10 = state.inst10 in
     paddle = state.paddle && 
     y = state.y && 
     x = state.x && 
     
     
-    Nodevert_move.step_fonct_ok y y2 dy state.inst10 state2.inst10 && 
+    Nodevert_move.step_fonct_ok y y2 dy state_inst10 state2.inst10 && 
     let var19 = (y2 - y) in
     
-    Nodeabs.step_fonct_ok var19 var20 state.inst11 state2.inst11 && 
+    Nodeabs.step_fonct_ok var19 var20 state_inst11 state2.inst11 && 
     
-    Nodeabs.step_fonct_ok dy var18 state.inst12 state2.inst12 && 
+    Nodeabs.step_fonct_ok dy var18 state_inst12 state2.inst12 && 
     let target = y2 in
     
-    Nodepaddle_move.step_fonct_ok target paddle paddle2 state.inst13 state2.inst13 && 
+    Nodepaddle_move.step_fonct_ok target paddle paddle2 state_inst13 state2.inst13 && 
     
-    Nodealigned_with_paddle.step_fonct_ok y paddle goal_ state.inst14 state2.inst14 && 
+    Nodealigned_with_paddle.step_fonct_ok y paddle goal_ state_inst14 state2.inst14 && 
     
-    Nodelat_move.step_fonct_ok x goal_ xx dir score state.inst15 state2.inst15 && 
-    let ok = (((0 <= x) && (x < 1000)) && ((((0 - 1) < xx) && (xx < 1000)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && ((is_eq (goal_) (true)) && (is_eq (score) (0)))))))))))) in
+    Nodelat_move.step_fonct_ok x goal_ xx dir score state_inst15 state2.inst15 && 
+    let ok = (((0 <= x) && (x < 1000)) && ((((0 - 1) < xx) && (xx < 1000)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 3) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && (is_eq (goal_) (true))))))))))) in
     
-    Nodedist_to_goal.step_fonct_ok x dir length state.inst16 state2.inst16 && 
+    Nodedist_to_goal.step_fonct_ok x dir length state_inst16 state2.inst16 && 
     let delta_y = (div ((length * var18)) (2)) in
     
     state2.paddle = paddle2 && 
     state2.y = y2 && 
     state2.x = xx && 
-    (((0 <= x) && (x < 1000)) && ((((0 - 1) < xx) && (xx < 1000)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && ((is_eq (goal_) (true)) && (is_eq (score) (0))))))))))))
+    (((0 <= x) && (x < 1000)) && ((((0 - 1) < xx) && (xx < 1000)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 3) && ((is_eq (paddle) (y)) && ((is_eq (paddle2) (y2)) && ((is_eq (score) (0)) && (is_eq (goal_) (true)))))))))))
   predicate step_fonct_ok (wind: int)  (x: int)  (y: int)  (paddle: int) 
     (score: int) (state:state) (state2:state) =
     exists var20,  var18,  xx,  y2,  dy,  paddle2,  dir,  length, 
@@ -1195,7 +1251,7 @@ module Nodepong
     let (goal_) = Nodealigned_with_paddle.step state.inst14 y paddle in 
     
     let (xx, dir, score) = Nodelat_move.step state.inst15 x goal_ in 
-    let ok = (((0 <= x) && (x < 1000)) && ((((0 - 1) < xx) && (xx < 1000)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 4) && ((paddle = y) && ((paddle2 = y2) && ((score = 0) && ((goal_ = true) && (score = 0))))))))))) in
+    let ok = (((0 <= x) && (x < 1000)) && ((((0 - 1) < xx) && (xx < 1000)) && (((0 <= y) && (y < 400)) && ((((0 - (400 - 1)) <= dy) && (dy <= 400)) && (((0 <= y2) && (y2 < 400)) && ((var20 <= 3) && ((paddle = y) && ((paddle2 = y2) && ((score = 0) && (goal_ = true)))))))))) in
     
     let (length) = Nodedist_to_goal.step state.inst16 x dir in 
     let delta_y = (div ((length * var18)) (2)) in

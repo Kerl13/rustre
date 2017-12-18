@@ -151,8 +151,7 @@
 
 \maketitle
 
-
-\section{Introduction}
+\section{trololo}
 \subsection{Introduction}
 
 \begin{frame}{\null}
@@ -179,16 +178,58 @@
   \end{tikzpicture}
 \end{frame}
 
+\subsection{Pong}
+
+\begin{frame}{\null}
+  Blah
+\end{frame}
+
 \section{Typage}
 \subsection{GADTs}
-\begin{frame}{\null}
-  TODO
+\begin{frame}[fragile]{\null}
+  \begin{lstlisting}[language=caml]
+type enum
+
+type 'a num_ty =
+  | TyZ : int num_ty
+  | TyReal : float num_ty
+
+type _ ty =
+  | TyBool : bool ty
+  | TyNum  : 'a num_ty -> 'a num_ty ty
+  | TyEnum : string * string list -> enum ty
+
+type 'a expr_desc =
+  | EConst : 'a const -> 'a ty expr_desc
+  | EFby   : 'a const * 'a ty expr -> 'a ty expr_desc
+  | EBOp   : ('a, 'b) binop * 'a ty expr * 'a ty expr -> 'b ty expr_desc
+  ...
+  \end{lstlisting}
 \end{frame}
 
 \section{Inférence des horloges}
 \subsection{Exemple d'horloge polymorphe}
 \begin{frame}[fragile]{\null}
   \lstinputlisting[firstline=6]{../../tests/poly_clock.lus}
+
+%    \begin{lstlisting}[language=minils]
+%  node sum
+%    inputs:
+%      i : [α]
+%    outputs:
+%      s : [α]
+%
+%  node main
+%    inputs:
+%      x : [base]
+%    locals:
+%      t1 : [α on True(half)]
+%      t2 : [α on True(half)]
+%      half : [α]
+%    outputs:
+%      t1 : [α on True(half)]
+%      t2 : [α on True(half)]
+%    \end{lstlisting}
 \end{frame}
 
 
@@ -211,7 +252,7 @@ with
     Input  & 16   & 16   & 16   & 16   & 2   & 2    & 2   \\
     \hline
     Output & 8.5  & 5.19 & 4.14 & 4.00 & 1.5 & 1.42 & 1.41 \\
-    \hline                                                      
+    \hline
 \end{tabular}
 \end{frame}
 
@@ -219,17 +260,17 @@ with
   \begin{lstlisting}[language=Rust]
 mod node_main {
   use node_sqrt;
-    
+
   #[derive(Default)]
   pub struct Machine { var3:f64, inst1:node_sqrt::Machine }
-  
+
   impl Machine {
     pub fn step(&mut self, s:f64) -> f64 {
       // ...
       let res = self.inst1.step(s);
       // ...
     }
-    
+
     pub fn reset(&mut self) {
       self.inst1.reset(); self.var3 = 0.0;
     }
@@ -238,10 +279,17 @@ mod node_main {
 \end{lstlisting}
 \end{frame}
 
+\subsection{Optimisations}
+\begin{frame}
+  TODO
+\end{frame}
+
 \section{Extraction Why3}
 \subsection{Why3}
 \begin{frame}{\null}
-  TODO
+  \begin{itemize}
+    \item préservation sémantique
+  \end{itemize}
 \end{frame}
 
 

@@ -123,7 +123,9 @@ in
   x = 100 fby xx ;
   (y2, dy) = vert_move(y) ;
   y = 10 fby y2 ;
+
   target = y2; /*target(x, y, dir, dy) ;*/
+
   paddle2 = paddle_move(target, paddle) ;
   paddle = 10 fby paddle2 ;
   /* Terms of the proof: */
