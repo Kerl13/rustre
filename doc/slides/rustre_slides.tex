@@ -1,6 +1,6 @@
 \documentclass[11pt,usenames,dvipsnames]{beamer}
 
-\usetheme[numbering=counter,progressbar=foot]{metropolis}
+\usetheme[numbering=counter,progressbar=foot,sectionpage=none]{metropolis}
 \usecolortheme[snowy]{owl}
 \setbeamercolor{progress bar}{fg=OwlBlue}
 \setbeamertemplate{itemize item}{\color{OwlBlue!80}$\blacktriangleright$}
@@ -94,6 +94,7 @@
   emph={println!,vec!,macro_rules!,assert_eq!},
   sensitive=true, % keywords are case-sensitive
   morecomment=[l]{//}, % l is for line comment
+  morecomment=[n]{/*}{*/},%
   morecomment=[l]{///}, % l is for line comment
   morecomment=[l]{//!}, % l is for line comment
   morestring=[b]" % defines that strings are enclosed in double quotes
@@ -151,7 +152,7 @@
 
 \maketitle
 
-\section{trololo}
+\section{\null}
 \subsection{Introduction}
 
 \begin{frame}{\null}
@@ -210,26 +211,35 @@ type 'a expr_desc =
 \section{Inférence des horloges}
 \subsection{Exemple d'horloge polymorphe}
 \begin{frame}[fragile]{\null}
-  \lstinputlisting[firstline=6]{../../tests/poly_clock.lus}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{lstlisting}[language=minils]
+node sum(i: int) = (s: int)
+with
+     s = i -> pre s + i
 
-%    \begin{lstlisting}[language=minils]
-%  node sum
-%    inputs:
-%      i : [α]
-%    outputs:
-%      s : [α]
-%
-%  node main
-%    inputs:
-%      x : [base]
-%    locals:
-%      t1 : [α on True(half)]
-%      t2 : [α on True(half)]
-%      half : [α]
-%    outputs:
-%      t1 : [α on True(half)]
-%      t2 : [α on True(half)]
-%    \end{lstlisting}
+node main (x:bool) = (t1, t2:int)
+with var t1, t2:int; half:bool in
+     half = true -> not (pre half);
+     t1 = sum(1 when true(half));
+     t2 = sum(1) when true(half)
+   \end{lstlisting}
+ \end{column}
+ \begin{column}{0.5\textwidth}
+   \pause
+   \begin{lstlisting}[escapechar=!]
+node sum
+    i : [!$\alpha$!]
+    s : [!$\alpha$!]
+
+node main
+    x : [base]
+    half : [!$\alpha$!]
+    t1 : [!$\alpha$! on True(half)]
+    t2 : [!$\alpha$! on True(half)]
+   \end{lstlisting}
+ \end{column}
+\end{columns}
 \end{frame}
 
 
@@ -256,7 +266,32 @@ with
 \end{tabular}
 \end{frame}
 
-  \begin{frame}[fragile]{\null}
+\begin{frame}[fragile]{\null}
+  %% + main = loop { parse, give to step, print result }
+  \begin{lstlisting}[language=Rust]
+mod node_sqrt {
+  pub struct Machine { ... }
+
+  impl Machine {
+    pub fn step(&mut self, ...) -> ... { ... }
+    pub fn reset(&mut self) { ... }
+  }
+}
+
+mod node_main {
+  use node_sqrt;
+
+  pub struct Machine { ... }
+  impl Machine {
+    pub fn step(&mut self, ...) -> ... { ... }
+    pub fn reset(&mut self) { ... }
+  }
+}
+  \end{lstlisting}
+\end{frame}
+
+
+\begin{frame}[fragile]{\null}
   \begin{lstlisting}[language=Rust]
 mod node_main {
   use node_sqrt;
@@ -279,8 +314,16 @@ mod node_main {
 \end{lstlisting}
 \end{frame}
 
+\begin{frame}[fragile]{\null}
+  \begin{itemize}
+  \item Un noeud = un module
+  \item Variables immuables
+  \item \inline{\#[derive(Default)]}
+  \end{itemize}
+\end{frame}
+
 \subsection{Optimisations}
-\begin{frame}
+\begin{frame}{\null}
   TODO
 \end{frame}
 
