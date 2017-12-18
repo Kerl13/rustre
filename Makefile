@@ -30,7 +30,7 @@ clean-all: clean
 	make -C pong/ clean
 
 .PHONY: doc
-doc: 
+doc:
 	make -C doc/report
 
 .PHONY: dist

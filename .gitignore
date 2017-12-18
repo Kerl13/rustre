@@ -12,3 +12,6 @@ tests/ocaml/*.ml
 *.v
 \#*
 *.crashcoqide
+
+# MacOS sucks
+.DS_Store
