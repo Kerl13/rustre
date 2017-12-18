@@ -6,5 +6,5 @@ with var x:bool in
 
 node main (s:real) = (res:real)
 with
-     res = sqrt(s) every (s <> pre s)
+     res = sqrt(s) every (false -> (s <> pre s))
 
