@@ -247,12 +247,12 @@ dans ce noyau, la tactique Coq permet de faire la preuve de correspondance.
 
 ##### Limitation de la preuve sémantique
 
-Nous n'avons réalisé ce travail de preuve que sur un sous-ensemble de minilustre que l'on
-a veillé à garder assez expressif. Ainsi, la syntaxe `every`, les types sommes (autre
+Nous n'avons réalisé ce travail de preuve que sur un sous-ensemble de minilustre. Ainsi, la syntaxe `every`, les types sommes (autre
 que les booléens), les nils (difficiles à axiomatiser) et les variables locales (qui ne sont
 fondamentalement pas une grande difficulté mais qui s'expriment avec des quantificateurs
-existentiels ce qui rend l'exercice assez technique) ne sont pas supportées.
-Cela laisse tout de même les `merge`, les `fby`, les appels de nœuds, et les opérations
+existentiels ce qui rend l'exercice assez technique) ne sont pas supportées. Les `merge` seraient quant à eux probablement plus complexes à supporter, 
+l'information des clocks étant largement implicite.
+Cela laisse tout de même les `fby`, les appels de nœuds, et les opérations
 arithmétiques et booléennes.
 
 #### Vérification de code Lustre
