@@ -13,6 +13,7 @@ let rec obc_varlist : type a. a Ast_typed.var_list -> var_list
     | Ast_typed.VIdent(a, ty) -> [a, Sty (ty)]
     | Ast_typed.VTuple(a, ty, b) -> (a, Sty (ty)) :: obc_varlist b
 
+
 let rec is_in: type a. a Ast_typed.var_list -> a Ast_typed.var_ident -> bool = fun vl v -> match vl with
   | Ast_typed.VIdent(v', _) -> v = v'
   | Ast_typed.VEmpty -> false
@@ -54,29 +55,65 @@ and obc_expr: type a. nl -> a nexpr -> a oexpr = fun nl expr ->
   | Ast_normalized.NWhen (e,_,_) ->
     obc_expr nl e
 
+let rec oexpr_of_ck ck =
+  match ck with
+  | Ast_clocked.CBase -> EConst (CBool true)
+  | Ast_clocked.COn (ck', dc, x) ->
+     let ident_x = Var x in
+     let x_eq_e = EBOp (Ast_typed.OpEq, (EVar ident_x), (EConst (CDataCons dc))) in
+     let oexpr_ck' = oexpr_of_ck ck' in
+     EBOp (Ast_typed.OpAnd, oexpr_ck', x_eq_e)
+  | Ast_clocked.CVar v ->
+     begin
+       match v.Ast_clocked.def with
+       | None -> EConst (CBool true)
+       | Some m -> oexpr_of_ck m
+     end
+      
 let obc_eq (Ast_typed.NodeLocal local) (instances, s, end_os) = function
   | EquSimple(v, expr_merge) ->
-    let v = if is_in local v then Loc v else Var v in
-    instances,
-    (SSeq (s, obc_expr_merge (Ast_typed.NodeLocal local) v expr_merge)),
-    end_os
-  | EquFby(v, c, expr_merge) ->
+     let v = if is_in local v then Loc v else Var v in
+     let ck = match expr_merge.nexpr_merge_clock with
+       |[ck] -> ck
+       |_ -> assert false in
+     let cond_of_ck = oexpr_of_ck ck in
+     let real_case = obc_expr_merge (Ast_typed.NodeLocal local) v expr_merge in
+     let other_case = SAssign { n = v; expr = EConst (CNil expr_merge.nexpr_merge_type) } in
+     let cases = [("False", other_case); ("True", real_case)] in
+     instances,
+     (SSeq (s, SCase (cond_of_ck, cases))),
+     end_os
+  | EquFby(v, c, expr) ->
     (* apart from the scheduling, equfby is the same thing as equsimple *)
-    let state, instances = instances in
-    ((((v:var_id), Sty expr_merge.nexpr_type), Const (obc_const expr_merge.nexpr_type c)) :: state, instances),
+     let state, instances = instances in
+     let ck = match expr.nexpr_clock with
+       |[ck] -> ck
+       |_ -> assert false in
+     let cond_of_ck = oexpr_of_ck ck in
+     let real_case = SAssign { n = State v; expr = obc_expr (Ast_typed.NodeLocal local) expr; }  in
+     let other_case = SSkip in
+     let cases = [("False", other_case); ("True", real_case)] in
+    ((((v:var_id), Sty expr.nexpr_type), Const (obc_const expr.nexpr_type c)) :: state, instances),
     s,
-    (SSeq (end_os, SAssign { n = State v; expr = obc_expr (Ast_typed.NodeLocal local) expr_merge; }))
-  | EquApp(pat, id, vl, every) ->
+    (SSeq (end_os, SCase (cond_of_ck, cases)))
+  | EquApp(pat, id, vl, every, ct) ->
     let Ast_typed.Tagged(_, _, machine_id) = id in
     let args = obc_varlist vl in
     let args = List.map (fun (v, _) -> if is_in local v then Loc v else Var v) args in
     let res = obc_varlist pat.Ast_typed.pat_desc in
+    let res_ty = List.map snd res in
     let res = List.map (fun (v, _) -> if is_in local v then Loc v else Var v) res in
     let i = new_instance () in
     let reset = SCase (obc_expr (Ast_typed.NodeLocal local) every, ["True", SReset (machine_id, i); "False", SSkip]) in
     let state, instances = instances in
+
+    let cond_of_ct = List.fold_left (fun acc x -> EBOp (Ast_typed.OpAnd, acc, oexpr_of_ck x)) (EConst (CBool true)) ct in
+    let cases_reset = [("False", SSkip); ("True", reset)] in
+    let real_call_case = SCall(args, i, machine_id, res) in
+    let other_call_case = List.fold_left2 (fun acc sty var -> let (Sty ty) = sty in SSeq (SAssign { n = var; expr = EConst (CNil ty) }, acc)) SSkip res_ty res in
+    let cases_call = [("False", other_call_case); ("True", real_call_case)] in
     (state, (i, machine_id)::instances),
-    (SSeq (s, SSeq (reset, SCall(args, i, machine_id, res)))),
+    (SSeq (s, SSeq (SCase (cond_of_ct, cases_reset), SCase (cond_of_ct, cases_call)))),
     end_os
 
 let obc_node (NNode desc) =

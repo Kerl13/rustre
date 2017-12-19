@@ -7,15 +7,30 @@ end
 
 
 module ConstMatches : OPT = struct
+  let rec simplify_oexpr : type a. a oexpr -> a oexpr = fun e ->
+    match e with
+    | EBOp (Ast_typed.OpAnd, (EConst (CBool true)), e') -> simplify_oexpr e'
+    | EBOp (Ast_typed.OpAnd, e', (EConst (CBool true))) -> simplify_oexpr e'
+    | EBOp (Ast_typed.OpAnd, _, (EConst (CBool false))) -> EConst (CBool false)
+    | EBOp (Ast_typed.OpAnd, (EConst (CBool false)), _) -> EConst (CBool false)
+    | _ -> e
+
   let rec apply_stmt = function
-    | SCase (EConst c, cases) ->
-      let dc = begin match c with
-        | CBool true -> "True"
-        | CBool false -> "False"
-        | CDataCons dc -> dc
-        | _ -> assert false (* cannot be *)
-      end in
-      List.assoc dc cases
+    | SCase (e, cases) ->
+       let cases = List.map (fun (s, stmt) -> (s, apply_stmt stmt)) cases in
+       let e' = simplify_oexpr e in
+       begin match e' with
+       | EConst c ->
+          begin
+            let dc = begin match c with
+                     | CBool true -> "True"
+                     | CBool false -> "False"
+                     | CDataCons dc -> dc
+                     | _ -> assert false (* cannot be *)
+                     end in
+            List.assoc dc cases
+          end
+       | _ -> SCase (e', cases) end
     | SSeq (s1, s2) -> SSeq (apply_stmt s1, apply_stmt s2)
     | s -> s
 

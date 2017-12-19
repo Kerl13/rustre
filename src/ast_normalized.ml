@@ -68,7 +68,7 @@ and ('a, 'b) nnode_desc = {
 and nequation =
   | EquSimple: 'a var_ident * 'a nexpr_merge -> nequation
   | EquFby: 'a var_ident * 'a const * 'a nexpr -> nequation (* the var_ident *must* be local *)
-  | EquApp: 'b pattern * ('a, 'b) tagged_ident * 'a var_list * bool nexpr -> nequation
+  | EquApp: 'b pattern * ('a, 'b) tagged_ident * 'a var_list * bool nexpr * Ast_clocked.ct -> nequation
 
 
 
@@ -98,7 +98,7 @@ let rec pp_vl: type a. 'b -> a var_list -> unit = fun ppf -> function
 let pp_eq fmt = function
   | EquSimple (x, e) -> fprintf fmt "%s = %a" x pp_expr_merge e
   | EquFby (x, c, e) -> fprintf fmt "%s = %a fby %a" x pp_const c pp_expr e
-  | EquApp (pat, f, args, every) ->
+  | EquApp (pat, f, args, every, _) ->
       let Ast_typed.Tagged(_, _, f) = f in
       fprintf fmt "(%a) = (%s(%a) every %a)" pp_vl pat.pat_desc f pp_vl args pp_expr every
 

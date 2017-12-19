@@ -152,11 +152,11 @@ and normalize_expr: type a. Ast_normalized.nequation list -> Ast_typed.node_loca
          nexpr_clock = texpr_clock;
          nexpr_loc = texpr_loc;
        } in
-       EquApp(pat, name, vl, ev) :: a, b, Expr nexpr
+       EquApp(pat, name, vl, ev, texpr_clock) :: a, b, Expr nexpr
      | Ast_typed.VTuple(_, _, _) ->
-       EquApp(pat, name, vl, ev) :: a, b, App
+       EquApp(pat, name, vl, ev, texpr_clock) :: a, b, App
      | Ast_typed.VEmpty ->
-       EquApp(pat, name, vl, ev) :: a, b, Unit
+       EquApp(pat, name, vl, ev, texpr_clock) :: a, b, Unit
     )
   | CWhen (expr, constr, cond) ->
     let a, b, Expr expr = normalize_expr a b None expr in

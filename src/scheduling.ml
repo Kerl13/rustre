@@ -41,7 +41,7 @@ module Check = struct
       Sset.add x seen_vars
     | EquFby (x, _, _) ->
       Sset.add x seen_vars
-    | EquApp (pat, Ast_typed.Tagged (_, _, f), args, every) ->
+    | EquApp (pat, Ast_typed.Tagged (_, _, f), args, every, _) ->
       check_expr seen_nodes seen_vars every ;
       assert_in_node f seen_nodes ;
       Ast_typed_utils.var_list_fold (fun () x -> assert_in x seen_vars) () args ;
@@ -159,7 +159,7 @@ module Simple = struct
   let eq_loc = function
     | EquSimple (_, e) -> e.nexpr_merge_loc
     | EquFby (_, _, e) -> e.nexpr_loc
-    | EquApp (_, _, _, e) -> e.nexpr_loc
+    | EquApp (_, _, _, e, _) -> e.nexpr_loc
 
   let number_and_resolve_deps node_name (i, eqs, defmap) eq =
     let add x defmap =
@@ -169,7 +169,7 @@ module Simple = struct
     let defmap, vars = match eq with
       | EquSimple (x, e) -> add x defmap, vars_emerge [] e
       | EquFby (x, _, _) -> add x defmap, []
-      | EquApp (pat, _, arg, every) ->
+      | EquApp (pat, _, arg, every, _) ->
         let varlist = pat.Ast_typed.pat_desc in
         let defmap = Ast_typed_utils.var_list_fold (fun defmap x -> add x defmap) defmap varlist in
         let vars = Ast_typed_utils.var_list_fold (fun vars v -> v :: vars) [] arg in
