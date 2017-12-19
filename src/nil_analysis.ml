@@ -12,7 +12,7 @@ let rec analyze_defs ?(fonct=false) = function
   | SSeq(a, b) -> analyze_defs ~fonct a @ analyze_defs ~fonct b
   | SReset(_, b) -> if fonct then [State b] else []
   | SSkip -> []
-  | SCall(_, _, i, res) ->
+  | SCall(_, _, _, res) ->
     res
   | SCase(_, b) ->
     List.map snd b |> List.map (analyze_defs ~fonct) |> List.concat |> List.sort_uniq compare 

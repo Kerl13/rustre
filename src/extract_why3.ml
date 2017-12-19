@@ -318,7 +318,7 @@ module E = struct
       (print_statement ~ok:false  ~loc:(fun _ -> false) ~prop:false ~fonct:false) mach.reset
 
   let print_check_nil ppf mach =
-    let var_in, _, var_out, step = mach.step in
+    let var_in, _, var_out, _ = mach.step in
     let var_in = List.map fst var_in in
     let var_out = List.map fst var_out in
 
