@@ -285,14 +285,22 @@ node main
 \end{center}
 \end{frame}
 
+\subsection{Code objet -- Optimisations}
+\begin{frame}{\null}
+  \begin{itemize}
+  \item Fusion des merges
+  \item Simplification des match triviaux
+  \end{itemize}
+\end{frame}
 
 \subsection{Extraction Rust}
 
 \begin{frame}[fragile]{\null}
   \begin{itemize}
-  \item<1-> Un noeud = un module
-  \item<2-> Variables locales immuables \onslide<3->{(cas des structures de contrôle)}
-  \item<4-> \inline{\#[derive(Default)]}
+  \item<1-> Un fichier = des noeuds + \inline{main}
+  \item<2-> Un noeud = un module
+  \item<3-> Variables locales immuables \onslide<4->{(cas des structures de contrôle)}
+  \item<5-> \inline{\#[derive(Default)]}
   \end{itemize}
 \end{frame}
 
@@ -350,7 +358,7 @@ mod node_main {
   use node_sqrt;
 
   #[derive(Default)]
-  pub struct Machine { var3:f64, inst1:node_sqrt::Machine }
+  pub struct Machine { var:f64, inst1:node_sqrt::Machine }
 
   impl Machine {
     pub fn step(&mut self, s:f64) -> f64 {
@@ -360,7 +368,7 @@ mod node_main {
     }
 
     pub fn reset(&mut self) {
-      self.inst1.reset(); self.var3 = Default::default();
+      self.inst1.reset(); self.var = Default::default();
     }
   }
 }
@@ -379,15 +387,6 @@ pub fn main() {
   \end{lstlisting}
 \end{frame}
 
-
-
-\subsection{Optimisations}
-\begin{frame}{\null}
-  \begin{itemize}
-  \item Fusion des merges
-  \item Simplification des match triviaux
-  \end{itemize}
-\end{frame}
 
 \subsection{Extraction Why3}
 \begin{frame}{\null}
@@ -448,10 +447,10 @@ pub fn main() {
   \end{itemize}
 \end{frame}
 
-\appendix
-\subsection{Besoin d'une annexe ?}
-\begin{frame}{\null}
-\end{frame}
+% \appendix
+% \subsection{Besoin d'une annexe ?}
+% \begin{frame}{\null}
+% \end{frame}
 
 
 \end{document}
