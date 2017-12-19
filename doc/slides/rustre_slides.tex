@@ -403,53 +403,156 @@ pub fn main() {
 	\path[draw, <->, line width = .3mm] (why3) -- node[right] {abstraction} (spec);
   \end{tikzpicture}
 \end{frame}
+\subsection{Correspondance sémantique}
+\begin{frame}[fragile]{\null}
+\begin{itemize}
+\item Nœud synchrone
+  \begin{lstlisting}[language=minils]
+node incr () = (cpt:int; ok: bool)
+with var ok: bool in
+  cpt = (0 fby cpt) + 1;
+  ok = 0 <= cpt\end{lstlisting}
+  \end{itemize}
+\end{frame}
 
 \subsection{Correspondance sémantique}
 \begin{frame}[fragile]{\null}
 \begin{itemize}
+\item Nœud synchrone
+  \begin{lstlisting}[language=minils]
+node incr () = (cpt:int; ok: bool)
+  cpt = (0 fby cpt) + 1; ...\end{lstlisting}
 \item Code séquentiel, analogue à Rust 
   \begin{lstlisting}[language=why3]
-pub fn main() {
-  let mut mach:node_main::Machine = Default::default();
-  loop {
-    let arg0 = parse_args();
-    println!("{:?}", mach.step(arg0));
-  }
-}
+let step (state:state) (tic: bool): (int) 
+  ensures { step_fonct tic result (old state) state } =
+  let var1 = state.var1 in
+  let cpt = var1 + 1 in
+  ...
+  state.var1 <- cpt;
+  cpt
   \end{lstlisting}
+\end{itemize}
+\end{frame}
+
+\subsection{Correspondance sémantique}
+\begin{frame}[fragile]{\null}
+\begin{itemize}
+\item Nœud synchrone
+  \begin{lstlisting}[language=minils]
+node incr (tic: bool) = (cpt:int; ok: bool)
+  cpt = (0 fby cpt) + 1; ...\end{lstlisting}
+\item Code séquentiel, analogue à Rust 
+  \begin{lstlisting}[language=why3]
+let step (state:state) (tic: bool): (int) 
+  ensures { step_fonct tic result (old state) state }\end{lstlisting}
 \item Postcondition
+  \begin{lstlisting}[language=why3]
+predicate step_fonct (tic: bool) 
+  (cpt: int) (state:state) (state2:state) =
+  let var1 = state.var1 in
+  ...
+  cpt = var1 + 1 && 
+  state2.var1 = cpt\end{lstlisting}
 \item Spécification
+\end{itemize}
+\end{frame}
+
+\subsection{Correspondance sémantique}
+\begin{frame}[fragile]{\null}
+\begin{itemize}
+\item Nœud synchrone
+  \begin{lstlisting}[language=minils]
+node incr (tic: bool) = (cpt:int; ok: bool)
+  cpt = (0 fby cpt) + 1; ...\end{lstlisting}
+\item Code séquentiel, analogue à Rust 
+  \begin{lstlisting}[language=why3]
+let step (state:state) (tic: bool): (int) 
+  ensures { step_fonct tic result (old state) state }\end{lstlisting}
+\item Postcondition
+  \begin{lstlisting}[language=why3]
+predicate step_fonct (tic: bool) (cpt: int)
+					 (state:state) (state2:state)\end{lstlisting}
+\item Spécification
+  \begin{lstlisting}[language=why3]
+type stream 'a
+function get (stream 'a) nat: 'a
+\end{lstlisting}
+
+\end{itemize}
+\end{frame}
+
+\subsection{Correspondance sémantique}
+\begin{frame}[fragile]{\null}
+\begin{itemize}
+\item Nœud synchrone
+  \begin{lstlisting}[language=minils]
+node incr (tic: bool) = (cpt:int; ok: bool)
+  cpt = (0 fby cpt) + 1; ...\end{lstlisting}
+\item Code séquentiel, analogue à Rust 
+  \begin{lstlisting}[language=why3]
+let step (state:state) (tic: bool): (int) 
+  ensures { step_fonct tic result (old state) state }\end{lstlisting}
+\item Postcondition
+  \begin{lstlisting}[language=why3]
+predicate step_fonct (tic: bool) (cpt: int)
+					 (state:state) (state2:state)\end{lstlisting}
+\item Spécification
+  \begin{lstlisting}[language=why3]
+predicate spec (tic:stream bool) (cpt:stream int) =
+  exists ok: stream bool.
+    cpt = (splus (sfby 0 cpt) (sconst 1))\end{lstlisting}
+
 \end{itemize}
 \end{frame}
 
 \subsection{Vérification simple des valeurs non initialisées}
 \begin{frame}{\null}
 	\begin{itemize}
-		\item preuve de propriété inductive
 		\item analyse des nils
+		\item quantification sur ces valeurs
 	\end{itemize}
 \end{frame}
 
 
 \subsection{Preuves inductives sur les programmes Lustre}
-\begin{itemize}
-\item utilisation de la variable "ok" pour donner un invariant du nœud
-\item
-\end{itemize}
+\begin{frame}[fragile]{\null}
+	\begin{itemize}
+		\item preuve de propriétés inductives
+		\item utilisation de la variable "ok" pour donner un invariant du nœud
+		\item
+		  \begin{lstlisting}[language=minils]
+node incr () = (cpt:int; ok: bool)
+with var ok: bool in
+  cpt = (0 fby cpt) + 1;
+  ok = 0 <= cpt\end{lstlisting}
+		\item vérification modulaire
+	\end{itemize}
+\end{frame}
 
-\subsection{Application à pong}
-
-\subsection{Conclusion}
-\begin{frame}{\null}
-  \begin{itemize}
-  \item todo
-  \end{itemize}
+\subsection{Pong, le retour}
+\begin{frame}[fragile]{\null}
+Démo
 \end{frame}
 
 \appendix
-\subsection{Besoin d'une annexe ?}
-\begin{frame}{\null}
+
+\subsection{Correspondance sémantique}
+\begin{frame}[fragile]{\null}
+  \begin{lstlisting}[language=why3]
+lemma valid:
+  forall (* in and out vars *) tic:stream bool, 
+  cpt:stream int, ok: stream bool,
+  (* state *) svar1: stream int.  
+  (* definition by recurrence *)
+  ({ Nodeincr.var1 = get svar1 O; } = reset_state /\
+  forall n: nat.
+    step_fonct (get tic n) 
+      (get cpt n) { Nodeincr.var1 = get svar1 n; } { Nodeincr.var1 = get svar1 (S n); })
+  (* correction *)
+  -> spec tic cpt\end{lstlisting}
 \end{frame}
+
 
 
 \end{document}
