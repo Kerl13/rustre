@@ -10,13 +10,10 @@ let rec filter_map: ('a -> 'b option) -> 'a list -> 'b list = fun f l ->
 let rec analyze_defs ?(fonct=false) = function
   | SAssign { n; _} -> [n]
   | SSeq(a, b) -> analyze_defs ~fonct a @ analyze_defs ~fonct b
-  | SReset(_, b) -> if fonct then [State ("state_" ^ b)] else []
+  | SReset(_, b) -> if fonct then [State b] else []
   | SSkip -> []
   | SCall(_, _, i, res) ->
-    if fonct then
-      res
-    else
-      (State ("state_" ^ i)) :: res
+    res
   | SCase(_, b) ->
     List.map snd b |> List.map (analyze_defs ~fonct) |> List.concat |> List.sort_uniq compare 
 

@@ -72,11 +72,7 @@ let spec_node states f_obj ppf node =
     apply sext \
   | [ |-  _ = seq ?A ?B] => \
     apply sext \
-  | [ |-  _ = swhen ?A ?B] => \
-    apply sext \
   | [ |-  _ = sconst _] => \
-    apply sext \
-  | [ |-  _ = smerge _ _ _] => \
     apply sext \
   | [ |- forall n:nat, ?C] => \
       intros nk; \
@@ -107,12 +103,6 @@ let spec_node states f_obj ppf node =
     || (pose (seq_rw_false a b n dec2) as c; clearbody c; rewrite c; clear c)) \
   | [ |- context[get (splus _ _) _]] => rewrite splus_rw \
   | [ |- context[get (sconst _) _]] => rewrite sconst_rw \
-  | [ |- context[get (smerge ?a _ _) ?n]] => \
-      let h := fresh \"merge\" in \
-      case_eq (get a n); [ \
-      intro h; rewrite h in *; rewrite smerge_rw_true | \
-      intro h; rewrite h in *;  rewrite smerge_rw_false] \
-  | [ |- context[get (swhen _ _)]] => rewrite swhen_rw \
   | [ |- context[get (sfby _ _) (O)]] => rewrite sfby_rw_o \
   | [ |- context[get (sfby _ _) (S _)]] => rewrite sfby_rw_s \
   | [ |- context[get (sfby _ _) ?n]] => \

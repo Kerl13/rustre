@@ -15,11 +15,8 @@ theory Stream
   function spre (stream 'a): stream 'a
   function sconst 'a: stream 'a
   function sgt (stream int) (stream int): stream bool
-  function sif (stream bool) (stream 'a) (stream 'a): stream 'a
   function sfby 'a (stream 'a): stream 'a
   function seq (stream 'a) (stream 'a): stream bool
-  function smerge (stream bool) (stream 'a) (stream 'a): stream 'a
-  function swhen (stream bool) (stream 'a): stream 'a
 
   axiom sext: forall a, b: stream 'a.
     (forall n: nat. get a n = get b n) -> a = b
@@ -38,13 +35,6 @@ theory Stream
   axiom sminus_rw: forall a, b, n. get (sminus a b) n = get a n - get b n
   axiom sgt_rw_true: forall a, b, n. (get a n > get b n) -> get (sgt a b) n = true
   axiom sgt_rw_false: forall a, b, n. (not (get a n > get b n)) -> get (sgt a b) n = false
-  axiom swhen_rw: forall a, b:stream 'a, n. get (swhen a b) n = get b n
-  axiom smerge_rw_true: forall a, b, c:stream 'a, n.
-    get a n ->
-    get (smerge a b c) n = get b n
-  axiom smerge_rw_false: forall a, b, c:stream 'a,  n.
-    get a n = false ->
-    get (smerge a b c) n = get c n
 
   lemma gt_dec: forall a: int, b:int. a > b \/ not (a > b)
 

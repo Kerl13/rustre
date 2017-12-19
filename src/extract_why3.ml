@@ -127,7 +127,7 @@ module E = struct
     | Ast_object.SCase (a, b) ->
       let vars = analyze_defs ~fonct s
                  |> filter_map (function
-                     | State s -> Some s
+                     | State s -> if fonct then Some ("state_" ^ s) else None
                      | Var s | Loc s -> Some s) in
       if prop && List.for_all loc vars then
         begin
@@ -140,7 +140,7 @@ module E = struct
         end
       else if prop then
         begin
-          fprintf ppf "@[<2>let (@[<2>%a@]) = match %a with@\n%a@]@\nend in"
+          fprintf ppf "@[<2>let (@[<2>%a@]) = match %a with@\n%a@]@\nend in@\n"
             (pp_list_brk "," (fun ppf s -> if loc s then
                                  fprintf ppf "__%s" s
                                else fprintf ppf "%s" s)) vars
@@ -152,6 +152,8 @@ module E = struct
             b;
           let vars = List.filter loc vars in
           (pp_list_brk " &&" (fun ppf s -> fprintf ppf "__%s = %s" s s)) ppf vars;
+          if vars <> [] then
+          fprintf ppf " &&@\n"
         end
       else
         begin
@@ -236,7 +238,9 @@ module E = struct
            fprintf ppf "(%s: %a)" var  print_sty sty)) (var_in @ var_out @ var_loc);
     (pp_list_n "" (fun ppf (s, _) -> fprintf ppf "let state_%s = state.%s in@\n" s s)) ppf mach.instances;
     fprintf ppf "%a@\n"
-      (print_statement ~ok ~prop:true ~loc:(fun s' -> List.exists (fun (s,_) -> s = s') (var_in @ var_out)) ~fonct:true) stat;
+      (print_statement ~ok ~prop:true ~loc:(fun s' ->
+           (String.length s' >= String.length "state_" && String.sub s' 0 (String.length "state_")  = "state_") || List.exists (fun (s,_) ->
+           s = s') (var_in @ var_loc @ var_out)) ~fonct:true) stat;
     f ();
     fprintf ppf "@]@\n";
     fprintf ppf "@[<2>predicate step_fonct%s %a (state:state) (state2:state) =@\n" s
@@ -318,7 +322,6 @@ module E = struct
     let var_in = List.map fst var_in in
     let var_out = List.map fst var_out in
 
-    assert (ostatement_get_nils step = []);
     let nils = ostatement_get_nils mach.reset in
     let nils = List.map (function
         | State i -> i, "state_" ^ i
