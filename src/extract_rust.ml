@@ -68,12 +68,7 @@ module E = struct
     | EConst (CInt i) -> fprintf ppf "%d" i
     | EConst (CReal f) -> fprintf ppf "%.16f" f
     | EConst (CDataCons dc) -> print_datacons ppf dc
-    | EConst (CNil ty) -> begin match ty with
-        | Ast_typed.TyBool -> fprintf ppf "%B" true
-        | Ast_typed.TyNum Ast_typed.TyZ -> fprintf ppf "%d" 42
-        | Ast_typed.TyNum Ast_typed.TyReal -> fprintf ppf "%f" 0.
-        | Ast_typed.TyEnum (_, dcs) -> print_datacons ppf (List.hd dcs)
-      end
+    | EConst (CNil _) -> fprintf ppf "Default::default()"
     | EBOp (Ast_typed.OpImpl, b, c) -> fprintf ppf "(!(%a)) || (%a)" print_expr b print_expr c
     | EBOp (a, b, c) -> fprintf ppf "(%a) %a (%a)" print_expr b pp_bop a print_expr c
     | EUOp (a, b) -> fprintf ppf "%a (%a)" pp_uop a print_expr b
