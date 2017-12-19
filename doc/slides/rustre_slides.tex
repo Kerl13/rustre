@@ -138,6 +138,31 @@
 %  literate={\#}{{/}}
 }
 
+\lstdefinelanguage{why3}
+{
+morekeywords=[1]{predicate,constant,function,goal,type,use,%
+import,theory,end,in,%
+mutable,invariant,model,requires,ensures,raises,returns,reads,writes,diverges,%
+variant,let,val,while,for,loop,abstract,private,any,assert,assume,check,%
+rec,clone,if,then,else,result,old,ghost,%
+axiom,lemma,export,forall,exists,match,with,not,inductive,coinductive},%
+%keywordstyle=[1]{\color{red}},%
+morekeywords=[2]{true,false},%
+%keywordstyle=[2]{\color{blue}},%
+otherkeywords={},%
+commentstyle=\itshape,%
+columns=[l]fullflexible,%
+sensitive=true,%
+morecomment=[s]{(*}{*)},%
+escapeinside={*?}{?*},%
+keepspaces=true,
+}
+
+\lstnewenvironment{why3}{\lstset{language=why3}}{}
+
+\newcommand{\whyf}[1]{\lstinline[language=why3]{#1}}
+
+
 
 
 \newcommand\blfootnote[1]{%
@@ -358,18 +383,61 @@ pub fn main() {
 \begin{frame}{\null}
   \begin{itemize}
   \item Fusion des merges
-  \item Simplification des merges triviaux
+  \item Simplification des match triviaux
   \end{itemize}
 \end{frame}
 
 \subsection{Extraction Why3}
 \begin{frame}{\null}
-  \begin{itemize}
-    \item préservation sémantique
-  \end{itemize}
+  \begin{tikzpicture}[node distance=1cm, align=center]
+    \node (parsing)         [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm]                            {Parsing};
+    \node (extraction)      [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, above right = of parsing]         {Code extraction};
+    \node (why3)            [rectangle, rounded corners, draw=red, fill=red!20, minimum height = .75cm, minimum width=3cm, right = of extraction] {Why3\\ Code séquentiel};
+    \node (spec)            [rectangle, rounded corners, draw=red, fill=red!20, minimum height = .75cm, minimum width=3cm, below = of why3] {Why3\\ Spécification};
+    \node (rust)            [above = of extraction] {\includegraphics[width=0.1\textwidth]{img/rust.png}};
+
+    \path[draw, ->, line width = .3mm] (extraction) -- (rust);
+    \path[draw, ->, line width = .3mm, dashed] (parsing) -- (extraction);
+    \path[draw, ->, line width = .3mm] (parsing) -- (spec);
+    \path[draw, ->, line width = .3mm] (extraction) -- (why3);
+	\path[draw, <->, line width = .3mm] (why3) -- node[right] {abstraction} (spec);
+  \end{tikzpicture}
+\end{frame}
+
+\subsection{Correspondance sémantique}
+\begin{frame}[fragile]{\null}
+\begin{itemize}
+\item Code séquentiel, analogue à Rust 
+  \begin{lstlisting}[language=why3]
+pub fn main() {
+  let mut mach:node_main::Machine = Default::default();
+  loop {
+    let arg0 = parse_args();
+    println!("{:?}", mach.step(arg0));
+  }
+}
+  \end{lstlisting}
+\item Postcondition
+\item Spécification
+\end{itemize}
+\end{frame}
+
+\subsection{Vérification simple des valeurs non initialisées}
+\begin{frame}{\null}
+	\begin{itemize}
+		\item preuve de propriété inductive
+		\item analyse des nils
+	\end{itemize}
 \end{frame}
 
 
+\subsection{Preuves inductives sur les programmes Lustre}
+\begin{itemize}
+\item utilisation de la variable "ok" pour donner un invariant du nœud
+\item
+\end{itemize}
+
+\subsection{Application à pong}
 
 \subsection{Conclusion}
 \begin{frame}{\null}
@@ -379,7 +447,7 @@ pub fn main() {
 \end{frame}
 
 \appendix
-\subsection{Besoin d'une annexe ?}
+\subsection{Besoin d'une annexe ?}
 \begin{frame}{\null}
 \end{frame}
 
