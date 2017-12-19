@@ -182,7 +182,7 @@
 \subsection{Pong}
 
 \begin{frame}{\null}
-  Blah
+  \centering \Large Pong : démo !
 \end{frame}
 
 \subsection{Typage - GADTs}
@@ -207,15 +207,14 @@ type 'a expr_desc =
   \end{lstlisting}
 \end{frame}
 
-\subsection{Inférence des horloges}
-\begin{frame}[fragile]{\null}
+\subsection{Horloges}
+\begin{frame}[fragile]{-- Inférence}
   \begin{itemize}
   \item Algo W avec effets de bords, références...
   \end{itemize}
 \end{frame}
 
-\subsection{Exemple d'horloge polymorphe}
-\begin{frame}[fragile]{\null}
+\begin{frame}[fragile]{-- Exemple}
   \begin{columns}
     \begin{column}{0.5\textwidth}
       \begin{lstlisting}[language=minils]
@@ -242,16 +241,37 @@ node main
     half : [!$\alpha$!]
     t1 : [!$\alpha$! on True(half)]
     t2 : [!$\alpha$! on True(half)]
-   \end{lstlisting}
+  \end{lstlisting}
  \end{column}
 \end{columns}
+\pause
+\begin{center}
+  \begin{tabular}{|c|ccccccc|}
+    \hline
+    t1    & 1 & 0 & 2 & 0 & 3 & 0 & 4\\
+    \hline
+%%    sum(1)& 1 & 2 & 3 & 4 & 5 & 6 & 7\\
+%%    \hline
+    t2    & 1 & 0 & 3 & 0 & 5 & 0 & 7\\
+    \hline
+  \end{tabular}
+\end{center}
 \end{frame}
 
 
 \subsection{Extraction Rust}
 
 \begin{frame}[fragile]{\null}
-  \begin{lstlisting}[language=minils]
+  \begin{itemize}
+  \item<1-> Un noeud = un module
+  \item<2-> Variables immuables \onslide<3->{(cas des structures de contrôle)}
+  \item<4-> \inline{\#[derive(Default)]}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{\null}
+  \begin{tabular}{c}
+    \begin{lstlisting}[language=minils]
 node sqrt (s:real) = (res:real)
 with var x:bool in
   res = 0.5*(s+1) -> (0.5 * (pre res + (s / pre res)))
@@ -259,15 +279,18 @@ with var x:bool in
 node main (s:real) = (res:real)
 with
   res = sqrt(s) every (false -> (s <> pre s))
-  \end{lstlisting}
-
-  \begin{tabular}{|c|ccccccc|}
-    \hline
-    Input  & 16   & 16   & 16   & 16   & 2   & 2    & 2   \\
-    \hline
-    Output & 8.5  & 5.19 & 4.14 & 4.00 & 1.5 & 1.42 & 1.41 \\
-    \hline
-\end{tabular}
+\end{lstlisting}
+  \end{tabular}
+  
+  \begin{center}
+    \begin{tabular}{|c|ccccccc|}
+      \hline
+      Input  & 16   & 16   & 16   & 16   & 2   & 2    & 2   \\
+      \hline
+      Output & 8.5  & 5.19 & 4.14 & 4.00 & 1.5 & 1.42 & 1.41 \\
+      \hline
+    \end{tabular}
+  \end{center}
 \end{frame}
 
 \begin{frame}[fragile]{\null}
@@ -294,7 +317,6 @@ mod node_main {
   \end{lstlisting}
 \end{frame}
 
-
 \begin{frame}[fragile]{\null}
   \begin{lstlisting}[language=Rust]
 mod node_main {
@@ -311,7 +333,7 @@ mod node_main {
     }
 
     pub fn reset(&mut self) {
-      self.inst1.reset(); self.var3 = 0.0;
+      self.inst1.reset(); self.var3 = Default::default();
     }
   }
 }
@@ -319,18 +341,24 @@ mod node_main {
 \end{frame}
 
 \begin{frame}[fragile]{\null}
-  \begin{itemize}
-  \item Un noeud = un module
-  \item Variables immuables
-  \item \inline{\#[derive(Default)]}
-  \end{itemize}
+  \begin{lstlisting}[language=Rust]
+pub fn main() {
+  let mut mach:node_main::Machine = Default::default();
+  loop {
+    let arg0 = parse_args();
+    println!("{:?}", mach.step(arg0));
+  }
+}
+  \end{lstlisting}
 \end{frame}
+
+
 
 \subsection{Optimisations}
 \begin{frame}{\null}
   \begin{itemize}
   \item Fusion des merges
-  \item Suppression des merges triviaux
+  \item Simplification des merges triviaux
   \end{itemize}
 \end{frame}
 
