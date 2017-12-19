@@ -153,7 +153,13 @@
 \maketitle
 
 \section{\null}
-\subsection{Introduction}
+\subsection{Pong}
+
+\begin{frame}{\null}
+  \centering \Large Pong : démo !
+\end{frame}
+
+\subsection{Organisation du compilateur}
 
 \begin{frame}{\null}
   \begin{tikzpicture}[node distance=1cm, align=center]
@@ -179,12 +185,6 @@
   \end{tikzpicture}
 \end{frame}
 
-\subsection{Pong}
-
-\begin{frame}{\null}
-  \centering \Large Pong : démo !
-\end{frame}
-
 \subsection{Typage - GADTs}
 \begin{frame}[fragile]{\null}
   \begin{lstlisting}[language=caml]
@@ -194,7 +194,7 @@ type 'a num_ty =
   | TyZ : int num_ty
   | TyReal : float num_ty
 
-type _ ty =
+type 'a ty =
   | TyBool : bool ty
   | TyNum  : 'a num_ty -> 'a num_ty ty
   | TyEnum : string * string list -> enum ty
@@ -281,7 +281,7 @@ with
   res = sqrt(s) every (false -> (s <> pre s))
 \end{lstlisting}
   \end{tabular}
-  
+
   \begin{center}
     \begin{tabular}{|c|ccccccc|}
       \hline
