@@ -5,6 +5,7 @@
 Pour compiler le binaire `rustre`, il faut :
 - une version d'ocaml (testé en version 4.05.x)
 - menhir (testé en version 20171206)
+- ocamlbuild (testé en version 0.11.0)
 
 Il est aussi recommandé d'avoir installé :
 - rustc (testé en version 1.22.1)
