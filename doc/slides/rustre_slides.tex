@@ -194,7 +194,7 @@ keepspaces=true,
     \node (normalization)   [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, below = of clocking]       {Normalization};
     \node (scheduling)      [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, left = of normalization]   {Scheduling};
     \node (object)          [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, left = of scheduling]      {Object generation};
-    \node (extraction)      [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, below = of object]         {Extraction de code};
+    \node (extraction)      [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, below = of object]         {Code extraction};
     \node (rust)            [right = of extraction] {\includegraphics[width=0.1\textwidth]{img/rust.png}};
     \node (why3)            [below = of rust] {Why3};
 
@@ -392,7 +392,7 @@ pub fn main() {
 \begin{frame}{\null}
   \begin{tikzpicture}[node distance=1cm, align=center]
     \node (parsing)         [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm]                            {Parsing};
-    \node (extraction)      [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, above right = of parsing]         {Code extraction};
+    \node (extraction)      [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, above right = of parsing]         {Extraction de code};
     \node (why3)            [rectangle, rounded corners, draw=red, fill=red!20, minimum height = .75cm, minimum width=3cm, right = of extraction] {Why3\\ Code séquentiel};
     \node (spec)            [rectangle, rounded corners, draw=red, fill=red!20, minimum height = .75cm, minimum width=3cm, below = of why3] {Why3\\ Spécification};
     \node (rust)            [above = of extraction] {\includegraphics[width=0.1\textwidth]{img/rust.png}};
