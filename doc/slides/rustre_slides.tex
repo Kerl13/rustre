@@ -388,8 +388,8 @@ pub fn main() {
 \end{frame}
 
 
-\subsection{Extraction Why3}
-\begin{frame}{\null}
+\subsection{Why3}
+\begin{frame}{-- Extraction}
   \begin{tikzpicture}[node distance=1cm, align=center]
     \node (parsing)         [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm]                            {Parsing};
     \node (extraction)      [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, above right = of parsing]         {Extraction de code};
@@ -404,8 +404,8 @@ pub fn main() {
 	\path[draw, <->, line width = .3mm] (why3) -- node[right] {abstraction} (spec);
   \end{tikzpicture}
 \end{frame}
-\subsection{Correspondance sémantique}
-\begin{frame}[fragile]{\null}
+
+\begin{frame}[fragile]{-- Correspondance sémantique}
 \begin{itemize}
 \item Nœud synchrone
   \begin{lstlisting}[language=minils]
@@ -416,8 +416,7 @@ with var ok: bool in
   \end{itemize}
 \end{frame}
 
-\subsection{Correspondance sémantique}
-\begin{frame}[fragile]{\null}
+\begin{frame}[fragile]{-- Correspondance sémantique}
 \begin{itemize}
 \item Nœud synchrone
   \begin{lstlisting}[language=minils]
@@ -436,8 +435,7 @@ let step (state:state) (tic: bool): (int)
 \end{itemize}
 \end{frame}
 
-\subsection{Correspondance sémantique}
-\begin{frame}[fragile]{\null}
+\begin{frame}[fragile]{-- Correspondance sémantique}
 \begin{itemize}
 \item Nœud synchrone
   \begin{lstlisting}[language=minils]
@@ -459,8 +457,7 @@ predicate step_fonct (tic: bool)
 \end{itemize}
 \end{frame}
 
-\subsection{Correspondance sémantique}
-\begin{frame}[fragile]{\null}
+\begin{frame}[fragile]{-- Correspondance sémantique}
 \begin{itemize}
 \item Nœud synchrone
   \begin{lstlisting}[language=minils]
@@ -483,8 +480,7 @@ function get (stream 'a) nat: 'a
 \end{itemize}
 \end{frame}
 
-\subsection{Correspondance sémantique}
-\begin{frame}[fragile]{\null}
+\begin{frame}[fragile]{-- Correspondance sémantique}
 \begin{itemize}
 \item Nœud synchrone
   \begin{lstlisting}[language=minils]
@@ -507,34 +503,34 @@ predicate spec (tic:stream bool) (cpt:stream int) =
 \end{itemize}
 \end{frame}
 
-\subsection{Vérification simple des valeurs non initialisées}
-\begin{frame}{\null}
+\begin{frame}{-- Vérification simple des valeurs non initialisées}
 	\begin{itemize}
-		\item analyse des nils
-		\item quantification sur ces valeurs
+		\item Analyse des nils
+		\item Quantification sur ces valeurs
 	\end{itemize}
 \end{frame}
 
 
-\subsection{Preuves inductives sur les programmes Lustre}
-\begin{frame}[fragile]{\null}
+\begin{frame}[fragile]{-- Preuves inductives sur les programmes Lustre}
 	\begin{itemize}
-		\item preuve de propriétés inductives
-		\item utilisation de la variable "ok" pour donner un invariant du nœud
+		\item Preuve de propriétés inductives
+		\item Utilisation de la variable "ok" pour donner un invariant du nœud
 		\item
 		  \begin{lstlisting}[language=minils]
 node incr () = (cpt:int; ok: bool)
 with var ok: bool in
   cpt = (0 fby cpt) + 1;
   ok = 0 <= cpt\end{lstlisting}
-		\item vérification modulaire
+		\item Vérification modulaire
 	\end{itemize}
 \end{frame}
 
-\subsection{Pong, le retour}
-\begin{frame}[fragile]{\null}
-Démo
+\subsection{Conclusion : Pong, le retour}
+\begin{frame}{\null}
+\centering \Large Démo !
 \end{frame}
+
+
 
 \appendix
 
