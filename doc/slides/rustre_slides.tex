@@ -455,7 +455,7 @@ node incr (tic: bool) = (cpt:int)
 \item Code séquentiel, analogue à Rust
   \begin{lstlisting}[language=why3]
 let step (state:state) (tic: bool): (int)
-  ensures { step_fonct tic result (old state) state }\end{lstlisting}
+  ensures { step_fonct tic result (old state) state } ...\end{lstlisting}
 \item Postcondition
   \begin{lstlisting}[language=why3]
 predicate step_fonct (tic: bool)
@@ -476,11 +476,15 @@ node incr (tic: bool) = (cpt:int)
 \item Code séquentiel, analogue à Rust
   \begin{lstlisting}[language=why3]
 let step (state:state) (tic: bool): (int)
-  ensures { step_fonct tic result (old state) state }\end{lstlisting}
+  ensures { step_fonct tic result (old state) state } ...\end{lstlisting}
 \item Postcondition
   \begin{lstlisting}[language=why3]
-predicate step_fonct (tic: bool) (cpt: int)
-					 (state:state) (state2:state)\end{lstlisting}
+predicate step_fonct (tic: bool)
+  (cpt: int) (state:state) (state2:state) =
+  let var1 = state.var1 in
+  ...
+  cpt = var1 + 1 &&
+  state2.var1 = cpt\end{lstlisting}
 \end{itemize}
 
 
@@ -505,11 +509,11 @@ node incr (tic: bool) = (cpt:int)
 \item Code séquentiel, analogue à Rust
   \begin{lstlisting}[language=why3]
 let step (state:state) (tic: bool): (int)
-  ensures { step_fonct tic result (old state) state }\end{lstlisting}
+  ensures { step_fonct tic result (old state) state } ...\end{lstlisting}
 \item Postcondition
   \begin{lstlisting}[language=why3]
 predicate step_fonct (tic: bool) (cpt: int)
-					 (state:state) (state2:state)\end{lstlisting}
+					 (state:state) (state2:state) ...\end{lstlisting}
 \item Spécification
   \begin{lstlisting}[language=why3]
 predicate spec (tic:stream bool) (cpt:stream int) =
