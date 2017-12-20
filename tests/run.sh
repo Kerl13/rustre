@@ -95,7 +95,7 @@ echo
 echo "Ran $total test"
 if [ $fails -ne 0 ]
 then
-  echo "Errors: $fails"
+  echo -e "\033[0;31mErrors:\033[0m $fails"
 else
-  echo OK
+  echo -e "\033[0;32mOK\033[0m"
 fi
