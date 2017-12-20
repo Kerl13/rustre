@@ -402,14 +402,14 @@ pub fn main() {
 \subsection{Why3}
 \begin{frame}{-- Extraction}
   \begin{tikzpicture}[node distance=1cm, align=center]
-    \node (parsing)         [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm]                            {Parsing};
-    \node (extraction)      [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, above right = of parsing]         {Extraction de code};
+    \node (extraction)      [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm]         {Extraction de code};
+    \node (parsing)         [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, below left = 1.3cm and .5cm of extraction]                            {Parsing};
     \node (why3)            [rectangle, rounded corners, draw=red, fill=red!20, minimum height = .75cm, minimum width=3cm, right = of extraction] {Why3\\ Code séquentiel};
     \node (spec)            [rectangle, rounded corners, draw=red, fill=red!20, minimum height = .75cm, minimum width=3cm, below = of why3] {Why3\\ Spécification};
     \node (rust)            [above = of extraction] {\includegraphics[width=0.1\textwidth]{img/rust.png}};
 
     \path[draw, ->, line width = .3mm] (extraction) -- (rust);
-    \path[draw, ->, line width = .3mm, dashed] (parsing) -- (extraction);
+    \path[draw, ->, line width = .3mm, dashed] (parsing) |- (extraction);
     \path[draw, ->, line width = .3mm] (parsing) -- (spec);
     \path[draw, ->, line width = .3mm] (extraction) -- (why3);
 	\path[draw, <->, line width = .3mm] (why3) -- node[right] {abstraction} (spec);
