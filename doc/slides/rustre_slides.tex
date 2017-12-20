@@ -235,9 +235,20 @@ type 'a expr_desc =
 \subsection{Horloges}
 \begin{frame}[fragile]{-- Inférence}
   \begin{itemize}
-  \item Algorithme W avec références...
-  \item Horloges polymorphes (les entrées sont sur \inline{CBase})
-  \item Passe de vérification des horloges
+  \item<1-> Algorithme W
+    \begin{lstlisting}[language=minils, escapechar=!]
+node f (x1, x2, !\ldots!) = (y1, y2, !\ldots!)
+with var z1, z2, !\ldots! in
+  body
+    \end{lstlisting}
+    \begin{lstlisting}[language=caml, escapechar=!]
+let f = fun x1 x2 !\ldots! ->
+  let y1, y2, !\ldots!, z1, z2, !\ldots! = body in
+  y1, y2, !\ldots!
+    \end{lstlisting}
+    $\Rightarrow$ Horloges polymorphes
+  \item<2-> Les entrées sont sur \inline{base}
+  \item<3-> Passe de vérification des horloges
   \end{itemize}
 \end{frame}
 
@@ -422,9 +433,9 @@ with var ok: bool in
   \begin{lstlisting}[language=minils]
 node incr () = (cpt:int; ok: bool)
   cpt = (0 fby cpt) + 1; ...\end{lstlisting}
-\item Code séquentiel, analogue à Rust 
+\item Code séquentiel, analogue à Rust
   \begin{lstlisting}[language=why3]
-let step (state:state) (tic: bool): (int) 
+let step (state:state) (tic: bool): (int)
   ensures { step_fonct tic result (old state) state } =
   let var1 = state.var1 in
   let cpt = var1 + 1 in
@@ -441,17 +452,17 @@ let step (state:state) (tic: bool): (int)
   \begin{lstlisting}[language=minils]
 node incr (tic: bool) = (cpt:int; ok: bool)
   cpt = (0 fby cpt) + 1; ...\end{lstlisting}
-\item Code séquentiel, analogue à Rust 
+\item Code séquentiel, analogue à Rust
   \begin{lstlisting}[language=why3]
-let step (state:state) (tic: bool): (int) 
+let step (state:state) (tic: bool): (int)
   ensures { step_fonct tic result (old state) state }\end{lstlisting}
 \item Postcondition
   \begin{lstlisting}[language=why3]
-predicate step_fonct (tic: bool) 
+predicate step_fonct (tic: bool)
   (cpt: int) (state:state) (state2:state) =
   let var1 = state.var1 in
   ...
-  cpt = var1 + 1 && 
+  cpt = var1 + 1 &&
   state2.var1 = cpt\end{lstlisting}
 \item Spécification
 \end{itemize}
@@ -463,9 +474,9 @@ predicate step_fonct (tic: bool)
   \begin{lstlisting}[language=minils]
 node incr (tic: bool) = (cpt:int; ok: bool)
   cpt = (0 fby cpt) + 1; ...\end{lstlisting}
-\item Code séquentiel, analogue à Rust 
+\item Code séquentiel, analogue à Rust
   \begin{lstlisting}[language=why3]
-let step (state:state) (tic: bool): (int) 
+let step (state:state) (tic: bool): (int)
   ensures { step_fonct tic result (old state) state }\end{lstlisting}
 \item Postcondition
   \begin{lstlisting}[language=why3]
@@ -486,9 +497,9 @@ function get (stream 'a) nat: 'a
   \begin{lstlisting}[language=minils]
 node incr (tic: bool) = (cpt:int; ok: bool)
   cpt = (0 fby cpt) + 1; ...\end{lstlisting}
-\item Code séquentiel, analogue à Rust 
+\item Code séquentiel, analogue à Rust
   \begin{lstlisting}[language=why3]
-let step (state:state) (tic: bool): (int) 
+let step (state:state) (tic: bool): (int)
   ensures { step_fonct tic result (old state) state }\end{lstlisting}
 \item Postcondition
   \begin{lstlisting}[language=why3]
@@ -538,13 +549,13 @@ with var ok: bool in
 \begin{frame}[fragile]{\null}
   \begin{lstlisting}[language=why3]
 lemma valid:
-  forall (* in and out vars *) tic:stream bool, 
+  forall (* in and out vars *) tic:stream bool,
   cpt:stream int, ok: stream bool,
-  (* state *) svar1: stream int.  
+  (* state *) svar1: stream int.
   (* definition by recurrence *)
   ({ Nodeincr.var1 = get svar1 O; } = reset_state /\
   forall n: nat.
-    step_fonct (get tic n) 
+    step_fonct (get tic n)
       (get cpt n) { Nodeincr.var1 = get svar1 n; } { Nodeincr.var1 = get svar1 (S n); })
   (* correction *)
   -> spec tic cpt\end{lstlisting}

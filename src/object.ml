@@ -69,7 +69,7 @@ let rec oexpr_of_ck ck =
        | None -> EConst (CBool true)
        | Some m -> oexpr_of_ck m
      end
-      
+
 let obc_eq (Ast_typed.NodeLocal local) (instances, s, end_os) = function
   | EquSimple(v, expr_merge) ->
      let v = if is_in local v then Loc v else Var v in
