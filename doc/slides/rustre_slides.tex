@@ -171,7 +171,7 @@ keepspaces=true,
   \addtocounter{footnote}{-1}%
   \endgroup
 }
-
+\usepackage[absolute,overlay, showboxes]{textpos}
 
 \begin{document}
 
@@ -420,7 +420,7 @@ pub fn main() {
 \begin{itemize}
 \item Nœud synchrone
   \begin{lstlisting}[language=minils]
-node incr () = (cpt:int; ok: bool)
+node incr (tic:bool) = (cpt:int)
 with var ok: bool in
   cpt = (0 fby cpt) + 1;
   ok = 0 <= cpt\end{lstlisting}
@@ -431,7 +431,7 @@ with var ok: bool in
 \begin{itemize}
 \item Nœud synchrone
   \begin{lstlisting}[language=minils]
-node incr () = (cpt:int; ok: bool)
+node incr (tic:bool) = (cpt:int)
   cpt = (0 fby cpt) + 1; ...\end{lstlisting}
 \item Code séquentiel, analogue à Rust
   \begin{lstlisting}[language=why3]
@@ -450,7 +450,7 @@ let step (state:state) (tic: bool): (int)
 \begin{itemize}
 \item Nœud synchrone
   \begin{lstlisting}[language=minils]
-node incr (tic: bool) = (cpt:int; ok: bool)
+node incr (tic: bool) = (cpt:int)
   cpt = (0 fby cpt) + 1; ...\end{lstlisting}
 \item Code séquentiel, analogue à Rust
   \begin{lstlisting}[language=why3]
@@ -464,7 +464,6 @@ predicate step_fonct (tic: bool)
   ...
   cpt = var1 + 1 &&
   state2.var1 = cpt\end{lstlisting}
-\item Spécification
 \end{itemize}
 \end{frame}
 
@@ -472,7 +471,7 @@ predicate step_fonct (tic: bool)
 \begin{itemize}
 \item Nœud synchrone
   \begin{lstlisting}[language=minils]
-node incr (tic: bool) = (cpt:int; ok: bool)
+node incr (tic: bool) = (cpt:int)
   cpt = (0 fby cpt) + 1; ...\end{lstlisting}
 \item Code séquentiel, analogue à Rust
   \begin{lstlisting}[language=why3]
@@ -482,20 +481,26 @@ let step (state:state) (tic: bool): (int)
   \begin{lstlisting}[language=why3]
 predicate step_fonct (tic: bool) (cpt: int)
 					 (state:state) (state2:state)\end{lstlisting}
-\item Spécification
-  \begin{lstlisting}[language=why3]
-type stream 'a
-function get (stream 'a) nat: 'a
-\end{lstlisting}
-
 \end{itemize}
+
+
+\begin{textblock*}{70mm}(29mm,0.5\textheight)
+\textblockcolour{green!40}
+\begin{exampleblock}{\centering{Flots dans Why3}}
+  \begin{lstlisting}[language=why3]
+  type stream 'a
+  function get (stream 'a) nat: 'a
+\end{lstlisting}
+\end{exampleblock}
+\end{textblock*}
+
 \end{frame}
 
 \begin{frame}[fragile]{-- Correspondance sémantique}
 \begin{itemize}
 \item Nœud synchrone
   \begin{lstlisting}[language=minils]
-node incr (tic: bool) = (cpt:int; ok: bool)
+node incr (tic: bool) = (cpt:int)
   cpt = (0 fby cpt) + 1; ...\end{lstlisting}
 \item Code séquentiel, analogue à Rust
   \begin{lstlisting}[language=why3]
@@ -528,7 +533,7 @@ predicate spec (tic:stream bool) (cpt:stream int) =
 		\item Utilisation de la variable "ok" pour donner un invariant du nœud
 		\item
 		  \begin{lstlisting}[language=minils]
-node incr () = (cpt:int; ok: bool)
+node incr (tic: bool) = (cpt:int)
 with var ok: bool in
   cpt = (0 fby cpt) + 1;
   ok = 0 <= cpt\end{lstlisting}
