@@ -403,7 +403,7 @@ pub fn main() {
 \begin{frame}{-- Extraction}
   \begin{tikzpicture}[node distance=1cm, align=center]
     \node (extraction)      [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm]         {Extraction de code};
-    \node (parsing)         [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, below left = 1.3cm and .5cm of extraction]                            {Parsing};
+    \node (parsing)         [rectangle, rounded corners, draw=black, fill=blue!50, minimum height = .75cm, minimum width=3cm, below left = 1.45cm and .5cm of extraction]                            {Parsing};
     \node (why3)            [rectangle, rounded corners, draw=red, fill=red!20, minimum height = .75cm, minimum width=3cm, right = of extraction] {Why3\\ Code séquentiel};
     \node (spec)            [rectangle, rounded corners, draw=red, fill=red!20, minimum height = .75cm, minimum width=3cm, below = of why3] {Why3\\ Spécification};
     \node (rust)            [above = of extraction] {\includegraphics[width=0.1\textwidth]{img/rust.png}};
